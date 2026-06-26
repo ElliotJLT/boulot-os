@@ -3,306 +3,316 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Boulot — the job-search system that makes you undeniable</title>
-<meta name="description" content="Boulot is a career-ops system that runs on your own machine. It tailors your CV per role using AI agents that argue over every claim, researches companies, and grills you for interviews. Quality over volume. Your data stays yours." />
-<meta property="og:title" content="Boulot — the job-search system that makes you undeniable" />
-<meta property="og:description" content="Fewer applications, each one undeniable. A local, AI-powered career-ops system. Your data stays yours." />
+<title>Boulot — a calmer, sharper job search that lives on your laptop</title>
+<meta name="description" content="Boulot helps you build a CV worth reading, prep for the interview, and keep track of it all — quietly, on your own laptop. Fewer applications, and better ones." />
+<meta property="og:title" content="Boulot — a calmer, sharper job search" />
+<meta property="og:description" content="Build a CV worth reading, prep for the interview, and keep track of it all — on your own laptop. Fewer applications, and better ones." />
 <meta property="og:type" content="website" />
-<meta name="theme-color" content="#08080A" />
+<meta name="theme-color" content="#bfe6f5" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#08080A; --bg-elev:#0E0E12; --surface:#131318; --surface-hover:#17171D;
-    --text:#F4F4F6; --muted:#9A9AA6; --dim:#5E5E6B;
-    --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
-    --accent:#FF6A3D; --accent-2:#FF3D81; --glow:rgba(255,106,61,.40);
-    --sans:'Geist',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
-    --mono:'Geist Mono','JetBrains Mono',ui-monospace,monospace;
-    --maxw:1120px;
+    --cream:#fcf8f0; --cream-2:#f6efe2; --card:#ffffff;
+    --ink:#332f28; --muted:#736c61; --dim:#9a9286;
+    --line:#ece3d2; --line-2:#e2d7c2;
+    --sky-1:#bfe6f5; --sky-2:#e9f5ee;
+    --accent:#e07a55; --accent-deep:#c25c3c; --accent-soft:#fbe6da;
+    --leaf:#7cb45f; --sun:#ffd56b; --sun-soft:#fff2cf;
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    --maxw:1080px;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
-    font-size:17px;line-height:1.6;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
-  }
-  /* global noise */
-  body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.022;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
-  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;position:relative;z-index:2}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans);
+    font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;position:relative}
   a{color:inherit;text-decoration:none}
-  h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.03em;line-height:1.06}
   p{margin:0}
-  .eyebrow{font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:8px}
-  .eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
-  .gradient-text{background:linear-gradient(120deg,#FF6A3D,#FF3D81,#FF6A3D);background-size:200% auto;
-    -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
-  @keyframes shine{to{background-position:200% center}}
+  h1,h2,h3{margin:0;font-family:var(--serif);font-weight:500;letter-spacing:-.01em;line-height:1.1}
+  .label{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-deep)}
+  .serif-i{font-style:italic}
 
   /* nav */
-  nav{position:sticky;top:0;z-index:50;border-bottom:1px solid transparent;transition:background .25s,border-color .25s}
-  nav.scrolled{background:rgba(8,8,10,.72);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border-bottom:1px solid var(--border)}
-  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
-  .brand{font-weight:600;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
-  .brand .glyph{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:inline-block;box-shadow:0 0 18px var(--glow)}
-  nav .links{display:flex;align-items:center;gap:26px}
-  nav .links a:not(.cta){font-size:14.5px;color:var(--muted);transition:color .2s}
-  nav .links a:not(.cta):hover{color:var(--text)}
-  .cta{font-size:14px;font-weight:500;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));
-    padding:9px 16px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
-  .cta:hover{filter:brightness(1.08)}
-  @media(max-width:680px){nav .links a:not(.cta){display:none}}
+  nav{position:sticky;top:0;z-index:50;transition:background .25s,box-shadow .25s}
+  nav.scrolled{background:rgba(252,248,240,.82);backdrop-filter:blur(12px) saturate(130%);-webkit-backdrop-filter:blur(12px) saturate(130%);box-shadow:0 1px 0 var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{font-family:var(--serif);font-size:23px;font-weight:600;letter-spacing:-.01em}
+  nav .links{display:flex;align-items:center;gap:24px}
+  nav .links a:not(.btn){font-size:15px;color:var(--muted);transition:color .2s}
+  nav .links a:not(.btn):hover{color:var(--ink)}
+  @media(max-width:680px){nav .links a:not(.btn){display:none}}
 
-  section{padding:clamp(80px,12vw,150px) 0;position:relative}
-  .lead{color:var(--muted);max-width:660px;margin-top:20px;font-size:19px}
-  h2.head{font-size:clamp(1.8rem,3.4vw,2.6rem);max-width:760px;margin-top:14px}
+  .btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:15px;font-weight:600;
+    padding:11px 20px;border-radius:999px;transition:transform .18s,filter .18s,background .18s,border-color .18s;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff;box-shadow:0 6px 18px -8px rgba(224,122,85,.7)}
+  .btn.primary:hover{transform:translateY(-2px);filter:brightness(1.04)}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line-2)}
+  .btn.ghost:hover{transform:translateY(-2px);border-color:var(--accent);color:var(--accent-deep)}
+  .btn.sm{padding:9px 16px;font-size:14px}
 
-  /* hero */
-  .hero{padding:clamp(70px,11vw,130px) 0 clamp(80px,10vw,120px);overflow:hidden}
-  .hero::before{content:"";position:absolute;left:50%;top:-180px;transform:translateX(-50%);
-    width:1100px;height:680px;z-index:0;pointer-events:none;
-    background:radial-gradient(50% 50% at 50% 50%,var(--glow) 0%,transparent 70%);filter:blur(30px)}
-  .hero::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-    background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
-    background-size:64px 64px;
-    -webkit-mask-image:radial-gradient(ellipse 65% 55% at 50% 0%,#000 25%,transparent 78%);
-    mask-image:radial-gradient(ellipse 65% 55% at 50% 0%,#000 25%,transparent 78%)}
-  .hero .wrap{position:relative;z-index:2}
-  .hero h1{font-size:clamp(2.7rem,6.2vw,4.6rem);max-width:880px;margin-top:22px}
-  .hero .sub{font-size:clamp(18px,2.3vw,22px);color:var(--muted);max-width:620px;margin-top:24px}
-  .frenchnote{margin-top:14px;color:var(--dim);font-size:14px;font-family:var(--mono)}
-  .btns{margin-top:36px;display:flex;gap:12px;flex-wrap:wrap}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:9px;font-size:15.5px;font-weight:500;transition:transform .2s,border-color .2s,background .2s,filter .2s}
-  .btn.primary{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 30px -8px var(--glow)}
-  .btn.primary:hover{transform:translateY(-2px);filter:brightness(1.08)}
-  .btn.ghost{color:var(--text);background:var(--surface);border:1px solid var(--border)}
-  .btn.ghost:hover{transform:translateY(-2px);border-color:var(--border-strong);background:var(--surface-hover)}
+  /* hero with illustrated landscape */
+  .hero{position:relative;min-height:92vh;display:flex;flex-direction:column;isolation:isolate}
+  .scene{position:absolute;inset:0;z-index:-1;width:100%;height:100%}
+  .scene svg{width:100%;height:100%;display:block}
+  .hero-inner{flex:1;display:flex;align-items:flex-start;padding-top:clamp(40px,9vh,90px)}
+  .hero-copy{max-width:600px}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.9);
+    backdrop-filter:blur(4px);padding:7px 14px;border-radius:999px;font-size:13.5px;font-weight:500;color:#4a6b6b}
+  .badge .dot{width:8px;height:8px;border-radius:50%;background:var(--leaf);box-shadow:0 0 0 3px rgba(124,180,95,.25)}
+  .hero h1{font-size:clamp(2.6rem,6vw,4.3rem);margin-top:22px;color:#2b3a3a}
+  .hero h1 .hl{color:var(--accent-deep);font-style:italic}
+  .hero .sub{font-size:clamp(17px,2.2vw,20.5px);color:#3f5252;margin-top:20px;max-width:500px;line-height:1.55}
+  .hero .btns{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
 
-  /* terminal hero visual */
-  .terminal{margin-top:56px;border:1px solid transparent;border-radius:14px;
-    background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(135deg,rgba(255,106,61,.6),transparent 55%) border-box;
-    box-shadow:0 40px 120px -40px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.02);
-    overflow:hidden;max-width:760px}
-  .term-bar{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-  .term-bar .dot{width:11px;height:11px;border-radius:50%;background:#3a3a44}
-  .term-bar .dot.r{background:#ff5f57}.term-bar .dot.y{background:#febc2e}.term-bar .dot.g{background:#28c840}
-  .term-bar .name{margin-left:8px;font-family:var(--mono);font-size:12.5px;color:var(--dim)}
-  .term-body{padding:22px;font-family:var(--mono);font-size:13.5px;line-height:1.85;color:var(--text)}
-  .term-body .u{color:var(--text)}
-  .term-body .p{color:#8fb7ff}
-  .term-body .ok{color:#3ddc91}
-  .term-body .c{color:var(--muted)}
-  .term-body .dimc{color:var(--dim)}
-  .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:-2px;margin-left:2px;animation:blink 1.1s steps(1) infinite;box-shadow:0 0 10px var(--glow)}
-  @keyframes blink{50%{opacity:0}}
+  /* generic section */
+  section{padding:clamp(72px,11vw,128px) 0;position:relative}
+  .intro{max-width:680px}
+  h2.head{font-size:clamp(1.9rem,3.6vw,2.8rem);margin-top:14px;max-width:16ch}
+  .lead{color:var(--muted);font-size:19px;margin-top:18px;max-width:60ch}
 
-  /* problem cards */
-  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:46px}
   @media(max-width:760px){.cards{grid-template-columns:1fr}}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;transition:transform .25s,border-color .25s,background .25s}
-  .card:hover{transform:translateY(-3px);border-color:var(--border-strong);background:var(--surface-hover)}
-  .card h3{font-size:17px;margin-bottom:9px}
-  .card h3 .k{font-family:var(--mono);font-size:12px;color:var(--accent);display:block;margin-bottom:6px;letter-spacing:.04em}
-  .card p{color:var(--muted);font-size:15px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px;
+    box-shadow:0 1px 2px rgba(60,50,30,.03);transition:transform .25s,box-shadow .25s}
+  .card:hover{transform:translateY(-4px);box-shadow:0 16px 36px -20px rgba(80,60,30,.25)}
+  .card .emoji{font-size:24px}
+  .card h3{font-size:20px;margin:14px 0 8px}
+  .card p{color:var(--muted);font-size:15.5px}
 
-  /* bento */
-  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:44px}
-  .bento .b{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;transition:transform .25s,border-color .25s,background .25s}
-  .bento .b:hover{transform:translateY(-3px);border-color:var(--border-strong);background:var(--surface-hover)}
-  .bento .span4{grid-column:span 4}.bento .span3{grid-column:span 3}.bento .span2{grid-column:span 2}
-  .bento .feature{grid-column:span 4;grid-row:span 2;border:1px solid transparent;
-    background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(135deg,var(--accent),transparent 58%) border-box;
-    display:flex;flex-direction:column;justify-content:space-between;gap:26px}
-  @media(max-width:820px){.bento{grid-template-columns:repeat(2,1fr)}.bento .span4,.bento .span3,.bento .span2,.bento .feature{grid-column:span 2}.bento .feature{grid-row:auto}}
-  @media(max-width:520px){.bento{grid-template-columns:1fr}.bento .span4,.bento .span3,.bento .span2,.bento .feature{grid-column:1/-1}}
-  .b .ic{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
-  .b h3{font-size:18px;margin:12px 0 8px;letter-spacing:-.02em}
-  .feature h3{font-size:clamp(20px,2.4vw,27px)}
-  .b p{color:var(--muted);font-size:15px}
-  .feature p{font-size:16.5px;max-width:42ch}
-  .argue{font-family:var(--mono);font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
-  .argue span{border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:rgba(255,255,255,.02)}
-  .argue span.win{border-color:var(--accent);color:var(--accent)}
+  /* what it is — bento, light & friendly */
+  .soft{background:linear-gradient(180deg,#fff7ec,var(--cream))}
+  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;margin-top:46px}
+  .bento .b{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;
+    box-shadow:0 1px 2px rgba(60,50,30,.03);transition:transform .25s,box-shadow .25s}
+  .bento .b:hover{transform:translateY(-4px);box-shadow:0 16px 36px -20px rgba(80,60,30,.25)}
+  .bento .span2{grid-column:span 2}.bento .span3{grid-column:span 3}
+  .bento .feature{grid-column:span 4;grid-row:span 2;background:linear-gradient(150deg,#fff5dd,#ffe9d6);
+    border:1px solid #f3dcc2;display:flex;flex-direction:column;justify-content:space-between;gap:24px}
+  @media(max-width:820px){.bento{grid-template-columns:repeat(2,1fr)}.bento .span2,.bento .span3,.bento .feature{grid-column:span 2}.bento .feature{grid-row:auto}}
+  @media(max-width:520px){.bento{grid-template-columns:1fr}.bento .span2,.bento .span3,.bento .feature{grid-column:1/-1}}
+  .b .ic{font-size:22px}
+  .b h3{font-size:19px;margin:12px 0 8px}
+  .feature h3{font-size:clamp(21px,2.5vw,28px);color:#7a4a28}
+  .b p{color:var(--muted);font-size:15.5px}
+  .feature p{color:#8a5a38;font-size:16.5px;max-width:42ch}
+  .argue{display:flex;flex-wrap:wrap;gap:8px;font-size:13.5px;font-weight:500}
+  .argue span{background:rgba(255,255,255,.7);border:1px solid #f0d9bf;border-radius:999px;padding:6px 13px;color:#9a6a44}
+  .argue span.win{background:var(--accent);border-color:var(--accent);color:#fff}
 
-  /* comparison table */
-  .tablewrap{overflow-x:auto;margin-top:44px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+  /* comparison */
+  .tablewrap{overflow-x:auto;margin-top:46px;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:0 1px 2px rgba(60,50,30,.03)}
   table{border-collapse:collapse;width:100%;min-width:720px;font-size:14.5px}
-  th,td{padding:15px 18px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
-  thead th{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.04em;color:var(--dim);text-transform:uppercase}
-  tbody th{font-weight:500;color:var(--muted);font-size:14px}
+  th,td{padding:16px 18px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{font-size:13px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.03em}
+  tbody th{font-weight:600;color:var(--muted);font-size:14px}
   td{color:var(--muted)}
-  .col-b{background:rgba(255,106,61,.06)}
-  thead th.col-b{color:var(--accent)}
-  tbody td.col-b{color:var(--text);font-weight:500}
+  .col-b{background:var(--accent-soft)}
+  thead th.col-b{color:var(--accent-deep)}
+  tbody td.col-b{color:var(--ink);font-weight:600}
   tr:last-child td,tr:last-child th{border-bottom:none}
-
-  .honest{margin-top:30px;border:1px solid var(--border);border-left:2px solid var(--accent);border-radius:12px;
-    padding:20px 22px;color:var(--muted);font-size:15.5px;max-width:780px;background:var(--bg-elev)}
-  .honest b{color:var(--text);font-weight:600}
+  .honest{margin-top:30px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--leaf);
+    border-radius:14px;padding:22px 24px;color:var(--muted);font-size:16px;max-width:780px}
+  .honest b{color:var(--ink)}
 
   /* steps */
-  .steps{margin-top:44px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .steps{margin-top:46px;display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
   @media(max-width:680px){.steps{grid-template-columns:1fr}}
-  .step{display:flex;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;transition:transform .25s,border-color .25s,background .25s}
-  .step:hover{transform:translateY(-3px);border-color:var(--border-strong);background:var(--surface-hover)}
-  .step .n{flex:0 0 auto;width:34px;height:34px;border-radius:9px;font-family:var(--mono);font-size:14px;font-weight:500;
-    display:grid;place-items:center;color:var(--accent);border:1px solid var(--border-strong);background:rgba(255,106,61,.08)}
-  .step b{display:block;margin-bottom:4px;font-weight:600}
-  .step p{color:var(--muted);font-size:15px}
+  .step{display:flex;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;
+    box-shadow:0 1px 2px rgba(60,50,30,.03);transition:transform .25s,box-shadow .25s}
+  .step:hover{transform:translateY(-4px);box-shadow:0 16px 36px -20px rgba(80,60,30,.25)}
+  .step .n{flex:0 0 auto;width:38px;height:38px;border-radius:50%;font-family:var(--serif);font-size:18px;font-weight:600;
+    display:grid;place-items:center;color:var(--accent-deep);background:var(--accent-soft)}
+  .step b{display:block;margin-bottom:4px;font-size:16.5px;font-weight:600}
+  .step p{color:var(--muted);font-size:15.5px}
 
   /* contact */
-  .contact{text-align:center;border-top:1px solid var(--border);overflow:hidden}
-  .contact::before{content:"";position:absolute;left:50%;bottom:-260px;transform:translateX(-50%);width:900px;height:520px;z-index:0;
-    background:radial-gradient(50% 50% at 50% 50%,var(--glow) 0%,transparent 70%);filter:blur(40px);pointer-events:none}
+  .contact{position:relative;text-align:center;overflow:hidden;background:linear-gradient(180deg,var(--cream),#eaf6ee)}
+  .contact .hills{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:0;display:block}
   .contact .wrap{position:relative;z-index:2}
-  .contact .eyebrow{justify-content:center;display:inline-flex}
-  .contact h2{margin:14px auto 0}
-  .contact .lead{margin:20px auto 0}
-  .contact .btns{justify-content:center}
+  .contact .label,.contact .lead{margin-left:auto;margin-right:auto}
+  .contact h2{margin:14px auto 0;max-width:18ch}
+  .contact .lead{margin:18px auto 0;text-align:center}
+  .contact .btns{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 
-  footer{border-top:1px solid var(--border);padding:30px 0;color:var(--dim);font-size:13.5px;font-family:var(--mono)}
+  footer{background:#dff0e6;padding:30px 0;color:#5e7065;font-size:14px}
   footer .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
 
-  /* scroll reveal */
-  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s cubic-bezier(.2,.6,.2,1),transform .6s cubic-bezier(.2,.6,.2,1)}
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s cubic-bezier(.2,.6,.2,1),transform .6s cubic-bezier(.2,.6,.2,1)}
   .reveal.in{opacity:1;transform:none}
-  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.gradient-text,.caret{animation:none}}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 </style>
 </head>
 <body>
 
 <nav id="nav"><div class="wrap">
-  <a class="brand" href="#top"><span class="glyph"></span>Boulot</a>
+  <a class="brand" href="#top">Boulot</a>
   <div class="links">
-    <a href="#what">What it is</a>
+    <a href="#what">What it does</a>
     <a href="#different">Why it's different</a>
-    <a href="#how">How to use it</a>
-    <a class="cta" href="#contact">Get in touch</a>
+    <a href="#how">How it works</a>
+    <a class="btn primary sm" href="#contact">Get in touch</a>
   </div>
 </div></nav>
 
-<header class="hero" id="top"><div class="wrap">
-  <span class="eyebrow">A career-ops system, not another job board</span>
-  <h1>Make yourself <span class="gradient-text">undeniable</span> for the roles you actually want.</h1>
-  <p class="sub">Boulot tailors your CV to every role, argues over each claim with a team of AI agents, researches the company, and grills you for the interview — all on your own machine. Fewer applications. Each one undeniable.</p>
-  <p class="frenchnote">// boulot — French slang for "work", "the job", "the daily grind"</p>
-  <div class="btns">
-    <a class="btn primary" href="#contact">Get in touch →</a>
-    <a class="btn ghost" href="https://github.com/ElliotJLT/boulot-os">View it on GitHub</a>
+<header class="hero" id="top">
+  <div class="scene" aria-hidden="true">
+    <svg viewBox="0 0 1440 760" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#bfe6f5"/><stop offset="0.55" stop-color="#dff1ef"/><stop offset="1" stop-color="#eef6e9"/>
+        </linearGradient>
+        <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#fff4d3"/><stop offset="0.5" stop-color="#ffd56b"/><stop offset="1" stop-color="#ffd56b" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1440" height="760" fill="url(#sky)"/>
+      <circle cx="1180" cy="180" r="190" fill="url(#sun)" opacity="0.9"/>
+      <circle cx="1180" cy="180" r="64" fill="#ffdf86"/>
+      <!-- clouds -->
+      <g fill="#ffffff" opacity="0.92">
+        <g><ellipse cx="320" cy="150" rx="70" ry="34"/><ellipse cx="380" cy="160" rx="56" ry="30"/><ellipse cx="265" cy="165" rx="50" ry="26"/></g>
+        <g opacity="0.85"><ellipse cx="760" cy="110" rx="58" ry="26"/><ellipse cx="810" cy="118" rx="44" ry="22"/><ellipse cx="715" cy="120" rx="40" ry="20"/></g>
+        <g opacity="0.8"><ellipse cx="1040" cy="240" rx="50" ry="22"/><ellipse cx="1085" cy="246" rx="38" ry="18"/></g>
+      </g>
+      <!-- birds -->
+      <g stroke="#5a7b7b" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6">
+        <path d="M150 250 q10 -10 20 0 q10 -10 20 0"/><path d="M210 285 q8 -8 16 0 q8 -8 16 0"/>
+      </g>
+      <!-- distant hills -->
+      <path d="M0 540 C 240 470 480 500 720 520 C 960 540 1200 480 1440 510 L1440 760 L0 760 Z" fill="#d2ebc4"/>
+      <!-- mid hills -->
+      <path d="M0 600 C 300 540 560 590 820 600 C 1080 610 1260 560 1440 590 L1440 760 L0 760 Z" fill="#a9d68d"/>
+      <!-- front hill -->
+      <path d="M0 660 C 260 620 520 680 760 670 C 1060 658 1240 700 1440 668 L1440 760 L0 760 Z" fill="#7cb45f"/>
+      <!-- trees on the right -->
+      <g>
+        <rect x="1112" y="566" width="12" height="46" rx="4" fill="#8a5a3a"/>
+        <circle cx="1118" cy="552" r="34" fill="#5f9e4e"/><circle cx="1096" cy="566" r="24" fill="#6dab59"/><circle cx="1140" cy="566" r="24" fill="#6dab59"/>
+        <rect x="1230" y="612" width="9" height="34" rx="3" fill="#8a5a3a"/>
+        <circle cx="1234" cy="602" r="24" fill="#67a653"/><circle cx="1218" cy="612" r="17" fill="#74b260"/><circle cx="1250" cy="612" r="17" fill="#74b260"/>
+      </g>
+      <!-- little path -->
+      <path d="M560 760 C 600 700 700 690 720 672 C 740 654 720 636 760 624" stroke="#e9dcc0" stroke-width="22" fill="none" stroke-linecap="round" opacity="0.85"/>
+      <!-- a small flower, lower left -->
+      <g><rect x="252" y="690" width="5" height="40" fill="#4f8a44"/><circle cx="254" cy="686" r="13" fill="#ffd56b"/><circle cx="254" cy="686" r="5" fill="#e0934a"/></g>
+    </svg>
   </div>
-
-  <div class="terminal reveal">
-    <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="name">boulot — claude code</span></div>
-    <div class="term-body">
-<span class="dimc">~/boulot</span> <span class="ok">$</span> <span class="u">claude</span><br>
-<span class="p">&gt;</span> <span class="u">tailor my CV for the Head of Ops role at Acme</span><br>
-<span class="c">●</span> pulling matching bullets from your master CV…<br>
-<span class="c">●</span> running 3 agents — <span class="c">Hiring Manager · Reviewer · Strategist</span><br>
-&nbsp;&nbsp;<span class="ok">✓</span> they disagreed on 4 points. resolved.<br>
-<span class="c">●</span> tailored CV → <span class="dimc">USER/active/acme/cv.md</span><br>
-<span class="p">&gt;</span> <span class="u">now grill me for the interview — be tough</span><br>
-<span class="c">●</span> <span class="c">hostile interviewer:</span> "why you over someone who's<br>
-&nbsp;&nbsp;actually done this at scale?"<span class="caret"></span>
+  <div class="hero-inner"><div class="wrap"><div class="hero-copy">
+    <span class="badge"><span class="dot"></span>Runs on your own laptop · no subscription</span>
+    <h1>Job hunting that actually sounds like <span class="hl">you</span>.</h1>
+    <p class="sub">Boulot helps you build a CV worth reading, get ready for the interview, and keep track of it all — quietly, on your own laptop. Fewer applications, and much better ones.</p>
+    <div class="btns">
+      <a class="btn primary" href="#contact">Get in touch</a>
+      <a class="btn ghost" href="https://github.com/ElliotJLT/boulot-os">See it on GitHub</a>
     </div>
-  </div>
-</div></header>
+  </div></div></div>
+</header>
 
 <section id="problem"><div class="wrap">
-  <span class="eyebrow reveal">The problem</span>
-  <h2 class="head reveal">Every other tool plays the numbers game. The numbers stopped working.</h2>
-  <p class="lead reveal">They optimise for volume — and leave your career data sitting on someone else's servers.</p>
+  <div class="intro reveal">
+    <span class="label">The honest problem</span>
+    <h2 class="head">Most job tools just help you send more spam, faster.</h2>
+    <p class="lead">They're built for volume. That race already broke — and your CV ends up sitting on someone else's servers.</p>
+  </div>
   <div class="cards">
-    <div class="card reveal"><h3><span class="k">auto-apply bots</span>Spray, then throttled</h3><p>Fire 200 generic applications a day. Response rates collapsed <i>because</i> of them, and platforms now throttle the accounts that use them.</p></div>
-    <div class="card reveal"><h3><span class="k">ai recruiter agents</span>Their network, not yours</h3><p>Hand you a daily list of often-stale matches. Their incentive is to place you in <i>their</i> network — not to make <i>you</i> the strongest candidate for the job you want.</p></div>
-    <div class="card reveal"><h3><span class="k">trackers + autofill</span>A bolt-on AI layer</h3><p>Organise the chaos, but the AI is one-shot, generic, keyword-stuffed output that modern applicant-tracking systems now <i>penalise</i>.</p></div>
+    <div class="card reveal"><div class="emoji">📨</div><h3>Auto-apply bots</h3><p>Fire off 200 identical applications a day. Reply rates fell <i>because</i> of them, and the big platforms now throttle the accounts that use them.</p></div>
+    <div class="card reveal"><div class="emoji">🤝</div><h3>AI recruiter agents</h3><p>Hand you a daily list of often-stale matches. Their job is to place you somewhere in <i>their</i> network — not to make <i>you</i> the best candidate for the role you actually want.</p></div>
+    <div class="card reveal"><div class="emoji">🗂️</div><h3>Trackers &amp; autofill</h3><p>Tidy, but the AI bit is bolted on: one-shot, generic, keyword-stuffed text that today's hiring systems quietly mark down.</p></div>
   </div>
 </div></section>
 
-<section id="what" style="background:var(--bg-elev)"><div class="wrap">
-  <span class="eyebrow reveal">What it is</span>
-  <h2 class="head reveal">The slow, careful work a great application actually takes — done for you.</h2>
-  <p class="lead reveal">Boulot runs on your computer through Claude Code. Not a website you log into — a folder you own. You talk to it in plain English.</p>
+<section id="what" class="soft"><div class="wrap">
+  <div class="intro reveal">
+    <span class="label">What it does</span>
+    <h2 class="head">It does the slow, careful work a good application really takes.</h2>
+    <p class="lead">Boulot lives on your computer and runs through Claude Code. There's no account to log into — just a folder that's yours. You talk to it like a person.</p>
+  </div>
   <div class="bento">
     <div class="b feature reveal">
       <div>
-        <span class="ic">the core mechanic</span>
-        <h3>Your CV gets argued over, not generated.</h3>
-        <p>Three agents with opposing jobs pressure-test every claim and disagree on purpose. You get the version that survived the fight — not a first draft from a single prompt.</p>
+        <div class="ic">✍️</div>
+        <h3>It plays devil's advocate on your CV — before a recruiter does.</h3>
+        <p>Three helpers look at your draft from different angles: the hiring manager, a sharp second reader, and someone hunting for your hidden strengths. They disagree, then settle it. You get the version that held up.</p>
       </div>
-      <div class="argue"><span>Hiring Manager</span><span>Reviewer</span><span>Strategist</span><span class="win">→ resolved</span></div>
+      <div class="argue"><span>Hiring manager</span><span>Second reader</span><span>Strategist</span><span class="win">→ sorted</span></div>
     </div>
-    <div class="b span2 reveal"><span class="ic">tailor</span><h3>Per-role CVs</h3><p>Rebuilds from your master record for each job. Never invents experience.</p></div>
-    <div class="b span2 reveal"><span class="ic">research</span><h3>Company intel</h3><p>News, funding, who you'd report to, red flags — before you apply.</p></div>
-    <div class="b span3 reveal"><span class="ic">interview</span><h3>Adversarial mock interviews</h3><p>A friendly interviewer, a hostile one, and a gap-analyst run a tough mock and tell you exactly where you're bluffing.</p></div>
-    <div class="b span3 reveal"><span class="ic">letters · tracking</span><h3>Cover letters &amp; a live pipeline</h3><p>Letters that say something only true about <i>that</i> company. Plus what's stale, what's next, what worked.</p></div>
+    <div class="b span2 reveal"><div class="ic">🎯</div><h3>A CV per role</h3><p>Rebuilt from everything you've done — for that one job. It never makes things up.</p></div>
+    <div class="b span2 reveal"><div class="ic">🔍</div><h3>Company homework</h3><p>News, funding, who you'd report to, any red flags — before you apply.</p></div>
+    <div class="b span3 reveal"><div class="ic">🎤</div><h3>A proper mock interview</h3><p>A friendly interviewer, a tough one, and someone who spots where you're bluffing — so the real thing feels easy.</p></div>
+    <div class="b span3 reveal"><div class="ic">📊</div><h3>Letters &amp; a tidy pipeline</h3><p>Cover letters that say something true about <i>that</i> company, plus a clear view of what's next and what worked.</p></div>
   </div>
 </div></section>
 
 <section id="different"><div class="wrap">
-  <span class="eyebrow reveal">Why it's different</span>
-  <h2 class="head reveal">The unit isn't the application. It's the craft that goes into each one.</h2>
+  <div class="intro reveal">
+    <span class="label">Why it's different</span>
+    <h2 class="head">It's not about how many you send. It's how good each one is.</h2>
+  </div>
   <div class="tablewrap reveal"><table>
     <thead><tr>
       <th></th><th>Auto-apply bots</th><th>AI recruiter agents</th><th>Trackers + autofill</th><th class="col-b">Boulot</th>
     </tr></thead>
     <tbody>
-      <tr><th>Optimises for</th><td>Volume</td><td>Matches in their network</td><td>Organisation</td><td class="col-b">Quality of each application</td></tr>
-      <tr><th>Your CV is</th><td>One static PDF, sprayed</td><td>A profile in their database</td><td>Scored by a bolt-on</td><td class="col-b">Rebuilt &amp; argued over per role</td></tr>
-      <tr><th>Interview prep</th><td>None</td><td>Light</td><td>Light</td><td class="col-b">Adversarial mock interviews</td></tr>
-      <tr><th>Your data lives</th><td>Their cloud</td><td>Their cloud</td><td>Their cloud</td><td class="col-b">On your machine</td></tr>
-      <tr><th>Cost</th><td>Subscription</td><td>Free — incentive ≠ yours</td><td>Subscription</td><td class="col-b">No subscription; bring your own AI</td></tr>
+      <tr><th>Built for</th><td>Volume</td><td>Matches in their network</td><td>Staying organised</td><td class="col-b">Making each application great</td></tr>
+      <tr><th>Your CV is</th><td>One PDF, sprayed everywhere</td><td>A profile in their database</td><td>Scored by a bolt-on</td><td class="col-b">Rebuilt &amp; stress-tested per role</td></tr>
+      <tr><th>Interview prep</th><td>None</td><td>Light</td><td>Light</td><td class="col-b">A real, tough mock</td></tr>
+      <tr><th>Your data lives</th><td>Their cloud</td><td>Their cloud</td><td>Their cloud</td><td class="col-b">On your laptop</td></tr>
+      <tr><th>Cost</th><td>Monthly fee</td><td>Free — but their goals ≠ yours</td><td>Monthly fee</td><td class="col-b">No subscription</td></tr>
     </tbody>
   </table></div>
   <div class="honest reveal">
-    <b>Where Boulot honestly doesn't compete:</b> it won't find jobs for you, and it can't introduce you to a hiring manager the way a recruiter network can. If you want warm intros, the recruiter-agent tools do that well. Boulot does the other half — the half they do badly: making you impossible to pass over once you've found the role.
+    <b>Where Boulot honestly won't help:</b> it won't go and find jobs for you, and it can't introduce you to a hiring manager the way a recruiter network can. If you want warm intros, those tools do that well. Boulot does the other half — the part they're bad at: making you the person who's hard to say no to once you've found the role.
   </div>
 </div></section>
 
-<section id="how" style="background:var(--bg-elev)"><div class="wrap">
-  <span class="eyebrow reveal">How to use it</span>
-  <h2 class="head reveal">You don't need to be technical. Set it up once, then just talk to it.</h2>
-  <p class="lead reveal">About twenty minutes to set up. After that you say <i>"tailor my CV for this role"</i> or <i>"grill me for the interview"</i> and it does the work.</p>
+<section id="how" class="soft"><div class="wrap">
+  <div class="intro reveal">
+    <span class="label">How it works</span>
+    <h2 class="head">You don't need to be techie. Set it up once, then just chat to it.</h2>
+    <p class="lead">About twenty minutes to get going. After that you say things like <i class="serif-i">"tailor my CV for this one"</i> or <i class="serif-i">"give me a tough mock interview"</i> and it gets on with it.</p>
+  </div>
   <div class="steps">
     <div class="step reveal"><span class="n">1</span><div><b>Install Claude Code</b><p>A free app from Anthropic that lets the AI work with files on your computer. There's a desktop version — no terminal needed.</p></div></div>
-    <div class="step reveal"><span class="n">2</span><div><b>Download Boulot</b><p>One click from GitHub. It's a folder that lives on your machine.</p></div></div>
-    <div class="step reveal"><span class="n">3</span><div><b>Tell it who you are</b><p>Fill in two files — or just say "interview me and fill in my profile" and it writes them for you.</p></div></div>
-    <div class="step reveal"><span class="n">4</span><div><b>Start applying</b><p>Paste a job link. Ask for a tailored CV, a cover letter, research, a mock interview. It tracks the rest.</p></div></div>
+    <div class="step reveal"><span class="n">2</span><div><b>Download Boulot</b><p>One click from GitHub. It becomes a folder that lives on your machine.</p></div></div>
+    <div class="step reveal"><span class="n">3</span><div><b>Tell it about you</b><p>Fill in two short files — or just say "interview me and fill in my profile" and it writes them for you.</p></div></div>
+    <div class="step reveal"><span class="n">4</span><div><b>Start applying</b><p>Paste a job link. Ask for a tailored CV, a cover letter, some homework, a mock interview. It keeps track of the rest.</p></div></div>
   </div>
 </div></section>
 
 <section id="contact" class="contact"><div class="wrap">
-  <span class="eyebrow reveal">Get in touch</span>
-  <h2 class="head reveal" style="max-width:720px">I built this because the tools I tried treated my job search as spam to send.</h2>
-  <p class="lead reveal">Boulot is the system I wished existed — quality over volume, my data stays mine. Want to use it, want a hand setting it up, or want to talk about building AI systems people actually adopt?</p>
+  <span class="label reveal">Say hello</span>
+  <h2 class="head reveal">I built this because job hunting made me miserable.</h2>
+  <p class="lead reveal">So I made the thing I wished I'd had — calmer, sharper, and mine. If you'd like to use it, want a hand setting it up, or just want to chat about building AI tools people actually stick with, get in touch.</p>
   <div class="btns reveal">
-    <a class="btn primary" href="mailto:elliotjlittle@gmail.com?subject=Boulot">Email me →</a>
-    <a class="btn ghost" href="https://www.linkedin.com/in/hireelliot">Connect on LinkedIn</a>
+    <a class="btn primary" href="mailto:elliotjlittle@gmail.com?subject=Boulot">Email me</a>
+    <a class="btn ghost" href="https://www.linkedin.com/in/hireelliot">Say hi on LinkedIn</a>
     <a class="btn ghost" href="https://github.com/ElliotJLT/boulot-os">Get it on GitHub</a>
   </div>
+  <svg class="hills" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 60 C 300 20 560 70 820 60 C 1080 50 1260 20 1440 50 L1440 120 L0 120 Z" fill="#bfe0a8"/>
+    <path d="M0 84 C 260 56 520 96 760 88 C 1060 78 1240 100 1440 80 L1440 120 L0 120 Z" fill="#9ccb7e"/>
+  </svg>
 </div></section>
 
 <footer><div class="wrap">
   <span>Boulot — built by Elliot Little.</span>
-  <span>Runs locally through Claude Code. Your data never leaves your machine.</span>
+  <span>Runs on your own laptop. Your data stays with you.</span>
 </div></footer>
 
 <script>
-  // nav glass on scroll
   var nav=document.getElementById('nav');
   var onScroll=function(){nav.classList.toggle('scrolled',window.scrollY>10)};
   onScroll();addEventListener('scroll',onScroll,{passive:true});
-  // staggered scroll reveal
   var io=new IntersectionObserver(function(es){
-    es.forEach(function(e,i){if(e.isIntersecting){var el=e.target;
-      setTimeout(function(){el.classList.add('in')}, (el.dataset.d||0)*1);io.unobserve(el);}});
+    es.forEach(function(e){if(e.isIntersecting){var el=e.target;
+      setTimeout(function(){el.classList.add('in')},(el.dataset.d||0)*1);io.unobserve(el);}});
   },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
-  document.querySelectorAll('.reveal').forEach(function(el,i){
-    var sibs=Array.prototype.indexOf.call(el.parentNode.children,el);
-    el.dataset.d=Math.min(sibs,5)*60;io.observe(el);
+  document.querySelectorAll('.reveal').forEach(function(el){
+    var i=Array.prototype.indexOf.call(el.parentNode.children,el);
+    el.dataset.d=Math.min(i,5)*70;io.observe(el);
   });
 </script>
 </body>
