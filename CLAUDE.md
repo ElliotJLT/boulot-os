@@ -11,7 +11,8 @@
 - (You can rename the `USER/` folder to your own name. If you do, update the three `@USER/...` import lines above and find-and-replace `USER/` across the `.claude/` folder.)
 
 ## Always do first
-1. Profile, CV master, and dashboard are auto-loaded via the @imports above — read them to understand the candidate.
+1. **Check if this is a first-time user.** `USER/profile.md` and `USER/cv-master.md` are auto-loaded above. If they are still the blank template (placeholder prompts, empty fields, no real name or experience), the user has not set up yet. Do NOT try to run a job search or read empty job folders. Instead, welcome them and run the onboarding in `/start`: interview them one question at a time and write their profile and master CV. Everything else depends on this being filled in.
+2. If the profile and CV are filled in, read them to understand the candidate before doing anything.
 3. Run a status check on active jobs: scan `USER/active/*/status.md` for any with `last_updated` > 14 days ago. Flag stale ones.
 4. Check for any jobs where `stage: rejected` or `stage: withdrawn` and auto-move to archive.
 

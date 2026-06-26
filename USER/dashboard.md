@@ -16,6 +16,6 @@ _None yet._
 | _none yet_ | | | | |
 
 ## Recommended next actions
-1. Fill in `profile.md` and `cv-master.md`.
+1. New here? Type `/start` — Boulot will interview you and fill in your profile and CV.
 2. Add your first role with `/new-job`.
 3. Tailor a CV for it with `/cv`.
