@@ -1,0 +1,189 @@
+{
+  "nodes": [
+    {
+      "id": "bluf",
+      "type": "text",
+      "text": "# BLUF\n\n**Who:** [Name, Title]\n**They care about:** [1 sentence]\n**Your pitch:** [1 sentence in their language]\n**Confidence:** High / Medium / Low",
+      "x": -200,
+      "y": -500,
+      "width": 400,
+      "height": 200,
+      "color": "1"
+    },
+    {
+      "id": "group-beliefs",
+      "type": "group",
+      "label": "Their Top 5 Beliefs",
+      "x": -600,
+      "y": -200,
+      "width": 500,
+      "height": 500,
+      "color": "4"
+    },
+    {
+      "id": "belief1",
+      "type": "text",
+      "text": "**Belief 1:**\n[Their position]\n\n**Your proof:**\n[Story + metric]",
+      "x": -580,
+      "y": -160,
+      "width": 220,
+      "height": 140
+    },
+    {
+      "id": "belief2",
+      "type": "text",
+      "text": "**Belief 2:**\n[Their position]\n\n**Your proof:**\n[Story + metric]",
+      "x": -340,
+      "y": -160,
+      "width": 220,
+      "height": 140
+    },
+    {
+      "id": "belief3",
+      "type": "text",
+      "text": "**Belief 3:**\n[Their position]\n\n**Your proof:**\n[Story + metric]",
+      "x": -580,
+      "y": 0,
+      "width": 220,
+      "height": 140
+    },
+    {
+      "id": "belief4",
+      "type": "text",
+      "text": "**Belief 4:**\n[Their position]\n\n**Your proof:**\n[Story + metric]",
+      "x": -340,
+      "y": 0,
+      "width": 220,
+      "height": 140
+    },
+    {
+      "id": "belief5",
+      "type": "text",
+      "text": "**Belief 5:**\n[Their position]\n\n**Your proof:**\n[Story + metric]",
+      "x": -460,
+      "y": 160,
+      "width": 220,
+      "height": 140
+    },
+    {
+      "id": "group-ifthen",
+      "type": "group",
+      "label": "If-Then Playbook",
+      "x": 100,
+      "y": -200,
+      "width": 500,
+      "height": 500,
+      "color": "6"
+    },
+    {
+      "id": "ifthen1",
+      "type": "text",
+      "text": "**If:** [Topic 1]\n**Then:** [Story]\n**Metric:** [Number]",
+      "x": 120,
+      "y": -160,
+      "width": 220,
+      "height": 120
+    },
+    {
+      "id": "ifthen2",
+      "type": "text",
+      "text": "**If:** [Topic 2]\n**Then:** [Story]\n**Metric:** [Number]",
+      "x": 360,
+      "y": -160,
+      "width": 220,
+      "height": 120
+    },
+    {
+      "id": "ifthen3",
+      "type": "text",
+      "text": "**If:** [Topic 3]\n**Then:** [Story]\n**Metric:** [Number]",
+      "x": 120,
+      "y": -20,
+      "width": 220,
+      "height": 120
+    },
+    {
+      "id": "ifthen4",
+      "type": "text",
+      "text": "**If:** [Topic 4]\n**Then:** [Story]\n**Metric:** [Number]",
+      "x": 360,
+      "y": -20,
+      "width": 220,
+      "height": 120
+    },
+    {
+      "id": "ifthen5",
+      "type": "text",
+      "text": "**If:** [Topic 5]\n**Then:** [Story]\n**Metric:** [Number]",
+      "x": 240,
+      "y": 120,
+      "width": 220,
+      "height": 120
+    },
+    {
+      "id": "group-questions",
+      "type": "group",
+      "label": "Your Questions (Pick 2-3)",
+      "x": -600,
+      "y": 400,
+      "width": 500,
+      "height": 200,
+      "color": "5"
+    },
+    {
+      "id": "q1",
+      "type": "text",
+      "text": "**Q1:** [References their specific work]\n*Why it lands:* [1 line]",
+      "x": -580,
+      "y": 440,
+      "width": 460,
+      "height": 60
+    },
+    {
+      "id": "q2",
+      "type": "text",
+      "text": "**Q2:** [About a challenge they've discussed]\n*Why it lands:* [1 line]",
+      "x": -580,
+      "y": 510,
+      "width": 460,
+      "height": 60
+    },
+    {
+      "id": "group-danger",
+      "type": "group",
+      "label": "Danger Zones",
+      "x": 100,
+      "y": 400,
+      "width": 500,
+      "height": 200,
+      "color": "2"
+    },
+    {
+      "id": "danger1",
+      "type": "text",
+      "text": "**Don't:** [Clash with their views]\n**Don't:** [Topic to avoid]\n**Instead:** [What to do]",
+      "x": 120,
+      "y": 440,
+      "width": 460,
+      "height": 120
+    },
+    {
+      "id": "selftest",
+      "type": "text",
+      "text": "# Self-Test\n\nClose this canvas. Answer from memory:\n1. Their #1 belief?\n2. Your story for their likely question?\n3. The metric that backs it up?\n4. Your best question for them?\n5. The thing you must NOT say?",
+      "x": -200,
+      "y": 680,
+      "width": 400,
+      "height": 220,
+      "color": "3"
+    }
+  ],
+  "edges": [
+    {"id": "e1", "fromNode": "bluf", "toNode": "group-beliefs", "fromSide": "bottom", "toSide": "top", "label": "know them"},
+    {"id": "e2", "fromNode": "bluf", "toNode": "group-ifthen", "fromSide": "bottom", "toSide": "top", "label": "your plays"},
+    {"id": "e3", "fromNode": "group-beliefs", "toNode": "group-questions", "fromSide": "bottom", "toSide": "top", "label": "leads to"},
+    {"id": "e4", "fromNode": "group-ifthen", "toNode": "group-danger", "fromSide": "bottom", "toSide": "top", "label": "watch for"},
+    {"id": "e5", "fromNode": "group-questions", "toNode": "selftest", "fromSide": "bottom", "toSide": "top"},
+    {"id": "e6", "fromNode": "group-danger", "toNode": "selftest", "fromSide": "bottom", "toSide": "top"}
+  ]
+}

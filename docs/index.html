@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Boulot — the job-search system that makes you undeniable</title>
+<meta name="description" content="Boulot is a career-ops system that runs on your own machine. It tailors your CV per role using AI agents that argue over every claim, researches companies, and grills you for interviews. Quality over volume. Your data stays yours." />
+<meta property="og:title" content="Boulot — the job-search system that makes you undeniable" />
+<meta property="og:description" content="Fewer applications, each one undeniable. A local, AI-powered career-ops system. Your data stays yours." />
+<meta property="og:type" content="website" />
+<style>
+  :root{
+    --ink:#15161a; --muted:#5b606b; --line:#e7e6e1; --paper:#fbfaf7;
+    --accent:#e3502f; --accent-ink:#b53a1e; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+  a{color:var(--accent-ink);text-decoration:none}
+  a:hover{text-decoration:underline}
+  h1,h2,h3{line-height:1.15;letter-spacing:-0.02em;font-weight:680}
+  .eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:700}
+
+  /* nav */
+  nav{border-bottom:1px solid var(--line);background:rgba(251,250,247,.85);backdrop-filter:saturate(150%) blur(8px);position:sticky;top:0;z-index:10}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .brand{font-weight:780;letter-spacing:-.02em;font-size:20px}
+  .brand .dot{color:var(--accent)}
+  nav .links a{color:var(--ink);margin-left:22px;font-size:15px;font-weight:560}
+  nav .links a.cta{color:#fff;background:var(--ink);padding:8px 14px;border-radius:8px}
+  nav .links a.cta:hover{text-decoration:none;background:#000}
+  @media(max-width:640px){nav .links a:not(.cta){display:none}}
+
+  /* hero */
+  header.hero{padding:88px 0 64px;border-bottom:1px solid var(--line)}
+  header.hero h1{font-size:clamp(38px,6vw,62px);margin:14px 0 0}
+  header.hero .sub{font-size:clamp(18px,2.4vw,22px);color:var(--muted);max-width:660px;margin:22px 0 0}
+  .frenchnote{margin-top:14px;color:var(--muted);font-size:15px;font-style:italic}
+  .btns{margin-top:34px;display:flex;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-block;padding:13px 22px;border-radius:10px;font-weight:640;font-size:16px}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-ink);text-decoration:none}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--ink);text-decoration:none}
+
+  section{padding:64px 0;border-bottom:1px solid var(--line)}
+  section h2{font-size:clamp(26px,3.4vw,36px);margin:10px 0 0;max-width:720px}
+  section .lead{color:var(--muted);max-width:680px;margin:18px 0 0;font-size:18px}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px}
+  @media(max-width:760px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .card h3{font-size:18px;margin:0 0 8px}
+  .card p{margin:0;color:var(--muted);font-size:15.5px}
+
+  ul.feat{list-style:none;padding:0;margin:34px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:16px 30px}
+  @media(max-width:680px){ul.feat{grid-template-columns:1fr}}
+  ul.feat li{padding-left:30px;position:relative;color:var(--ink)}
+  ul.feat li::before{content:"";position:absolute;left:0;top:9px;width:13px;height:13px;border-radius:50%;background:var(--accent);opacity:.85}
+  ul.feat li b{display:block}
+  ul.feat li span{color:var(--muted);font-size:15px}
+
+  .tablewrap{overflow-x:auto;margin-top:36px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+  table{border-collapse:collapse;width:100%;min-width:680px;font-size:15px}
+  th,td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{font-size:13px;letter-spacing:.03em;color:var(--muted);font-weight:680}
+  tbody th{font-weight:640;color:var(--ink)}
+  td.boulot,th.boulot{background:#fff5f1}
+  thead th.boulot{color:var(--accent-ink)}
+  tr:last-child td,tr:last-child th{border-bottom:none}
+
+  .steps{counter-reset:s;margin-top:36px;display:grid;gap:14px}
+  .step{display:flex;gap:16px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .step::before{counter-increment:s;content:counter(s);flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center}
+  .step b{display:block;margin-bottom:2px}
+  .step p{margin:0;color:var(--muted);font-size:15.5px}
+
+  .honest{margin-top:34px;background:#fff;border:1px dashed var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:18px 20px;color:var(--muted);font-size:15.5px;max-width:760px}
+  .honest b{color:var(--ink)}
+
+  .contact{text-align:center;padding:80px 0}
+  .contact h2{margin:0 auto}
+  .contact .lead{margin:18px auto 0}
+  .contact .btns{justify-content:center}
+
+  footer{padding:34px 0;color:var(--muted);font-size:14px}
+  footer .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="brand">Boulot<span class="dot">.</span></div>
+  <div class="links">
+    <a href="#what">What it is</a>
+    <a href="#different">Why it's different</a>
+    <a href="#how">How to use it</a>
+    <a class="cta" href="#contact">Get in touch</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">A career-ops system, not another job board</div>
+  <h1>Make yourself undeniable for the roles you actually want.</h1>
+  <p class="sub">Boulot tailors your CV to every role, argues over each claim with a team of AI agents, researches the company, and grills you for the interview — all on your own machine. Fewer applications. Each one undeniable. Your data stays yours.</p>
+  <p class="frenchnote">Boulot — French slang for "work", "the job", "the daily grind".</p>
+  <div class="btns">
+    <a class="btn primary" href="#contact">Get in touch</a>
+    <a class="btn ghost" href="https://github.com/ElliotJLT/boulot-os">View it on GitHub</a>
+  </div>
+</div></header>
+
+<section id="problem"><div class="wrap">
+  <div class="eyebrow">The problem</div>
+  <h2>Every other tool plays the numbers game. The numbers stopped working.</h2>
+  <p class="lead">The job-search tools everyone uses optimise for volume. That race already broke — and it leaves your career data sitting on someone else's servers.</p>
+  <div class="cards">
+    <div class="card"><h3>Auto-apply bots</h3><p>Fire 200 generic applications a day. Response rates collapsed <i>because</i> of them, and platforms now throttle the accounts that use them.</p></div>
+    <div class="card"><h3>AI recruiter agents</h3><p>Hand you a daily list of matches — often stale or off-target. Their incentive is to place you in <i>their</i> network, not to make <i>you</i> the strongest candidate for the job you want.</p></div>
+    <div class="card"><h3>Trackers &amp; autofill</h3><p>Organise the chaos, but the AI layer is a bolt-on: one-shot, generic, keyword-stuffed output that modern applicant-tracking systems now <i>penalise</i>.</p></div>
+  </div>
+</div></section>
+
+<section id="what"><div class="wrap">
+  <div class="eyebrow">What it is</div>
+  <h2>A system that does the slow, careful work a great application actually takes.</h2>
+  <p class="lead">Boulot runs on your own computer through Claude Code. It's not a website you log into — it's a set of plain files and AI instructions in a folder you own. You talk to it in plain English.</p>
+  <ul class="feat">
+    <li><b>Tailors your CV per role</b><span>Pulls from a master record of everything you've done, then rewords and reorders it for that one job. Never invents experience.</span></li>
+    <li><b>Argues over your CV before you send it</b><span>A Hiring Manager, a Reviewer, and a Strategist pressure-test every claim and disagree on purpose. You get the version that survived.</span></li>
+    <li><b>Researches the company</b><span>Recent news, funding, who you'd report to, red flags — before you apply or interview.</span></li>
+    <li><b>Drafts cover letters that aren't generic</b><span>Says something only true about <i>that</i> company, framed through <i>your</i> experience.</span></li>
+    <li><b>Grills you for the interview</b><span>A friendly interviewer, a hostile one, and a gap-analyst run a tough mock and tell you where you're bluffing.</span></li>
+    <li><b>Tracks every application</b><span>Knows what's stale, what's next, and what worked across everything you've sent.</span></li>
+  </ul>
+</div></section>
+
+<section id="different"><div class="wrap">
+  <div class="eyebrow">Why it's different</div>
+  <h2>The unit isn't the application. It's the craft that goes into each one.</h2>
+  <div class="tablewrap"><table>
+    <thead><tr>
+      <th></th><th>Auto-apply bots</th><th>AI recruiter agents</th><th>Trackers + autofill</th><th class="boulot">Boulot</th>
+    </tr></thead>
+    <tbody>
+      <tr><th>Optimises for</th><td>Volume</td><td>Matches in their network</td><td>Organisation</td><td class="boulot">The quality of each application</td></tr>
+      <tr><th>Your CV is</th><td>One static PDF, sprayed</td><td>A profile in their database</td><td>Scored by a bolt-on</td><td class="boulot">Rebuilt and argued over per role</td></tr>
+      <tr><th>Interview prep</th><td>None</td><td>Light</td><td>Light</td><td class="boulot">Adversarial mock interviews</td></tr>
+      <tr><th>Your data lives</th><td>Their cloud</td><td>Their cloud</td><td>Their cloud</td><td class="boulot">On your machine</td></tr>
+      <tr><th>Cost</th><td>Monthly subscription</td><td>Free — but their incentive ≠ yours</td><td>Monthly subscription</td><td class="boulot">No subscription; bring your own AI</td></tr>
+    </tbody>
+  </table></div>
+  <div class="honest">
+    <b>Where Boulot honestly doesn't compete:</b> it won't find jobs for you, and it can't introduce you to a hiring manager the way a recruiter network can. If you want warm intros, the recruiter-agent tools do that well. Boulot does the other half — the half they do badly: making you the candidate that's impossible to pass over once you've found the role.
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="eyebrow">How to use it</div>
+  <h2>You don't need to be technical. Set it up once, then just talk to it.</h2>
+  <p class="lead">About twenty minutes to set up. After that you say things like <i>"tailor my CV for this role"</i> or <i>"grill me for the interview"</i> and it does the work.</p>
+  <div class="steps">
+    <div class="step"><div><b>Install Claude Code</b><p>A free app from Anthropic that lets the AI work with files on your computer. There's a desktop version — no terminal needed.</p></div></div>
+    <div class="step"><div><b>Download Boulot</b><p>One click from GitHub. It's a folder that lives on your machine.</p></div></div>
+    <div class="step"><div><b>Tell it who you are</b><p>Fill in two files — who you are and everything you've done. Or just say "interview me and fill in my profile" and it writes them for you.</p></div></div>
+    <div class="step"><div><b>Start applying</b><p>Paste a job link. Ask for a tailored CV, a cover letter, company research, a mock interview. It tracks the rest.</p></div></div>
+  </div>
+</div></section>
+
+<section id="contact" class="contact"><div class="wrap">
+  <div class="eyebrow">Get in touch</div>
+  <h2>I built this because the tools I tried treated my job search as spam to send.</h2>
+  <p class="lead">Boulot is the system I wished existed — quality over volume, and my data stays mine. If you want to use it, want a hand setting it up, or want to talk about building AI systems people actually adopt, get in touch.</p>
+  <div class="btns">
+    <a class="btn primary" href="mailto:elliotjlittle@gmail.com?subject=Boulot">Email me</a>
+    <a class="btn ghost" href="https://www.linkedin.com/in/hireelliot">Connect on LinkedIn</a>
+    <a class="btn ghost" href="https://github.com/ElliotJLT/boulot-os">Get it on GitHub</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <span>Boulot — built by Elliot Little.</span>
+  <span>Runs locally through Claude Code. Your data never goes anywhere except the AI you choose to power it.</span>
+</div></footer>
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Node dependencies — reinstalled with `npm install`, never committed
+node_modules/
+
+# macOS junk
+.DS_Store
+
+# Obsidian per-machine UI state
+.obsidian/workspace.json
+.obsidian/graph.json
+.obsidian/bookmarks.json
+
+# Generated CV files (your real applications stay on your machine)
+*.pdf
+*.docx
+
+# Local company CSV used only for rebuilding the database
+shared/companies.csv
+shared/companies.db
