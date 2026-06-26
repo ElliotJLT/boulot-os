@@ -2,9 +2,9 @@
 
 # Boulot
 
-**A job-search system that makes you undeniable for the roles you actually want — running on your own machine, not in someone else's cloud.**
+**Hiring is run by AI now. Boulot is the one on your side — a free, open-source career system that learns your whole story and makes you the candidate the bots can't screen out. Runs on your own laptop.**
 
-*Boulot — French slang for "work", "the job", "the daily grind".*
+*Boulot — French slang for "work", "the job", "the daily grind". Free and open source, because the market's hard enough without another subscription.*
 
 [What it is](#what-it-is) · [Why it's different](#why-its-different) · [How to use it](#how-to-use-it) · [Setup](#setup-20-minutes-once) · [Get in touch](#get-in-touch)
 
@@ -51,10 +51,10 @@ The unit isn't the application. It's the **craft** that goes into each one.
 | **Your CV is** | One static PDF, sprayed | A profile in their database | Scored by a bolt-on | **Rebuilt and argued over per role** |
 | **Interview prep** | None | Light | Light | **Adversarial mock interviews** |
 | **Your data lives** | Their cloud | Their cloud | Their cloud | **On your machine** |
-| **Cost** | Monthly subscription | Free, but their incentive ≠ yours | Monthly subscription | **No subscription — you bring your own AI** |
-| **Finds / introduces you** | No | Yes (their strength) | No | No — it makes you undeniable for jobs *you* pick |
+| **Cost** | Monthly subscription | Free, but their incentive ≠ yours | Monthly subscription | **Free & open source** |
+| **Gets you in front of people** | Sprays applications | Warm intros (their strength) | No | Researches & surfaces target roles — you decide where to aim |
 
-**Where Boulot honestly doesn't compete:** it won't find jobs for you, and it can't introduce you to a hiring manager the way a recruiter network can. If you want warm intros, the recruiter-agent tools do that well. Boulot does the other half — the half they do badly: making you the candidate that's impossible to pass over once you've found the role.
+**What Boulot won't do:** it won't auto-fire 200 applications while you sleep, and it can't broker a warm introduction to a hiring manager — that's what a recruiter network is for. It does the harder part: knowing your whole story and turning it into applications a bot can't screen out.
 
 ---
 
@@ -113,9 +113,9 @@ Your real applications and personal data never leave your machine, and are ignor
 
 ## Get in touch
 
-I built Boulot because the tools I tried treated my job search as a list of spam to send. This is the system I wished existed — quality over volume, and my data stays mine.
+I built Boulot for my own job hunt, in a brutal market, because the tools I tried treated me as a list of spam to send. It worked — so I open-sourced it and made it free. It's entirely my own work, and mine to give away.
 
-If you want to use it, want a hand setting it up, or want to talk about building AI systems people actually adopt:
+If you want to use it, want a hand setting it up, or want to talk about building AI that fights for people instead of flattening them:
 
 - **Email:** [elliotjlittle@gmail.com](mailto:elliotjlittle@gmail.com)
 - **LinkedIn:** [linkedin.com/in/hireelliot](https://www.linkedin.com/in/hireelliot)
