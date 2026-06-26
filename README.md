@@ -115,7 +115,7 @@ Your real applications and personal data never leave your machine, and are ignor
 
 I built Boulot for my own job hunt, in a brutal market, because the tools I tried treated me as a list of spam to send. It worked — so I open-sourced it and made it free. It's entirely my own work, and mine to give away.
 
-If you want to use it, want a hand setting it up, or want to talk about building AI that fights for people instead of flattening them:
+If you want to use it, want a hand setting it up, or want to talk about building AI that's actually on people's side:
 
 - **Email:** [elliotjlittle@gmail.com](mailto:elliotjlittle@gmail.com)
 - **LinkedIn:** [linkedin.com/in/hireelliot](https://www.linkedin.com/in/hireelliot)

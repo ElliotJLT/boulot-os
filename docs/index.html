@@ -28,7 +28,7 @@
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans);
     font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;position:relative}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(24px,5vw,52px);position:relative}
   a{color:inherit;text-decoration:none}
   p{margin:0}
   h1,h2,h3{margin:0;font-family:var(--serif);font-weight:500;letter-spacing:-.01em;line-height:1.1}
@@ -57,25 +57,26 @@
 
   /* hero — framed oil painting with brushed edges */
   .hero{position:relative;padding:16px 0 0;background:var(--cream)}
-  .frame{position:relative;min-height:80vh;display:flex;align-items:center;overflow:hidden;isolation:isolate}
+  .frame{position:relative;min-height:82vh;display:flex;align-items:flex-start;overflow:hidden;isolation:isolate}
   .scene{position:absolute;inset:0;z-index:0}
-  .scene img{width:100%;height:100%;object-fit:cover;object-position:center 26%;display:block}
-  .frame::before{content:"";position:absolute;left:-1px;right:-1px;top:-1px;height:74px;z-index:3;
+  .scene img{width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block}
+  .frame::before{content:"";position:absolute;left:-1px;right:-1px;top:-1px;height:72px;z-index:3;
     background:url('edge-top.svg') top center/100% 100% no-repeat;pointer-events:none}
-  .frame::after{content:"";position:absolute;left:-1px;right:-1px;bottom:-1px;height:74px;z-index:3;
+  .frame::after{content:"";position:absolute;left:-1px;right:-1px;bottom:-1px;height:72px;z-index:3;
     background:url('edge-bottom.svg') bottom center/100% 100% no-repeat;pointer-events:none}
-  .haze{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:780px;height:440px;max-width:94%;
-    background:radial-gradient(ellipse at center,rgba(252,248,240,.78) 0%,rgba(252,248,240,.34) 46%,transparent 72%);
-    z-index:1;pointer-events:none;filter:blur(7px)}
-  .hero-inner{position:relative;z-index:2;width:100%;text-align:center;padding:56px 0}
-  .hero-copy{max-width:760px;margin:0 auto}
+  .haze{position:absolute;left:0;top:0;width:min(780px,74%);height:100%;z-index:1;pointer-events:none;
+    background:radial-gradient(130% 78% at 24% 38%,rgba(252,248,240,.68) 0%,rgba(252,248,240,.22) 46%,transparent 72%);filter:blur(5px)}
+  .hero-inner{position:relative;z-index:2;width:100%;padding:clamp(72px,12vh,150px) 0 clamp(64px,10vh,120px)}
+  .hero-copy{max-width:660px}
   .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.95);
     backdrop-filter:blur(4px);padding:7px 15px;border-radius:999px;font-size:13.5px;font-weight:500;color:#48584a;box-shadow:0 2px 12px rgba(40,50,40,.1)}
   .badge .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(63,107,74,.2)}
-  .hero h1{font-size:clamp(2.5rem,5.8vw,4.5rem);margin-top:22px;color:#27332a;font-weight:600;letter-spacing:-.015em}
+  .hero h1{font-size:clamp(2.5rem,5.6vw,4.3rem);margin-top:22px;color:#222c25;font-weight:600;letter-spacing:-.015em;
+    text-shadow:0 1px 1px rgba(255,255,255,.4),0 2px 24px rgba(252,248,240,.5)}
   .hero h1 .hl{color:var(--accent-deep);font-style:italic}
-  .hero .sub{font-size:clamp(17px,2.2vw,20px);color:#3a443a;margin:20px auto 0;max-width:520px;line-height:1.55}
-  .hero .btns{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .hero .sub{font-size:clamp(17px,2.1vw,20px);color:#2f3931;margin-top:20px;max-width:500px;line-height:1.55;
+    text-shadow:0 1px 10px rgba(252,248,240,.75)}
+  .hero .btns{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
 
   /* generic section */
   section{padding:clamp(72px,11vw,128px) 0;position:relative}
@@ -138,8 +139,7 @@
   .step p{color:var(--muted);font-size:15.5px}
 
   /* contact */
-  .contact{position:relative;text-align:center;overflow:hidden;background:linear-gradient(180deg,var(--cream),#eaf6ee)}
-  .contact .hills{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:0;display:block}
+  .contact{position:relative;text-align:center;background:linear-gradient(180deg,var(--cream),#eef2ea)}
   .contact .wrap{position:relative;z-index:2}
   .contact .label,.contact .lead{margin-left:auto;margin-right:auto}
   .contact h2{margin:14px auto 0;max-width:20ch}
@@ -172,8 +172,8 @@
     <div class="haze" aria-hidden="true"></div>
     <div class="hero-inner"><div class="wrap"><div class="hero-copy">
       <span class="badge"><span class="dot"></span>Free &amp; open source · runs on your own laptop</span>
-      <h1>Hiring is run by robots now. Boulot is the one on <span class="hl">your</span> side.</h1>
-      <p class="sub">Your CV gets screened by AI, recruiters run on autopilot, and everyone's firing off the same 200 applications. Boulot is your own AI instead — it learns your whole story and turns it into applications the bots can't screen out.</p>
+      <h1>Hiring is run by robots now. Boulot is <span class="hl">your edge</span>.</h1>
+      <p class="sub">Your CV gets screened by bots, recruiters run on autopilot, and everyone's firing off the same 200 applications. Boulot is the AI on your side. It knows everything you've done and turns it into applications the screeners can't ignore.</p>
       <div class="btns">
         <a class="btn primary" href="https://github.com/ElliotJLT/boulot-os">Get it free on GitHub</a>
         <a class="btn ghost" href="#how">See how it works</a>
@@ -186,41 +186,41 @@
   <div class="intro reveal">
     <span class="label">What you're up against</span>
     <h2 class="head">Hiring became a fight between machines. You're the one without a bot.</h2>
-    <p class="lead">The whole funnel is automated now, and it's all tuned for volume — which quietly flattens the specific, real person underneath.</p>
+    <p class="lead">The whole funnel is automated now, and all of it rewards volume over the actual person behind the CV.</p>
   </div>
   <div class="cards">
-    <div class="card reveal"><div class="emoji">🤖</div><h3>The screening bots</h3><p>Software reads your CV before any human does. It's keyword-led and template-shaped, and it bins anything that doesn't fit the mould — including good people.</p></div>
-    <div class="card reveal"><div class="emoji">🤝</div><h3>The AI recruiters</h3><p>They match you to roles in <i>their</i> network and chase a placement fee. Useful sometimes, but their goal is a placement — not your best next move.</p></div>
+    <div class="card reveal"><div class="emoji">🤖</div><h3>The screening bots</h3><p>Software reads your CV before any human does. It's keyword-led and template-shaped, and it bins anything that doesn't fit the mould, including plenty of good people.</p></div>
+    <div class="card reveal"><div class="emoji">🤝</div><h3>The AI recruiters</h3><p>They match you to roles in <i>their</i> network and chase a placement fee. Useful sometimes, but their goal is a placement, not the right job for you.</p></div>
     <div class="card reveal"><div class="emoji">📨</div><h3>The spray machines</h3><p>Auto-apply bots fire 200 identical applications a day. Reply rates fell <i>because</i> of them, and the actual you disappears in the noise.</p></div>
   </div>
-  <p class="lead reveal" style="margin-top:34px;font-weight:500;color:var(--ink)">It's a beige arms race. Boulot is the other side of it — one AI that knows your real story and fights for the specific you, not the average one.</p>
+  <p class="lead reveal" style="margin-top:34px;font-weight:500;color:var(--ink)">It's a beige arms race, and you're the only one without a bot. Boulot evens it up. It works from your actual record, not a template, so the specific things about you survive the machine.</p>
 </div></section>
 
 <section id="proof" class="soft"><div class="wrap">
   <div class="intro reveal">
     <span class="label">The honest bit</span>
     <h2 class="head">I built this for my own job hunt first. Then it worked.</h2>
-    <p class="lead">I was deep in a brutal market, tired of firing CVs into the void. So I built Boulot for myself — my own system, from scratch. Here's what it did on the search that mattered:</p>
+    <p class="lead">I was deep in a brutal market, tired of firing CVs into the void. So I built Boulot for myself, from scratch. Here's what it did on the search that mattered:</p>
   </div>
   <div class="stats">
     <div class="stat reveal"><div class="big">+85%</div><div class="cap">pay rise on the role I landed with it</div></div>
     <div class="stat reveal"><div class="big">28 days</div><div class="cap">from first contact to a signed offer</div></div>
     <div class="stat reveal"><div class="big">1 in 4</div><div class="cap">of my applications turned into an interview</div></div>
   </div>
-  <p class="retro-note reveal">These are my own numbers from one real search — yours will be your own. I've made Boulot <b>free and open source</b> because the market's hard enough right now without another subscription, and because it's entirely my own work and mine to give away.</p>
+  <p class="retro-note reveal">These are my own numbers from one real search. Yours will be your own. I've made Boulot <b>free and open source</b> because the market's hard enough right now without another subscription, and because it's entirely my own work and mine to give away.</p>
 </div></section>
 
 <section id="how"><div class="wrap">
   <div class="intro reveal">
     <span class="label">How it works</span>
-    <h2 class="head">It's not a magic button. It's a system that does the real work, with you.</h2>
-    <p class="lead">Boulot lives on your computer and runs through Claude Code. No account, no cloud — just a folder that's yours. Here's the loop it runs:</p>
+    <h2 class="head">No magic button. A system that does the real work alongside you.</h2>
+    <p class="lead">Boulot lives on your computer and runs through Claude Code. No account, no cloud, just a folder that's yours. Here's the loop it runs:</p>
   </div>
   <div class="flow">
-    <div class="frow reveal"><span class="n">1</span><div><h3>It learns the real you</h3><p>A living profile and a master CV that hold everything you've ever done — every role, every number — tagged so nothing gets lost. This is the source of truth it draws from, and it grows as you do. It never makes anything up.</p></div></div>
-    <div class="frow reveal"><span class="n">2</span><div><h3>It runs your pipeline</h3><p>Roles move from "maybe" to "applying" to "done." It researches companies for you — news, funding, who you'd report to, red flags — and helps you find the ones actually worth your time.</p></div></div>
-    <div class="frow reveal"><span class="n">3</span><div><h3>It builds each application by hand</h3><p>For every role it pulls the right bullets from your master CV, then three agents argue over the draft — the hiring manager, a sharp second reader, and a strategist hunting your hidden strengths — until it holds up. You get the version that survived.</p></div></div>
-    <div class="frow reveal"><span class="n">4</span><div><h3>It gets you ready</h3><p>Cover letters that say something true about <i>that</i> company, then a proper mock interview: a friendly interviewer, a hostile one, and someone who finds exactly where you're bluffing — so the real thing feels easy.</p></div></div>
+    <div class="frow reveal"><span class="n">1</span><div><h3>It learns the real you</h3><p>A living profile and a master CV that hold everything you've ever done, every role and every number, tagged so nothing slips through. It's what each new CV gets built from, and it grows as you do. It never invents anything.</p></div></div>
+    <div class="frow reveal"><span class="n">2</span><div><h3>It runs your pipeline</h3><p>Roles move from "maybe" to "applying" to "done." It researches each company for you: news, funding, who you'd report to, any red flags. And it helps you find the ones actually worth your time.</p></div></div>
+    <div class="frow reveal"><span class="n">3</span><div><h3>It builds each application by hand</h3><p>For every role it pulls the right bullets from your master CV, then three agents argue over the draft: the hiring manager, a sharp second reader, and a strategist hunting your hidden strengths. They go at it until the draft holds up, and you get the version that survived.</p></div></div>
+    <div class="frow reveal"><span class="n">4</span><div><h3>It gets you ready</h3><p>Cover letters that say something true about <i>that</i> company, then a proper mock interview: a friendly interviewer, a hostile one, and someone who finds exactly where you're bluffing. By the time the real one comes round, you've already had the hard version.</p></div></div>
     <div class="frow reveal"><span class="n">5</span><div><h3>It tracks everything and learns</h3><p>What's stale, what's next, what's landing. Every application teaches it something, so the next one is sharper. The grind stops living in your head.</p></div></div>
   </div>
 </div></section>
@@ -228,7 +228,7 @@
 <section id="different" class="soft"><div class="wrap">
   <div class="intro reveal">
     <span class="label">Why it's different</span>
-    <h2 class="head">It's not about how many you send. It's how good each one is.</h2>
+    <h2 class="head">Volume isn't the point. Each application is built to get you the interview.</h2>
   </div>
   <div class="tablewrap reveal"><table>
     <thead><tr>
@@ -239,11 +239,11 @@
       <tr><th>Your CV is</th><td>One PDF, sprayed everywhere</td><td>A profile in their database</td><td>Scored by a bolt-on</td><td class="col-b">Rebuilt &amp; stress-tested per role</td></tr>
       <tr><th>Interview prep</th><td>None</td><td>Light</td><td>Light</td><td class="col-b">A real, tough mock</td></tr>
       <tr><th>Your data lives</th><td>Their cloud</td><td>Their cloud</td><td>Their cloud</td><td class="col-b">On your laptop</td></tr>
-      <tr><th>Cost</th><td>Monthly fee</td><td>Free — but their goals ≠ yours</td><td>Monthly fee</td><td class="col-b">Free &amp; open source</td></tr>
+      <tr><th>Cost</th><td>Monthly fee</td><td>Free, but their goals ≠ yours</td><td>Monthly fee</td><td class="col-b">Free &amp; open source</td></tr>
     </tbody>
   </table></div>
   <div class="honest reveal">
-    <b>What Boulot won't do:</b> it won't auto-fire 200 applications while you sleep, and it can't broker a warm introduction to a hiring manager — that's what a recruiter network is for. It does the harder part: knowing your whole story and turning it into applications a bot can't screen out.
+    <b>What Boulot won't do:</b> it won't fire off 200 applications while you sleep, and it can't get you a warm introduction to a hiring manager the way a recruiter network can. It does the part they're bad at: taking everything you've done and turning it into an application a bot can't screen past.
   </div>
 </div></section>
 
@@ -254,26 +254,22 @@
     <p class="lead">About twenty minutes to get going. After that you say things like <i class="serif-i">"tailor my CV for this one"</i> or <i class="serif-i">"give me a tough mock interview"</i> and it gets on with it.</p>
   </div>
   <div class="steps">
-    <div class="step reveal"><span class="n">1</span><div><b>Install Claude Code</b><p>A free app from Anthropic that lets the AI work with files on your computer. There's a desktop version — no terminal needed.</p></div></div>
+    <div class="step reveal"><span class="n">1</span><div><b>Install Claude Code</b><p>A free app from Anthropic that lets the AI work with files on your computer. There's a desktop version, no terminal needed.</p></div></div>
     <div class="step reveal"><span class="n">2</span><div><b>Download Boulot</b><p>One click from GitHub. It becomes a folder that lives on your machine.</p></div></div>
-    <div class="step reveal"><span class="n">3</span><div><b>Tell it about you</b><p>Fill in two short files — or just say "interview me and fill in my profile" and it writes them for you.</p></div></div>
+    <div class="step reveal"><span class="n">3</span><div><b>Tell it about you</b><p>Fill in two short files, or just say "interview me and fill in my profile" and it writes them for you.</p></div></div>
     <div class="step reveal"><span class="n">4</span><div><b>Start applying</b><p>Paste a job link. Ask for a tailored CV, a cover letter, some homework, a mock interview. It keeps track of the rest.</p></div></div>
   </div>
 </div></section>
 
 <section id="contact" class="contact"><div class="wrap">
   <span class="label reveal">Say hello</span>
-  <h2 class="head reveal">I built this because the market made me miserable — and I wanted my own AI in my corner.</h2>
-  <p class="lead reveal">It's free, open source, and mine to give away. If you'd like to use it, want a hand setting it up, or just want to talk about building AI that fights for people instead of flattening them, get in touch.</p>
+  <h2 class="head reveal">I built this because the market made me miserable, and I wanted my own AI in my corner.</h2>
+  <p class="lead reveal">It's free, open source, and mine to give away. If you want to use it, want a hand setting it up, or just want to talk about building AI that's actually on people's side, get in touch.</p>
   <div class="btns reveal">
     <a class="btn primary" href="mailto:elliotjlittle@gmail.com?subject=Boulot">Email me</a>
     <a class="btn ghost" href="https://www.linkedin.com/in/hireelliot">Say hi on LinkedIn</a>
     <a class="btn ghost" href="https://github.com/ElliotJLT/boulot-os">Get it on GitHub</a>
   </div>
-  <svg class="hills" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0 60 C 300 20 560 70 820 60 C 1080 50 1260 20 1440 50 L1440 120 L0 120 Z" fill="#bfe0a8"/>
-    <path d="M0 84 C 260 56 520 96 760 88 C 1060 78 1240 100 1440 80 L1440 120 L0 120 Z" fill="#9ccb7e"/>
-  </svg>
 </div></section>
 
 <footer><div class="wrap">
