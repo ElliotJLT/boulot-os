@@ -94,7 +94,7 @@ You do **not** need to be technical. If you get stuck, paste the error into the 
 
 1. **Get a Claude account.** Sign up at [claude.com](https://claude.com) (a paid plan, Pro or Max, for it to do real work).
 2. **Install Claude Code.** Follow [the install guide](https://docs.claude.com/claude-code). There's a desktop app (no terminal needed) and a command-line version.
-3. **Download Boulot.** Click the green **Code → Download ZIP** button at the top of this page and unzip it. (Or, if you have git: `git clone <this-repo-url> boulot`.)
+3. **Download Boulot.** Click the green **Code → Download ZIP** button at the top of this page and unzip it. (Or, if you have git: `git clone https://github.com/ElliotJLT/boulot-os.git boulot`.)
 4. **(Optional) Turn on CV-to-PDF.** Install [Node.js](https://nodejs.org) (the "LTS" version), then in the `.claude/skills/cv-generator/scripts` folder run `npm install`. Skip this if you don't need PDFs.
 5. **Set yourself up.** Open the boulot folder in Claude Code and type `/start`. Boulot interviews you and writes your profile and master CV from your answers. Nothing to fill in by hand.
 6. **Apply for your first role.** Paste a job link and say *"tailor my CV for this."* You get a tailored CV, a cover letter, company research, and a mock interview.

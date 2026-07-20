@@ -8,7 +8,7 @@
 ## Who uses this
 - This vault is set up for **one job seeker**, whose files live in the `USER/` folder.
 - Everything that person is — their background, target roles, salary target — lives in `USER/profile.md`. Read it first; it defines who you're working for.
-- (You can rename the `USER/` folder to your own name. If you do, update the three `@USER/...` import lines above and find-and-replace `USER/` across the `.claude/` folder.)
+- (Leave the `USER/` folder as it is — it just works. Only rename it if you're comfortable editing files, since you'd then need to update the three `@USER/...` lines above and find-and-replace `USER/` across the `.claude/` folder.)
 
 ## Always do first
 1. **Check if this is a first-time user.** `USER/profile.md` and `USER/cv-master.md` are auto-loaded above. If they are still the blank template (placeholder prompts, empty fields, no real name or experience), the user has not set up yet. Do NOT try to run a job search or read empty job folders. Instead, welcome them and run the onboarding in `/start`: interview them one question at a time and write their profile and master CV. Everything else depends on this being filled in.
@@ -24,8 +24,6 @@ Jobs flow through two stages:
 USER/pipeline/  →  USER/active/  →  USER/archive/
 (looking)            (applying)         (done)
 ```
-
-> **Path convention:** User folders are UPPERCASE (`USER/`, `USER/`). All `USER` references below mean the uppercase folder name.
 
 ### `USER/pipeline/`
 - Roles you're researching or considering but haven't committed to applying for

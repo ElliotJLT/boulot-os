@@ -277,16 +277,10 @@ function parseEducationContent(lines) {
 
 // ─── Company URLs ─────────────────────────────────────────────────────
 
-const COMPANY_URLS = {
-  "zero gravity": "https://zerogravity.co.uk",
-  "farewill": "https://farewill.com",
-  "mealsforthenhs": "https://mealsforthenhs.org",
-  "flash pack": "https://www.flashpack.com",
-  "bluedot impact": "https://www.bluedot.org",
-  "university of birmingham": "https://www.birmingham.ac.uk",
-  "fudan university": "https://www.fudan.edu.cn",
-  "university of birmingham / fudan university": "https://www.birmingham.ac.uk",
-};
+// Optional: map a company or school name to its website, and its logo is looked
+// up automatically for the PDF. Leave this empty to skip it — CVs still generate
+// fine without it. Add your own, e.g. "acme corp": "https://acme.com".
+const COMPANY_URLS = {};
 
 function getCompanyUrl(name) {
   const lower = name.toLowerCase().trim();
