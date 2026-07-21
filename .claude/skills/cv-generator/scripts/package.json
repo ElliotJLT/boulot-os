@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "type": "module",
-  "dependencies": {
-    "docx": "^9.5.1",
-    "puppeteer": "^24.37.2"
+  "comment": "PDF generation needs NOTHING here — generate-pdf.mjs runs on bare Node and renders via a browser you already have. 'docx' is only for the optional Word-doc export (generate-cv.mjs); install it with `npm install` only if you want .docx output.",
+  "optionalDependencies": {
+    "docx": "^9.5.1"
   }
 }

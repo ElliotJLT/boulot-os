@@ -95,9 +95,8 @@ You do **not** need to be technical. If you get stuck, paste the error into the 
 1. **Get a Claude account.** Sign up at [claude.com](https://claude.com) (a paid plan, Pro or Max, for it to do real work).
 2. **Install Claude Code.** Follow [the install guide](https://docs.claude.com/claude-code). There's a desktop app (no terminal needed) and a command-line version.
 3. **Download Boulot.** Click the green **Code → Download ZIP** button at the top of this page and unzip it. (Or, if you have git: `git clone https://github.com/ElliotJLT/boulot-os.git boulot`.)
-4. **(Optional) Turn on CV-to-PDF.** Install [Node.js](https://nodejs.org) (the "LTS" version), then in the `.claude/skills/cv-generator/scripts` folder run `npm install`. Skip this if you don't need PDFs.
-5. **Set yourself up.** Open the boulot folder in Claude Code and type `/start`. Boulot interviews you and writes your profile and master CV from your answers. Nothing to fill in by hand.
-6. **Apply for your first role.** Paste a job link and say *"tailor my CV for this."* You get a tailored CV, a cover letter, company research, and a mock interview.
+4. **Set yourself up.** Open the boulot folder in Claude Code and type `/start`. Boulot interviews you and writes your profile and master CV from your answers. Nothing to fill in by hand.
+5. **Apply for your first role.** Paste a job link and say *"tailor my CV for this."* You get a tailored CV, a cover letter, company research, and a mock interview. Ask for a PDF and you get one — no extra software to install; Boulot uses a web browser you already have.
 
 The AI itself will walk you through anything that trips you up.
 
@@ -111,6 +110,20 @@ The AI itself will walk you through anything that trips you up.
 - **`CLAUDE.md`** — the master instructions the AI reads every time.
 
 Your real applications and personal data never leave your machine, and are ignored by git so they're never committed.
+
+---
+
+## How it's built
+
+Boulot is an agent-native application. No server, no database, no web app to log into. The whole system is three things:
+
+- **Markdown** for the AI's brain — its instructions, its agents, its commands (`.claude/`). You can read every rule it follows.
+- **Your files** as the state (`USER/`) — master CV, applications, notes. Plain text you own and can edit by hand.
+- **A few small scripts** for the mechanical bits, like turning a finished CV into a PDF with a browser you already have.
+
+That's the shape agent frameworks are settling on: a persona in markdown, tools in code, state on disk. Vercel's [Eve](https://vercel.com/eve), Claude Code's skills, the model providers' own agent SDKs are all versions of it. The difference is what sits on top. Those are frameworks for building agents; Boulot is a finished product built with the pattern, aimed at one job — getting a real person hired.
+
+One rule holds the whole thing together: **the AI only ever rearranges what's true about you.** It selects and reorders bullets from a master record you control. It never invents a role, a number, or a skill it can't trace back to something you told it.
 
 ---
 

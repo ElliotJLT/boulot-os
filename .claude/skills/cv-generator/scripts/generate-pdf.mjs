@@ -11,8 +11,10 @@
  * role title + company separated, education structured.
  */
 
-import { readFileSync, writeFileSync } from "fs";
-import puppeteer from "puppeteer";
+import { readFileSync, writeFileSync, existsSync, statSync } from "fs";
+import { spawnSync } from "child_process";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 
 // ─── Parse Markdown ───────────────────────────────────────────────────
 
@@ -916,14 +918,17 @@ function buildGenericSection(sectionTitle, section) {
 
 // ─── Main ─────────────────────────────────────────────────────────────
 
-const args = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
+const htmlFlag = rawArgs.includes("--html");
+const args = rawArgs.filter((a) => a !== "--html");
 if (args.length < 1) {
-  console.error("Usage: node generate-pdf.mjs <cv.md> [output.pdf]");
+  console.error("Usage: node generate-pdf.mjs [--html] <cv.md> [output.pdf|.html]");
   process.exit(1);
 }
 
 const inputPath = args[0];
 const outputPath = args[1] || inputPath.replace(/\.md$/, ".pdf");
+const htmlOnly = htmlFlag || outputPath.endsWith(".html");
 
 console.log(`Reading: ${inputPath}`);
 const markdown = readFileSync(inputPath, "utf-8");
@@ -939,33 +944,30 @@ console.log(
 console.log("Building HTML...");
 const html = buildHTML(cv);
 
-// Save HTML for debugging
-const htmlPath = outputPath.replace(/\.pdf$/, ".html");
+// Write the HTML next to the target. This step needs nothing installed —
+// no npm, no puppeteer, no Chromium download.
+const htmlPath = htmlOnly ? outputPath : outputPath.replace(/\.pdf$/, ".html");
 writeFileSync(htmlPath, html);
 console.log(`  HTML: ${htmlPath}`);
 
-console.log("Launching browser...");
-const browser = await puppeteer.launch({ headless: true });
-const page = await browser.newPage();
+if (htmlOnly) {
+  console.log(`Written: ${htmlPath}`);
+  process.exit(0);
+}
 
-await page.setContent(html, { waitUntil: "networkidle0" });
-
-// Wait for fonts to load before generating PDF
-await page.evaluate(() => document.fonts.ready);
-await new Promise(r => setTimeout(r, 1000));
-
+// Render to PDF with the dependency-free renderer (uses a browser you already
+// have — Chrome/Brave/Edge — or falls back to Save-as-PDF). No 300MB download.
 console.log("Generating PDF...");
-await page.pdf({
-  path: outputPath,
-  format: "A4",
-  printBackground: true,
-  margin: { top: "18mm", bottom: "12mm", left: 0, right: 0 },
-  displayHeaderFooter: true,
-  headerTemplate: "<span></span>",
-  footerTemplate: `<div style="width: 100%; text-align: right; font-size: 8pt; color: #aaa; padding-right: 20mm; font-family: 'Inter', 'Calibri', Arial, sans-serif;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
-});
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const renderer = resolve(scriptDir, "render-pdf.sh");
+const r = spawnSync("bash", [renderer, htmlPath, outputPath], { stdio: "inherit" });
 
-await browser.close();
-
-const stats = readFileSync(outputPath);
-console.log(`Written: ${outputPath} (${(stats.length / 1024).toFixed(1)}KB)`);
+if (r.status === 0 && existsSync(outputPath)) {
+  const size = statSync(outputPath).size;
+  console.log(`Written: ${outputPath} (${(size / 1024).toFixed(1)}KB)`);
+} else if (r.status === 2) {
+  console.log("PDF engine not found — opened the HTML so you can Save as PDF (Cmd+P).");
+} else {
+  console.error(`PDF render failed. The HTML is ready at: ${htmlPath}`);
+  process.exit(1);
+}

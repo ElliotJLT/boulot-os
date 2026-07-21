@@ -42,17 +42,32 @@ The CV markdown file should exist at:
 
 If no cv.md exists, inform the user and offer to run /cv to create one.
 
-### Step 2: Check Dependencies
+### Step 2: Generate the PDF (zero installs)
+
+The generator needs **nothing installed** — no `npm install`, no puppeteer, no
+weasyprint. It writes the HTML itself and renders the PDF with a browser the
+user already has (Chrome, Brave, Edge…). Prefer Node; fall back to Python:
 
 ```bash
-cd <skill-path>/scripts && ls node_modules/puppeteer/package.json 2>/dev/null || npm install
-```
-
-### Step 3: Generate the PDF
-
-```bash
+# Preferred — runs on bare Node, no npm install:
 cd <skill-path>/scripts && node generate-pdf.mjs "<path-to-cv.md>" "<output-path.pdf>"
+
+# If `node` isn't available, use Python (stdlib only):
+cd <skill-path>/scripts && python3 generate-pdf.py "<path-to-cv.md>" "<output-path.pdf>"
 ```
+
+**If neither `node` nor `python3` exists** (a bare machine), don't send the user
+off to install a runtime. Instead:
+1. Read the `cv.md` and write the styled HTML yourself into
+   `<output-dir>/cv.html`, using the exact CSS template already in
+   `generate-pdf.mjs` (copy the `<style>` block and the header/section markup so
+   the layout matches Wozber).
+2. Run the renderer directly: `bash <skill-path>/scripts/render-pdf.sh "<cv.html>" "<output.pdf>"`.
+
+**About `render-pdf.sh`:** it finds an installed browser and prints the PDF
+headlessly — no download. If the machine has *no* browser at all, it opens the
+HTML and exits with code `2`; tell the user to press **⌘P → Save as PDF**. The
+happy path (any normal machine) always produces a real PDF with no setup.
 
 **Output filename format:** `{Name} - {Company} - {Role}.pdf`
 - Name from the first `# ` line in cv.md

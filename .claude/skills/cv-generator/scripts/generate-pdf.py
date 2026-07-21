@@ -447,12 +447,17 @@ strong {
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 generate-pdf.py <cv.md> [output.pdf]", file=sys.stderr)
+    args = [a for a in sys.argv[1:] if a != "--html"]
+    html_only = "--html" in sys.argv[1:]
+
+    if len(args) < 1:
+        print("Usage: python3 generate-pdf.py [--html] <cv.md> [output.pdf|.html]", file=sys.stderr)
         sys.exit(1)
 
-    input_path = sys.argv[1]
-    output_path = sys.argv[2] if len(sys.argv) > 2 else input_path.replace(".md", ".pdf")
+    input_path = args[0]
+    output_path = args[1] if len(args) > 1 else input_path.replace(".md", ".pdf")
+    if output_path.endswith(".html"):
+        html_only = True
 
     print(f"Reading: {input_path}")
     with open(input_path, "r") as f:
@@ -467,18 +472,30 @@ def main():
 <body>{body_html}</body>
 </html>"""
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as tmp:
-        tmp.write(full_html)
-        tmp_path = tmp.name
+    # Write the HTML next to the target so render-pdf.sh can pick it up.
+    html_path = output_path if html_only else re.sub(r"\.pdf$", ".html", output_path)
+    with open(html_path, "w") as f:
+        f.write(full_html)
+    print(f"  HTML: {html_path}")
 
+    if html_only:
+        print(f"Written: {html_path}")
+        return
+
+    # Render to PDF with the dependency-free renderer (uses a browser you already
+    # have — no weasyprint, no npm, no Chromium download).
     print("Generating PDF...")
-    try:
-        subprocess.run(["weasyprint", tmp_path, output_path], check=True, capture_output=True)
+    renderer = os.path.join(os.path.dirname(os.path.abspath(__file__)), "render-pdf.sh")
+    result = subprocess.run(["bash", renderer, html_path, output_path])
+    if result.returncode == 0 and os.path.exists(output_path):
         size_kb = os.path.getsize(output_path) / 1024
         print(f"Written: {output_path}")
         print(f"Size: {size_kb:.1f}KB")
-    finally:
-        os.unlink(tmp_path)
+    elif result.returncode == 2:
+        print("PDF engine not found — opened the HTML so you can Save as PDF (Cmd+P).")
+    else:
+        print("PDF render failed. The HTML is ready at:", html_path, file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
