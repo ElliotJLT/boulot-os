@@ -41,8 +41,15 @@ function describe(name: string, input: Record<string, unknown>): string {
       return `Searching the web for ${String(input.query ?? "").slice(0, 60)}`;
     case "WebFetch":
       return `Reading ${String(input.url ?? "").replace(/^https?:\/\//, "").split("/")[0]}`;
-    case "Task":
-      return `${String(input.description ?? "Working")}`;
+    case "Task": {
+      const who = String(input.subagent_type ?? "");
+      const named: Record<string, string> = {
+        "hiring-manager": "Hiring Manager is scoring your bullets",
+        reviewer: "Reviewer is finding the three biggest edits",
+        strategist: "Strategist is looking for what you left out",
+      };
+      return named[who] ?? String(input.description ?? "Working");
+    }
     case "Skill":
       return `Running ${String(input.command ?? input.name ?? "a skill")}`;
     case "AskUserQuestion":
@@ -195,6 +202,66 @@ function boulotTools(vaultRoot: string, rendererPath: string) {
 /** A single run should never cost more than a cheap lunch. */
 export const DEFAULT_BUDGET_USD = 1.5;
 
+
+/**
+ * The three adversarial reviewers, as first-class agents.
+ *
+ * Defined here rather than inline in the skill for three reasons. They become
+ * nameable, so the UI can say which one is working. They get a cheaper model,
+ * because scoring someone else's draft is not the same job as writing it. And
+ * they get a read-only tool surface and a turn limit, so a reviewer cannot
+ * wander off and rewrite the CV it was asked to critique.
+ *
+ * The doctrine they exist to serve: if all three agree, the exercise failed.
+ */
+const REVIEWERS: Record<string, {
+  description: string;
+  prompt: string;
+  model: string;
+  tools: string[];
+  maxTurns: number;
+}> = {
+  "hiring-manager": {
+    description:
+      "Reads a CV draft as the person who wrote the job description. Use during CV tailoring to get relevance scoring and the ordering a hiring manager would want.",
+    model: "sonnet",
+    tools: ["Read"],
+    maxTurns: 4,
+    prompt:
+      "You are the hiring manager who wrote this job description. You are not the candidate's friend.\n\n" +
+      "Read the JD and the CV draft. Answer: what are you actually worried about in this hire? " +
+      "What would make you stop reading? What single thing would make you say 'interview this one'?\n\n" +
+      "Score every bullet 1 to 5 on relevance to THIS posting, and return the ordering you would want. " +
+      "Be blunt about anything that reads as padding. Return the scores and the ordering, nothing else.",
+  },
+  reviewer: {
+    description:
+      "Reads a CV draft against the job description and returns the three highest-impact edits. Use during CV tailoring.",
+    model: "sonnet",
+    tools: ["Read"],
+    maxTurns: 4,
+    prompt:
+      "You are a sharp second reader. Read the CV draft against the JD.\n\n" +
+      "Where is a claim unsupported? Where is it generic when it could be specific? Where would a " +
+      "recruiter skim past?\n\n" +
+      "Return exactly THREE edits: the three that would improve the draft most. Not a teardown, not a " +
+      "list of everything wrong. The three that matter. Quote the line and give the replacement.",
+  },
+  strategist: {
+    description:
+      "Reads the job description against the full master CV to find underplayed experience. Use during CV tailoring.",
+    model: "sonnet",
+    tools: ["Read"],
+    maxTurns: 4,
+    prompt:
+      "You look for what is being left out.\n\n" +
+      "Read the JD against the candidate's FULL master CV, not just the draft. What experience is being " +
+      "underplayed? What is the non-obvious connection between this background and this role?\n\n" +
+      "Return exactly THREE bullets that exist in the master CV, are missing from the draft, and should " +
+      "not be. Quote each one and say why it belongs. Never invent experience.",
+  },
+};
+
 export interface RunOptions {
   prompt: string;
   vaultRoot: string;
@@ -225,6 +292,7 @@ export async function run({
       plugins: [{ type: "local", path: resolve(import.meta.dirname, "../../plugin") }],
       disallowedTools: DENIED,
       mcpServers: { boulot: boulotTools(vaultRoot, rendererPath) },
+      agents: REVIEWERS,
       // Boulot's own tools are pre-approved. They are ours, they are
       // path-jailed internally, and prompting for them would be noise: nobody
       // wants to authorise "check today's date". Note this deliberately

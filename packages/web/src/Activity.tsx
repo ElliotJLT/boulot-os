@@ -77,6 +77,31 @@ export function Markdown({ text }: { text: string }) {
     <>
       {blocks.map((block, bi) => {
         const lines = block.split("\n");
+
+        // Tables. The JD mapping table is the most important thing tailor-cv
+        // produces, and without this it renders as an unreadable run of pipes.
+        // Handled before lists because a table row also starts with a symbol.
+        if (lines.length >= 2 && lines[0]?.includes("|") && /^[\s|:-]+$/.test(lines[1] ?? "")) {
+          const cells = (row: string) =>
+            row.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
+          const head = cells(lines[0] ?? "");
+          const body = lines.slice(2).filter((l) => l.includes("|")).map(cells);
+          return (
+            <table key={bi} className="md-table">
+              <thead>
+                <tr>{head.map((h, i) => <th key={i}>{inline(h)}</th>)}</tr>
+              </thead>
+              <tbody>
+                {body.map((row, ri) => (
+                  <tr key={ri}>
+                    {head.map((_, ci) => <td key={ci}>{inline(row[ci] ?? "")}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        }
+
         const isList = lines.every((l) => /^\s*[-*]\s+/.test(l));
         if (isList) {
           return (

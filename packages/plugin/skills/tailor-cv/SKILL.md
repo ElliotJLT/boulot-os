@@ -14,7 +14,7 @@ is after the decisions here have already been made.
 
 ## Step 1: Gather
 
-Read, in this order:
+Read exactly these files. Do not search for them, the paths are fixed:
 
 1. `cv-master.md` — the full experience bank. Bullets are numbered and tagged
    (`#ops #ai #evals #regulated`). The tags are the selection index.
@@ -49,22 +49,9 @@ Two failure modes to watch:
 
 ## Step 3: Three reviewers, in parallel, who must disagree
 
-Spawn three subagents with opposed briefs. Run them at the same time.
-
-**The Hiring Manager.** Read the JD as the person who wrote it. What are they
-actually worried about? What makes them stop reading? What single thing makes
-them say "interview this one"? Score every bullet 1 to 5 on relevance to *this*
-posting and return the ordering they would want.
-
-**The Reviewer.** Read the draft against the JD. Where is a claim unsupported?
-Where is it generic when it could be specific? Where would a recruiter skim?
-Return the **three highest-impact edits**. Not a teardown. The three that move
-it most.
-
-**The Strategist.** Read the JD against the *whole* master CV, not the draft.
-What is being underplayed? What is the non-obvious connection between this
-background and this role? Return **three bullets from the master CV that are
-missing from the draft and should not be**.
+Delegate to the three named subagents, **in a single message so they run in
+parallel**: `hiring-manager`, `reviewer`, `strategist`. Give each the paths to
+the JD and the draft. Their briefs are already defined; do not restate them.
 
 > If all three come back agreeing, the exercise failed. Three agents producing
 > one answer is three times the cost for one opinion. The value is the conflict.

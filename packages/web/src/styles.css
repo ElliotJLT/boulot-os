@@ -335,3 +335,14 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
   background: var(--ink-3); opacity: 0.45; margin-inline-start: 6px; vertical-align: middle;
 }
 .tabs { flex-wrap: wrap; }
+
+/* ── Markdown tables (the JD mapping table) ───────── */
+.md-table { inline-size: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 12.5px; }
+.md-table th {
+  text-align: start; font-weight: 600; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--ink-3); padding: 0 10px 6px 0;
+  border-block-end: 1px solid var(--line);
+}
+.md-table td { padding: 7px 10px 7px 0; border-block-end: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
+.md-table tr:last-child td { border-block-end: 0; }
+.md-table td:last-child, .md-table th:last-child { padding-inline-end: 0; white-space: nowrap; }
