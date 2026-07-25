@@ -110,11 +110,8 @@ and it writes the CV, the cover letter and the PDF.
 Your files land in `~/Boulot`, as plain markdown you can open in anything.
 
 You need [Node 20+](https://nodejs.org) and [pnpm](https://pnpm.io/installation).
-A Mac app builds today with `pnpm desktop`, and opens normally because you built
-it rather than downloaded it. There is no download link: an unsigned app that
-arrives over the internet makes macOS say it cannot verify the software, and
-clearing that warning now means a timed trip through System Settings. The
-[roadmap](docs/roadmap.md) explains when that changes.
+`pnpm desktop` builds a Mac app if you want one. A signed download is
+[on the roadmap](docs/roadmap.md).
 
 ### Through Claude Code
 
