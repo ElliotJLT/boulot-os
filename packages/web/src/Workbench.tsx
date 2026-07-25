@@ -101,10 +101,21 @@ export function Workbench({
       setTab("pdf");
     }
     setFit(d.fit ?? null);
+    // Always keep cv and job in memory: the tweak box attaches them regardless
+    // of which tab is showing, and the PDF tab has no markdown of its own.
     const active = tabRef.current;
-    if (active === "pdf") return;
-    const doc = await fetch(`/api/${who}/job/${slug}/doc/${active}`).then((r) => r.json());
+    const needed = [...new Set([active === "pdf" ? "cv" : active, "cv", "job"])];
+    const loaded = await Promise.all(
+      needed.map((k) =>
+        fetch(`/api/${who}/job/${slug}/doc/${k}`)
+          .then((r) => r.json())
+          .then((d) => [k, d.markdown ?? ""] as const),
+      ),
+    );
     if (dirtyRef.current) return;
+    setText((t) => ({ ...t, ...Object.fromEntries(loaded.filter(([k]) => k !== active)) }));
+    const doc = { markdown: loaded.find(([k]) => k === active)?.[1] ?? "" };
+    if (active === "pdf") return;
     setText((t) => {
       // Flash the pane when the agent changes what you are looking at, so it is
       // obvious something arrived rather than silently swapping underneath.
@@ -182,10 +193,47 @@ export function Workbench({
     void refresh();
   };
 
-  const tweak = () => {
+  /**
+   * Ask for a change, with the documents attached.
+   *
+   * The agent used to go and find the CV and the job description before it
+   * could answer anything, six steps to read two files that were already open
+   * in the browser. It reread each of them twice. Sending the content inline
+   * removes the round trip entirely, and it is cheaper than the tool calls it
+   * replaces because the prefix caches.
+   *
+   * The wording of the covering line matters more than it should. An earlier
+   * version said "you already have them: do not search for them and do not
+   * read them again", meaning do not call the Read tool. The model read it as
+   * do not consult this content, and answered questions about the attached CV
+   * with "NONE" while the text sat in front of it. Tested: the tag wrapper is
+   * fine, attaching the document is fine, and that one sentence is what broke
+   * it. Say what is true ("these are included, you do not need to open them")
+   * rather than issuing a prohibition that can be read too widely.
+   *
+   * Sending the editor's content, not the file's, also means an unsaved edit is
+   * what gets reasoned about. Reading from disk would have quietly ignored
+   * whatever you had just typed.
+   */
+  const tweak = async () => {
     const q = ask.trim();
-    if (!q) return;
-    send(`For the application in active/${slug}: ${q}`, "Working");
+    if (!q || running) return;
+    if (dirty) await save();
+
+    const cv = text.cv ?? "";
+    const job = text.job ?? "";
+    const attach = (label: string, body: string, file: string) =>
+      body.trim() ? `\n\n<${label} path="active/${slug}/${file}">\n${body.trim()}\n</${label}>` : "";
+
+    send(
+      `Application: active/${slug}\n\n` +
+        `The current contents of the files are included below, so you do not need to open them. ` +
+        `Use Edit to change them.` +
+        attach("cv", cv, "cv.md") +
+        attach("job_description", job, "job.md") +
+        `\n\nRequest: ${q}`,
+      "Working",
+    );
     setAsk("");
   };
 
