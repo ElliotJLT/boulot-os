@@ -24,12 +24,12 @@ It is first because it is the only route that is both easy and unencumbered. A
 Node script is not a quarantined app bundle, so it never meets Gatekeeper, never
 shows a warning, and needs no money to distribute.
 
-**Chromium on first render, with a progress bar.** PDF rendering needs a
-browser, and Chromium is 380MB against a 46MB app, so bundling it would make
-everyone pay for a feature not everyone uses. Right now it resolves whatever
-puppeteer already downloaded, which is true on a developer's machine and false
-on anyone else's. The download needs to happen once, visibly, the first time
-someone exports a PDF.
+**A browser for anyone who has none.** PDF rendering needs a print engine, and
+the renderer now looks for Chrome, Edge, Brave, Vivaldi or Chromium already
+installed before considering a download, so on most machines this costs nothing
+at all. What is left is the machine that genuinely has none, where the fallback
+is currently a silent 190MB fetch by puppeteer. That needs to be a visible,
+once-only download with a progress bar rather than a long unexplained pause.
 
 ## Later, when downloads justify it
 

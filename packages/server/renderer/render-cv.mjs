@@ -13,6 +13,10 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import puppeteer from "puppeteer";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { findBrowser, describeBrowser } from "./find-browser.mjs";
 
 // ─── Parse Markdown ───────────────────────────────────────────────────
 
@@ -1234,7 +1238,35 @@ writeFileSync(htmlPath, html);
 console.log(`  HTML: ${htmlPath}`);
 
 console.log("Launching browser...");
-const browser = await puppeteer.launch({ headless: true });
+/*
+ * Print with a browser that is already here if there is one.
+ *
+ * puppeteer.launch() with no path uses only the copy it downloaded itself,
+ * which is 190MB the user probably did not need: Chrome, Edge and Brave are the
+ * same engine and one of them is usually installed. Falling back to puppeteer's
+ * own copy keeps the machines that have none working.
+ */
+const found = findBrowser();
+if (found) console.log(`Using ${describeBrowser(found)} to print.`);
+/*
+ * A throwaway profile, always.
+ *
+ * Launching someone's installed Chrome picks up their real profile: every
+ * extension, sync, and startup task. Measured on this machine that took the
+ * same trivial page from 1.6s to 7.4s, and with a real CV it blew the 30s
+ * navigation timeout outright. An ad blocker deciding to update itself is not
+ * something a CV render should ever wait for.
+ *
+ * The directory is temporary and per-run, so nothing of the user's is read and
+ * nothing of theirs is written.
+ */
+const profileDir = mkdtempSync(join(tmpdir(), "boulot-print-"));
+const browser = await puppeteer.launch({
+  headless: true,
+  userDataDir: profileDir,
+  args: ["--no-first-run", "--no-default-browser-check"],
+  ...(found ? { executablePath: found } : {}),
+});
 const page = await browser.newPage();
 
 await page.setContent(html, { waitUntil: "networkidle0" });
@@ -1262,6 +1294,7 @@ await page.pdf({
 });
 
 await browser.close();
+rmSync(profileDir, { recursive: true, force: true });
 
 const stats = readFileSync(outputPath);
 console.log(`Written: ${outputPath} (${(stats.length / 1024).toFixed(1)}KB)`);
