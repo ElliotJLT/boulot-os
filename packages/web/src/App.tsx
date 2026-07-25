@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Workbench } from "./Workbench.js";
 import { NewApplication } from "./NewApplication.js";
 import { Career } from "./Career.js";
+import { Insights } from "./Insights.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
 type App = {
@@ -59,57 +60,24 @@ function Chip({ flag }: { flag: Flag }) {
   return <span className={`chip chip-${SEVERITY[flag.kind] ?? "muted"}`}>{flag.label}</span>;
 }
 
+/**
+ * A card carries a company, a role, and at most one quiet flag.
+ *
+ * It used to carry salary, source, substage and a red badge as well. Six
+ * columns of that is a wall, and a wall of red is stressful rather than
+ * informative. The detail has not gone anywhere: it is one tap away, where you
+ * are actually thinking about that application rather than scanning all of them.
+ */
 function Card({ app, onOpen }: { app: App; onOpen: () => void }) {
   const flag = app.flags2[0];
   const dead = app.stage.startsWith("closed");
   return (
     <article className={`card${dead ? " card-dead" : ""}`} onClick={onOpen} role="button" tabIndex={0}>
-      <div className="card-top">
-        <h3>{app.company}</h3>
-        {flag && <Chip flag={flag} />}
-      </div>
+      <h3>{app.company}</h3>
       {app.role && <p className="role">{app.role}</p>}
-      {app.substage && <p className="substage">{app.substage}</p>}
-      <div className="meta">
-        {app.salary && <span>{app.salary}</span>}
-        {app.source && <span>{app.source}</span>}
-        {app.warnings.length > 0 && (
-          <span className="warn-dot" title={app.warnings.join("; ")}>
-            needs a look
-          </span>
-        )}
-      </div>
+      {flag && !dead && <span className={`mark mark-${SEVERITY[flag.kind] ?? "muted"}`}>{flag.label}</span>}
+      {dead && app.outcome && <span className="mark mark-muted">{app.outcome.replace(/_/g, " ")}</span>}
     </article>
-  );
-}
-
-function Funnel({ funnel }: { funnel: Board["funnel"] }) {
-  const max = Math.max(...funnel.stages.map((s) => s.count), 1);
-  return (
-    <section className="funnel">
-      <h2>Funnel</h2>
-      <p className="derived">derived from your files, nothing to fill in</p>
-      {funnel.stages.map((s) => (
-        <div className="funnel-row" key={s.label}>
-          <span className="funnel-label">{s.label}</span>
-          <span className="funnel-bar" style={{ inlineSize: `${(s.count / max) * 100}%` }} />
-          <span className="funnel-count">
-            {s.count}
-            {s.label !== "Applied" && <em> {(s.rate * 100).toFixed(0)}%</em>}
-          </span>
-        </div>
-      ))}
-      <dl className="stats">
-        <div>
-          <dt>median days to close</dt>
-          <dd>{funnel.medianDaysToClose ?? "—"}</dd>
-        </div>
-        <div>
-          <dt>presumed ghosted</dt>
-          <dd>{funnel.presumedGhosted}</dd>
-        </div>
-      </dl>
-    </section>
   );
 }
 
@@ -121,6 +89,7 @@ export function App() {
   const [open, setOpen] = useState<{ slug: string; company: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [career, setCareer] = useState(false);
+  const [insights, setInsights] = useState(false);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
 
@@ -143,6 +112,13 @@ export function App() {
       .then(setBoard)
       .catch(() => setError("Could not load board"));
   }, [who, reload]);
+
+  if (insights && who)
+    return (
+      <main>
+        <Insights who={who} onClose={() => setInsights(false)} />
+      </main>
+    );
 
   if (career && who)
     return (
@@ -183,6 +159,7 @@ export function App() {
               {authMode === "api-key" ? "API credit" : "Claude plan"}
             </span>
           )}
+          <button onClick={() => setInsights(true)}>Insights</button>
           <button onClick={() => setCareer(true)}>Career record</button>
           <button className="primary" onClick={() => setAdding(true)}>
             + New application
@@ -204,12 +181,12 @@ export function App() {
         </ol>
       </section>
 
-      <div className="layout">
-        <div className="board">
+      <div className="board">
           {COLUMNS.map((col) => {
             const items = board.applications
               .filter((a) => col.stages.includes(a.stage))
               .sort((a, b) => (a.flags2[0]?.priority ?? 99) - (b.flags2[0]?.priority ?? 99));
+            if (!items.length) return null;
             return (
               <section className="column" key={col.key}>
                 <header>
@@ -222,10 +199,6 @@ export function App() {
               </section>
             );
           })}
-        </div>
-        <aside>
-          <Funnel funnel={board.funnel} />
-        </aside>
       </div>
     </main>
   );

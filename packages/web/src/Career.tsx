@@ -16,7 +16,10 @@ type Bullet = {
   tags: string[];
   hasNumber: boolean;
   usedIn: string[];
+  reachedInterview: number;
+  rejected: number;
 };
+type Attention = { kind: string; detail: string; action: string; count?: number };
 type Role = { org: string; title: string; dates: string; context: string; bullets: Bullet[]; deeperDetail: number };
 type Master = {
   updated: string | null;
@@ -24,6 +27,8 @@ type Master = {
   roles: Role[];
   totals: { bullets: number; tagged: number; withNumbers: number; used: number };
   allTags: Array<{ tag: string; count: number }>;
+  attention: Attention[];
+  proven: Bullet[];
 };
 
 type Filter = "all" | "unused" | "no-number" | string;
@@ -62,6 +67,41 @@ export function Career({ who, onClose }: { who: string; onClose: () => void }) {
         <span className="updated">updated {m.updated}</span>
       </header>
 
+      {m.attention.length > 0 && (
+        <section className="attention">
+          <h3>Worth doing</h3>
+          <ul>
+            {m.attention.map((a, i) => (
+              <li key={i}>
+                <b>{a.detail}</b>
+                <span>{a.action}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {m.proven.length > 0 && (
+        <section className="proven">
+          <h3>Earned an interview</h3>
+          <p className="lede">
+            These appeared in CVs that got past the screen. Small sample, so treat it as a hint rather
+            than a rule, but they are the closest thing you have to evidence about what lands.
+          </p>
+          <ul>
+            {m.proven.slice(0, 5).map((b) => (
+              <li key={b.id}>
+                <span className="score">
+                  {b.reachedInterview}/{b.usedIn.length}
+                </span>
+                <p>{b.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <h3 className="section-title">Every entry</h3>
       <div className="career-stats">
         <button className={filter === "all" ? "stat on" : "stat"} onClick={() => setFilter("all")}>
           <b>{m.totals.bullets}</b>
@@ -120,8 +160,15 @@ export function Career({ who, onClose }: { who: string; onClose: () => void }) {
                       </span>
                     ))}
                     {!b.hasNumber && <span className="flagless">no number</span>}
-                    <span className="usage" title={b.usedIn.join(", ") || "never selected"}>
-                      {b.usedIn.length ? `used ${b.usedIn.length}×` : "never used"}
+                    <span
+                      className={b.reachedInterview > 0 ? "usage good" : "usage"}
+                      title={b.usedIn.length ? b.usedIn.join(", ") : "never selected by tailoring"}
+                    >
+                      {b.usedIn.length === 0
+                        ? "never used"
+                        : b.reachedInterview > 0
+                          ? `${b.reachedInterview} of ${b.usedIn.length} reached interview`
+                          : `used ${b.usedIn.length}×, none progressed`}
                     </span>
                   </div>
                 </li>

@@ -29,6 +29,10 @@ export interface MasterBullet {
   hasNumber: boolean;
   /** Slugs of applications whose cv.md contains this bullet. */
   usedIn: string[];
+  /** Of those, how many reached a screen or interview. */
+  reachedInterview: number;
+  /** Of those, how many ended in rejection or silence. */
+  rejected: number;
 }
 
 export interface MasterRole {
@@ -41,6 +45,14 @@ export interface MasterRole {
   deeperDetail: number;
 }
 
+export interface Attention {
+  kind: "stale-role" | "no-number" | "unused-recent" | "untagged";
+  detail: string;
+  /** What to do about it, in the imperative. */
+  action: string;
+  count?: number;
+}
+
 export interface Master {
   path: string;
   /** Last write to the file, which is the honest "last updated". */
@@ -50,6 +62,10 @@ export interface Master {
   skills: Array<{ category: string; items: string[] }>;
   totals: { bullets: number; tagged: number; withNumbers: number; used: number };
   allTags: Array<{ tag: string; count: number }>;
+  /** What is worth doing to this record, most important first. */
+  attention: Attention[];
+  /** Bullets that have appeared in a CV that reached an interview. */
+  proven: MasterBullet[];
 }
 
 const NUMBERISH = /\d|%|£|\$|\bhalf\b|\bdoubled?\b|\btripled?\b/i;
@@ -65,7 +81,13 @@ function fingerprint(text: string): string {
     .toLowerCase();
 }
 
-export function readMaster(personDir: string): Master | null {
+/** Applications that got somewhere, keyed by slug. */
+export interface OutcomeIndex {
+  reachedInterview: Set<string>;
+  rejected: Set<string>;
+}
+
+export function readMaster(personDir: string, outcomes?: OutcomeIndex): Master | null {
   const path = join(personDir, "cv-master.md");
   if (!existsSync(path)) return null;
 
@@ -185,6 +207,11 @@ export function readMaster(personDir: string): Master | null {
       const fp = fingerprint(bullet.text);
       if (fp.length < 12) continue;
       bullet.usedIn = cvs.filter((c) => c.text.includes(fp)).map((c) => c.slug);
+      // Usage alone says a bullet got picked. Usage crossed with outcome says
+      // whether picking it was associated with getting anywhere, which is the
+      // only version of this number worth acting on.
+      bullet.reachedInterview = bullet.usedIn.filter((s) => outcomes?.reachedInterview.has(s)).length;
+      bullet.rejected = bullet.usedIn.filter((s) => outcomes?.rejected.has(s)).length;
     }
   }
 
@@ -192,9 +219,57 @@ export function readMaster(personDir: string): Master | null {
   const tagCounts = new Map<string, number>();
   for (const b of all) for (const t of b.tags) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
 
+  // What is worth doing about this record.
+  const attention: Attention[] = [];
+
+  for (const r of roles) {
+    if (/present|current|now/i.test(r.dates)) {
+      attention.push({
+        kind: "stale-role",
+        detail: `${r.org} is still marked "${r.dates}"`,
+        action: "Confirm this is current. An out-of-date end date goes out on every CV.",
+      });
+    }
+  }
+
+  const noNumber = all.filter((b) => !b.hasNumber);
+  if (noNumber.length) {
+    attention.push({
+      kind: "no-number",
+      detail: `${noNumber.length} entries carry no figure`,
+      action: "Add one number each. A claim without a number reads as an opinion.",
+      count: noNumber.length,
+    });
+  }
+
+  const untagged = all.filter((b) => !b.tags.length);
+  if (untagged.length) {
+    attention.push({
+      kind: "untagged",
+      detail: `${untagged.length} entries are untagged`,
+      action: "Tag them, or tailoring will never select them.",
+      count: untagged.length,
+    });
+  }
+
+  // Unused entries in the most recent role are the expensive ones: the newest
+  // work is usually the most relevant, and it is invisible to tailoring.
+  const recent = roles[0];
+  const recentUnused = recent?.bullets.filter((b) => !b.usedIn.length) ?? [];
+  if (recent && recentUnused.length > 2) {
+    attention.push({
+      kind: "unused-recent",
+      detail: `${recentUnused.length} of ${recent.bullets.length} ${recent.org} entries have never been used`,
+      action: "Your newest work is the least selected. Check it is written the way a JD would ask for it.",
+      count: recentUnused.length,
+    });
+  }
+
   return {
     path,
     updated,
+    attention,
+    proven: all.filter((b) => b.reachedInterview > 0).sort((a, b) => b.reachedInterview - a.reachedInterview),
     summaryVariants,
     roles,
     skills,

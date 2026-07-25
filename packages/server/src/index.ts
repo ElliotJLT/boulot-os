@@ -82,7 +82,17 @@ app.get("/api/health", async () => ({
 app.get<{ Params: { who: string } }>("/api/:who/master", async (req, reply) => {
   const dir = join(VAULT, req.params.who);
   if (!existsSync(dir)) return reply.code(404).send({ error: "no such person" });
-  const m = readMaster(dir);
+  // Cross bullet usage with what actually happened to those applications.
+  const { applications } = readVault(dir);
+  const reachedInterview = new Set<string>();
+  const rejected = new Set<string>();
+  for (const a of applications) {
+    const got = ["screening", "interviewing", "offer", "closed-won"].includes(a.stage) ||
+      /interview|screen|final|task day/i.test(a.substage ?? "");
+    if (got) reachedInterview.add(a.slug);
+    else if (a.stage === "closed-lost") rejected.add(a.slug);
+  }
+  const m = readMaster(dir, { reachedInterview, rejected });
   return m ?? reply.code(404).send({ error: "no cv-master.md" });
 });
 
