@@ -29,13 +29,34 @@ type Master = {
   allTags: Array<{ tag: string; count: number }>;
   attention: Attention[];
   proven: Bullet[];
+  profile: { markdown: string; updated: string | null } | null;
 };
 
 type Filter = "all" | "unused" | "no-number" | string;
 
+/**
+ * One sentence describing the memory, read out of the memory itself.
+ *
+ * Parsing the generated file rather than adding fields to the API on purpose:
+ * the file is the artefact, and anything the line claims should be something
+ * the user can verify by opening it.
+ */
+function summarise(markdown: string): string {
+  const n = (re: RegExp) => Number(new RegExp(re).exec(markdown)?.[1] ?? 0);
+  const claims = n(/`evidence\.md` — (\d+) claims/);
+  const figures = n(/(\d+) carrying a figure/);
+  const questions = n(/`questions\.md` — (\d+)/);
+  const apps = n(/from (\d+) applications/);
+  const parts = [`${claims} things you have proven`];
+  if (figures) parts.push(`${figures} with numbers`);
+  if (questions) parts.push(`${questions} worth checking`);
+  return `${parts.join(", ")} · from ${apps} applications`;
+}
+
 export function Career({ who, onClose }: { who: string; onClose: () => void }) {
   const [m, setM] = useState<Master | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [showMemory, setShowMemory] = useState(false);
 
   useEffect(() => {
     fetch(`/api/${who}/master`)
@@ -67,20 +88,35 @@ export function Career({ who, onClose }: { who: string; onClose: () => void }) {
         <span className="updated">updated {m.updated}</span>
       </header>
 
-      {m.attention.length > 0 && (
-        <section className="attention">
-          <h3>Worth doing</h3>
-          <ul>
-            {m.attention.map((a, i) => (
-              <li key={i}>
-                <b>{a.detail}</b>
-                <span>{a.action}</span>
-              </li>
-            ))}
-          </ul>
+      {/*
+        The whole visible surface of consolidation.
+
+        It rebuilds itself whenever an application is archived and the agent
+        reads it before writing anything, so there is nothing here to approve,
+        tune or keep on top of. What earns a line on screen is that the user
+        should be able to see it happened and read exactly what it decided. The
+        file is plain markdown; opening it is the only interaction.
+      */}
+      {m.profile && (
+        <section className="memory">
+          <button className="memory-line" onClick={() => setShowMemory((v) => !v)}>
+            <span className="dot" />
+            <b>Boulot has read your applications</b>
+            <span>{summarise(m.profile.markdown)}</span>
+            <em>updated {m.profile.updated}</em>
+          </button>
+          {showMemory && <pre className="memory-body">{m.profile.markdown}</pre>}
         </section>
       )}
 
+      {/*
+        "Worth doing" used to live here, and it said the same things the memory
+        now says: the Zero Gravity date appeared twice on one screen, once from
+        each mechanism. Consolidation supersedes it — the questions it raises are
+        derived from more evidence and are already in the file above — so the
+        older panel is gone rather than deduplicated. Two systems producing
+        overlapping advice is how a page stops being readable.
+      */}
       {m.proven.length > 0 && (
         <section className="proven">
           <h3>Earned an interview</h3>

@@ -2,7 +2,7 @@ import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk"
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
 import { resolve, relative, isAbsolute } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fetchJob } from "./boards.js";
 
 /**
@@ -262,6 +262,42 @@ const REVIEWERS: Record<string, {
   },
 };
 
+/**
+ * The consolidated memory, injected once per run.
+ *
+ * This is the whole point of consolidating. The agent used to start every
+ * tailoring run knowing nothing about the person beyond whatever files it chose
+ * to open, so it reread the master CV, missed the projects that were never
+ * filed there, and rewrote claims the user had already phrased better in six
+ * previous applications.
+ *
+ * Injected as system context rather than pasted into the prompt so it caches
+ * across turns, and read fresh each run so an application archived a minute ago
+ * is already reflected.
+ */
+function memoryContext(vaultRoot: string, person: string): string {
+  const file = resolve(vaultRoot, person, "profile", "MEMORY.md");
+  if (!existsSync(file)) return "";
+  let text = "";
+  try {
+    text = readFileSync(file, "utf8");
+  } catch {
+    return "";
+  }
+  if (!text.trim()) return "";
+  return [
+    "",
+    "# What Boulot knows about this person",
+    "",
+    "Built from the CVs they have actually sent, not from anything invented.",
+    "Prefer these phrasings and these figures over rewriting from scratch, and",
+    "never contradict the `Worth checking` section: those are open questions, so",
+    "ask rather than assuming an answer.",
+    "",
+    text.trim(),
+  ].join("\n");
+}
+
 export interface RunOptions {
   prompt: string;
   vaultRoot: string;
@@ -283,12 +319,14 @@ export async function run({
 }: RunOptions): Promise<string | undefined> {
   const cwd = resolve(vaultRoot, person);
   let newSessionId: string | undefined;
+  const memory = memoryContext(vaultRoot, person);
 
   const response = query({
     prompt,
     options: {
       cwd,
       settingSources: [],
+      ...(memory ? { systemPrompt: { type: "preset" as const, preset: "claude_code" as const, append: memory } } : {}),
       plugins: [{ type: "local", path: resolve(import.meta.dirname, "../../plugin") }],
       disallowedTools: DENIED,
       mcpServers: { boulot: boulotTools(vaultRoot, rendererPath) },

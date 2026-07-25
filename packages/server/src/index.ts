@@ -11,6 +11,8 @@ import {
   readMaster,
   readApplication,
   archiveCandidates,
+  runConsolidation,
+  readProfile,
   updateFrontmatter,
   today as todayStr,
 } from "@boulot/core";
@@ -82,6 +84,15 @@ function people(vault: string): string[] {
     });
 }
 
+/** A vault folder name, written the way a person would read it. */
+function displayPerson(who: string): string {
+  return who
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 /** Resolve a vault path from untrusted segments, or throw. */
 function inVault(...segments: string[]): string {
   const abs = resolve(VAULT, ...segments);
@@ -114,7 +125,29 @@ app.get<{ Params: { who: string } }>("/api/:who/master", async (req, reply) => {
     else if (a.stage === "closed-lost") rejected.add(a.slug);
   }
   const m = readMaster(dir, { reachedInterview, rejected });
-  return m ?? reply.code(404).send({ error: "no cv-master.md" });
+  if (!m) return reply.code(404).send({ error: "no cv-master.md" });
+  return { ...m, profile: readProfile(dir) };
+});
+
+/** The consolidated memory, as the agent sees it. */
+app.get<{ Params: { who: string } }>("/api/:who/profile", async (req, reply) => {
+  const dir = join(VAULT, req.params.who);
+  if (!existsSync(dir)) return reply.code(404).send({ error: "no such person" });
+  return readProfile(dir) ?? { markdown: "", updated: null };
+});
+
+/**
+ * Rebuild it now.
+ *
+ * Exposed because a first run needs a way to happen, not because it is a thing
+ * to press. The real trigger is archiving, below.
+ */
+app.post<{ Params: { who: string } }>("/api/:who/profile", async (req, reply) => {
+  const dir = join(VAULT, req.params.who);
+  if (!existsSync(dir)) return reply.code(404).send({ error: "no such person" });
+  // Folder names are keys ("ELLIOT"); the file is read by a person.
+  const r = runConsolidation(dir, displayPerson(req.params.who));
+  return r ?? reply.code(404).send({ error: "no cv-master.md to consolidate" });
 });
 
 app.get<{ Params: { who: string } }>("/api/:who/board", async (req, reply) => {
@@ -221,7 +254,23 @@ app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string } }>(
         }),
       );
     }
-    return { archived: slug, merged, application: readApplication(status, slug, "archive") };
+    /*
+     * Consolidate on archive.
+     *
+     * This is the trigger. autoDream waits for elapsed time and a session count
+     * because sessions are its unit of work; here the unit of work is an
+     * application, and one finishing is an unambiguous signal that there is
+     * something new to learn and nothing left to wait for. It costs nothing and
+     * takes milliseconds, so it happens inline rather than being queued.
+     */
+    const consolidated = runConsolidation(join(VAULT, who), displayPerson(who));
+
+    return {
+      archived: slug,
+      merged,
+      memory: consolidated?.summary ?? null,
+      application: readApplication(status, slug, "archive"),
+    };
   },
 );
 

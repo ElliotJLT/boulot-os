@@ -531,3 +531,46 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 /* A stage the application reached, standing in for an outcome nobody recorded.
    Quieter than a real outcome, because it is a weaker claim. */
 .arch-inferred { color: var(--ink-3); font-style: italic; }
+
+/* ── Salvage: what the sent CVs know and the record does not ─────────── */
+/* Capped at four by default. The corpus produces thirty-five of these, and a
+   thirty-five-item review queue is a chore that turns into a thing you avoid. */
+.salvage { margin-block: 22px; }
+.salvage h3 { font-size: 14px; margin: 0 0 4px; }
+.salvage .lede { margin: 0 0 14px; font-size: 12.5px; color: var(--ink-2); max-inline-size: 62ch; line-height: 1.6; }
+.salvage ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.salvage li {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 13px 16px; box-shadow: var(--shadow);
+}
+.salvage li.adopted { opacity: 0.55; }
+.salvage li > p { margin: 0; font-size: 13.5px; line-height: 1.55; }
+/* The line being replaced, shown so an update is never a blind swap. */
+.salvage .was { margin: 7px 0 0; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.salvage .was span { text-transform: uppercase; letter-spacing: 0.04em; font-size: 10.5px; margin-inline-end: 6px; }
+.salvage .entry-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-block-start: 10px; }
+
+/* ── Consolidated memory ──────────────────────────────────────────────── */
+/* One line. It rebuilds itself on archive and the agent reads it before it
+   writes anything, so there is nothing to approve and nothing to manage. The
+   line exists so the user can see it happened and read what it decided. */
+.memory { margin-block: 4px 20px; }
+.memory-line {
+  font: inherit; text-align: start; cursor: pointer; inline-size: 100%;
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 16px; box-shadow: var(--shadow); color: var(--ink-2); font-size: 13px;
+}
+.memory-line:hover { border-color: var(--ink-3); }
+.memory-line b { color: var(--ink); font-weight: 600; }
+.memory-line em { margin-inline-start: auto; font-style: normal; color: var(--ink-3); font-size: 12px; }
+/* Quietly alive. Not a status light, not a notification. */
+.memory-line .dot {
+  inline-size: 6px; block-size: 6px; border-radius: 50%;
+  background: #4c8c5a; flex: none; align-self: center;
+}
+.memory-body {
+  margin: 10px 0 0; padding: 16px 18px; max-block-size: 460px; overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  font-size: 12px; line-height: 1.6; white-space: pre-wrap; color: var(--ink-2);
+}
