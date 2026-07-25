@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Workbench } from "./Workbench.js";
+import { NewApplication } from "./NewApplication.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
 type App = {
@@ -117,6 +118,8 @@ export function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<{ slug: string; company: string } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     fetch("/api/health")
@@ -135,7 +138,14 @@ export function App() {
       .then((r) => r.json())
       .then(setBoard)
       .catch(() => setError("Could not load board"));
-  }, [who]);
+  }, [who, reload]);
+
+  if (adding && who)
+    return (
+      <main>
+        <NewApplication who={who} onClose={() => setAdding(false)} onCreated={() => setReload((r) => r + 1)} />
+      </main>
+    );
 
   if (open && who)
     return (
@@ -155,6 +165,9 @@ export function App() {
           <h1>Boulot</h1>
         </div>
         <nav className="people">
+          <button className="primary" onClick={() => setAdding(true)}>
+            + New application
+          </button>
           {people.map((p) => (
             <button key={p} className={p === who ? "on" : ""} onClick={() => setWho(p)}>
               {p[0] + p.slice(1).toLowerCase()}
