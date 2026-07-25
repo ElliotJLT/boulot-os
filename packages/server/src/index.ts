@@ -433,7 +433,15 @@ app.get<{ Params: { who: string; slug: string; file: string } }>(
   },
 );
 
-const webDist = resolve(import.meta.dirname, "../../web/dist");
+/*
+ * Where the built interface lives.
+ *
+ * Relative-to-source by default, which is right in the repo and wrong in the
+ * desktop bundle, where the server is one bundled file sitting beside its
+ * assets rather than three directories deep. The bundle sets BOULOT_WEB rather
+ * than the layout being guessed at from __dirname.
+ */
+const webDist = process.env.BOULOT_WEB ?? resolve(import.meta.dirname, "../../web/dist");
 if (existsSync(webDist)) {
   await app.register(fastifyStatic, { root: webDist });
   app.setNotFoundHandler((req, reply) =>

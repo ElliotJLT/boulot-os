@@ -327,7 +327,9 @@ export async function run({
       cwd,
       settingSources: [],
       ...(memory ? { systemPrompt: { type: "preset" as const, preset: "claude_code" as const, append: memory } } : {}),
-      plugins: [{ type: "local", path: resolve(import.meta.dirname, "../../plugin") }],
+      // Overridable for the same reason as the renderer: inside the desktop
+      // bundle the skill pack sits beside the server, not two levels up.
+      plugins: [{ type: "local", path: process.env.BOULOT_PLUGIN ?? resolve(import.meta.dirname, "../../plugin") }],
       disallowedTools: DENIED,
       mcpServers: { boulot: boulotTools(vaultRoot, rendererPath) },
       agents: REVIEWERS,

@@ -10,9 +10,11 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "start": "pnpm --filter @boulot/web build && pnpm --filter @boulot/server start",
-    "dev": "pnpm --filter @boulot/server dev"
+    "dev": "pnpm --filter @boulot/server dev",
+    "desktop": "node packages/desktop/scripts/bundle-server.mjs && pnpm -C packages/desktop exec tauri build --bundles app && ./packages/desktop/scripts/build-dmg.sh"
   },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }
