@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Workbench } from "./Workbench.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
 type App = {
@@ -56,11 +57,11 @@ function Chip({ flag }: { flag: Flag }) {
   return <span className={`chip chip-${SEVERITY[flag.kind] ?? "muted"}`}>{flag.label}</span>;
 }
 
-function Card({ app }: { app: App }) {
+function Card({ app, onOpen }: { app: App; onOpen: () => void }) {
   const flag = app.flags2[0];
   const dead = app.stage.startsWith("closed");
   return (
-    <article className={`card${dead ? " card-dead" : ""}`}>
+    <article className={`card${dead ? " card-dead" : ""}`} onClick={onOpen} role="button" tabIndex={0}>
       <div className="card-top">
         <h3>{app.company}</h3>
         {flag && <Chip flag={flag} />}
@@ -115,6 +116,7 @@ export function App() {
   const [who, setWho] = useState<string | null>(null);
   const [board, setBoard] = useState<Board | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState<{ slug: string; company: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
@@ -134,6 +136,13 @@ export function App() {
       .then(setBoard)
       .catch(() => setError("Could not load board"));
   }, [who]);
+
+  if (open && who)
+    return (
+      <main>
+        <Workbench who={who} slug={open.slug} company={open.company} onClose={() => setOpen(null)} />
+      </main>
+    );
 
   if (error) return <main className="empty">{error}</main>;
   if (!board) return <main className="empty">Reading your vault…</main>;
@@ -181,7 +190,7 @@ export function App() {
                   <span className="count">{items.length}</span>
                 </header>
                 {items.map((a) => (
-                  <Card key={a.slug + a.stage} app={a} />
+                  <Card key={a.slug + a.stage} app={a} onOpen={() => setOpen({ slug: a.slug, company: a.company })} />
                 ))}
               </section>
             );

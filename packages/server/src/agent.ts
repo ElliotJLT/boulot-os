@@ -254,7 +254,24 @@ export async function run({
           }
         }
       } else if (message.type === "result") {
-        const m = message as { total_cost_usd?: number; is_error?: boolean; session_id?: string };
+        const m = message as {
+          total_cost_usd?: number;
+          is_error?: boolean;
+          session_id?: string;
+          subtype?: string;
+          stop_reason?: string;
+          num_turns?: number;
+        };
+        // Runs occasionally end with stop_reason "tool_use", meaning the model
+        // emitted a tool call the loop never executed, so nothing happens and
+        // the user sees a reply that promises work it did not do. Surfaced
+        // rather than swallowed.
+        if (m.stop_reason === "tool_use") {
+          onEvent({
+            t: "error",
+            message: "That run stopped before finishing. Nothing was changed. Try asking again.",
+          });
+        }
         newSessionId = m.session_id ?? newSessionId;
         onEvent({ t: "result", cost: m.total_cost_usd ?? 0, error: m.is_error ?? false });
       }
