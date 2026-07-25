@@ -3,6 +3,7 @@ import { z } from "zod";
 import { spawnSync } from "node:child_process";
 import { resolve, relative, isAbsolute } from "node:path";
 import { existsSync } from "node:fs";
+import { fetchJob } from "./boards.js";
 
 /**
  * The agent bridge.
@@ -48,7 +49,11 @@ function describe(name: string, input: Record<string, unknown>): string {
       return "Asking you something";
     default:
       if (name.startsWith("mcp__boulot__")) {
-        return { boulot_render_pdf: "Rendering the PDF", boulot_today: "Checking today's date" }[
+        return {
+          boulot_render_pdf: "Rendering the PDF",
+          boulot_today: "Checking today's date",
+          boulot_fetch_job: "Reading the job posting",
+        }[
           name.replace("mcp__boulot__", "")
         ] ?? "Working";
       }
@@ -93,6 +98,32 @@ function boulotTools(vaultRoot: string, rendererPath: string) {
     name: "boulot",
     version: "0.1.0",
     tools: [
+      tool(
+        "boulot_fetch_job",
+        "Read a job posting from its URL. Understands Ashby, Greenhouse, Lever and Workable, " +
+          "which publish descriptions as structured JSON, and returns the full text plus title, " +
+          "location and compensation. ALWAYS try this before WebFetch on a job link: those boards " +
+          "render the description in JavaScript, so fetching the page returns only a title. " +
+          "If it fails, ask the user to paste the description. Never guess at a job's contents.",
+        { url: z.string().describe("The job posting URL") },
+        async ({ url }) => {
+          const job = await fetchJob(url);
+          if (!job.ok) {
+            return { content: [{ type: "text", text: job.error ?? "Could not read that posting." }], isError: true };
+          }
+          const head = [
+            `Title: ${job.title}`,
+            `Company: ${job.company}`,
+            job.location ? `Location: ${job.location}` : "",
+            job.employmentType ? `Type: ${job.employmentType}` : "",
+            job.compensation ? `Compensation: ${job.compensation}` : "",
+            `Source: ${job.source}`,
+            `URL: ${job.url}`,
+          ].filter(Boolean).join("\n");
+          return { content: [{ type: "text", text: `${head}\n\n---\n\n${job.description}` }] };
+        },
+      ),
+
       tool("boulot_today", "Get today's date in YYYY-MM-DD form.", {}, async () => ({
         content: [{ type: "text", text: new Date().toISOString().slice(0, 10) }],
       })),
@@ -197,6 +228,7 @@ export async function run({
       allowedTools: [
         "Task",
         "mcp__boulot__boulot_today",
+        "mcp__boulot__boulot_fetch_job",
         "mcp__boulot__boulot_render_pdf",
         "Read",
         "Glob",

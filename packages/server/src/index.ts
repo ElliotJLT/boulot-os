@@ -180,7 +180,14 @@ wss.on("connection", (socket) => {
       rendererPath: RENDERER,
       sessionId,
       onEvent: (e) => {
-        if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(e));
+        // A closed socket must never kill the run. Writing to one throws, and
+        // that exception used to propagate into the agent loop and end it
+        // early, which surfaced as a reply describing work that never happened.
+        try {
+          if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(e));
+        } catch {
+          /* client went away; the run continues and the vault is still written */
+        }
       },
     });
   });

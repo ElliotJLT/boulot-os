@@ -50,6 +50,10 @@ export function Workbench({
   const [cost, setCost] = useState(0);
   const ws = useRef<WebSocket | null>(null);
   const log = useRef<HTMLDivElement>(null);
+  // `dirty` must not be in the socket effect's deps: typing in the editor would
+  // otherwise close the socket underneath a running agent.
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
 
   useEffect(() => {
     fetch(`/api/${who}/job/${slug}/cv`)
@@ -80,14 +84,14 @@ export function Workbench({
         fetch(`/api/${who}/job/${slug}/cv`)
           .then((r) => r.json())
           .then((d) => {
-            if (!dirty) setMarkdown(d.markdown);
+            if (!dirtyRef.current) setMarkdown(d.markdown);
             setFit(d.fit);
           })
           .catch(() => {});
       }
     };
     return () => socket.close();
-  }, [who, slug, dirty]);
+  }, [who, slug]);
 
   useEffect(() => {
     log.current?.scrollTo({ top: log.current.scrollHeight, behavior: "smooth" });

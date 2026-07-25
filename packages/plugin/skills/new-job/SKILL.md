@@ -7,9 +7,16 @@ description: Start tracking a new role from a job link or pasted description. Us
 
 ## Step 1: Get the job description
 
-If given a **URL**, try `WebFetch` first. Many job boards block automated
-fetching, and that is normal rather than an error worth retrying. On failure,
-say so plainly and ask for the text:
+If given a **URL**, call `boulot_fetch_job` first, always. Ashby, Greenhouse,
+Lever and Workable publish the description as structured JSON, and about half of
+this vault's applications come from those boards. Fetching the page instead
+returns a JavaScript shell and a title.
+
+It will also tell you if a posting has been closed or unlisted, which is a
+different problem from being unable to read it, and worth relaying accurately.
+
+Only if that fails, try `WebFetch`. If that also fails, say so plainly and ask
+for the text:
 
 > I could not read that page, a lot of job boards block it. Paste the
 > description and I will carry on.

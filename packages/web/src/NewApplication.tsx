@@ -36,6 +36,11 @@ export function NewApplication({
   const [cost, setCost] = useState(0);
   const ws = useRef<WebSocket | null>(null);
   const log = useRef<HTMLDivElement>(null);
+  // Held in a ref so the socket effect can depend on nothing. An inline
+  // callback in the dependency array is recreated every render, which tore the
+  // socket down mid-run on every log line.
+  const created = useRef(onCreated);
+  created.current = onCreated;
 
   useEffect(() => {
     const socket = new WebSocket(`ws://${location.host}/ws`);
@@ -51,11 +56,11 @@ export function NewApplication({
         setRunning(false);
         setDone(true);
         setCost((c) => c + ev.cost);
-        onCreated();
+        created.current();
       }
     };
     return () => socket.close();
-  }, [onCreated]);
+  }, []);
 
   useEffect(() => {
     log.current?.scrollTo({ top: log.current.scrollHeight, behavior: "smooth" });
