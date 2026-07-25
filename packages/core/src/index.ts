@@ -1,3 +1,4 @@
+export * from "./config.js";
 export * from "./schema/cv.js";
 export * from "./schema/status.js";
 export * from "./pipeline/flags.js";

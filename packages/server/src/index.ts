@@ -16,6 +16,9 @@ import {
   createVault,
   vaultIsPopulated,
   peopleIn,
+  resolveVault,
+  resolvePerson,
+  writeConfig,
   updateFrontmatter,
   today as todayStr,
 } from "@boulot/core";
@@ -29,7 +32,14 @@ import { run } from "./agent.js";
  * them should cost anything to open.
  */
 
-const VAULT = process.env.BOULOT_VAULT ?? resolve(process.env.HOME ?? ".", "Boulot");
+/*
+ * Mutable, because first run chooses it.
+ *
+ * Environment variable beats saved config beats the default folder. Reassigned
+ * only by /api/setup, which is the one moment the user is telling us where
+ * their career actually lives.
+ */
+let VAULT = resolveVault();
 const PORT = Number(process.env.PORT ?? 4319);
 /**
  * The CV renderer ships with the app.
@@ -74,10 +84,15 @@ const app = Fastify({ logger: false });
  * people, but the app is for one: a switcher between two careers is a feature
  * nobody asked for and a way to write into the wrong person's files.
  */
-const PERSON = process.env.BOULOT_PERSON ?? null;
+let PERSON = resolvePerson();
 
 function people(vault: string): string[] {
   if (PERSON) return existsSync(join(vault, PERSON)) ? [PERSON] : [];
+  return peopleIn(vault);
+}
+
+/** Everyone in the vault, ignoring the pin. Used by setup to offer a choice. */
+function allPeople(vault: string): string[] {
   return peopleIn(vault);
 }
 
@@ -120,14 +135,48 @@ app.get("/api/health", async () => {
   };
 });
 
-/** Create a vault. The only write that happens before a vault exists. */
-app.post<{ Body: { name?: string } }>("/api/setup", async (req, reply) => {
-  const name = (req.body?.name ?? "").trim();
-  if (!name) return reply.code(400).send({ error: "name required" });
-  if (name.length > 80) return reply.code(400).send({ error: "name too long" });
-  const r = createVault(VAULT, name);
-  return { ...r, person: r.personDir.split("/").pop() };
-});
+/**
+ * First run: either point at a folder that already exists, or make one.
+ *
+ * Both paths end the same way, with the choice saved so it never has to be made
+ * again. `boulot` on its own then opens the right career, which is the only
+ * acceptable behaviour for a command someone runs every day.
+ */
+app.post<{ Body: { name?: string; path?: string; person?: string } }>(
+  "/api/setup",
+  async (req, reply) => {
+    const { name, path: existing, person } = req.body ?? {};
+
+    // "I already have one." Validate before saving: a config pointing at
+    // nothing is harder to recover from than no config at all.
+    if (typeof existing === "string" && existing.trim()) {
+      const dir = resolve(existing.trim().replace(/^~(?=\/|$)/, process.env.HOME ?? "~"));
+      if (!existsSync(dir)) return reply.code(400).send({ error: `No folder at ${dir}` });
+      const found = allPeople(dir);
+      if (!found.length) {
+        return reply
+          .code(400)
+          .send({ error: `${dir} has no Boulot folders in it. Look for one containing an "active" folder.` });
+      }
+      // Only ask which person when the answer is genuinely ambiguous.
+      if (found.length > 1 && !person) return { needsPerson: found, vault: dir };
+      const chosen = person && found.includes(person) ? person : found[0]!;
+      VAULT = dir;
+      PERSON = chosen;
+      writeConfig({ vault: dir, person: chosen });
+      return { vault: dir, person: chosen, existed: true };
+    }
+
+    const trimmed = (name ?? "").trim();
+    if (!trimmed) return reply.code(400).send({ error: "name required" });
+    if (trimmed.length > 80) return reply.code(400).send({ error: "name too long" });
+    const r = createVault(VAULT, trimmed);
+    const who = r.personDir.split("/").pop() ?? null;
+    PERSON = who;
+    writeConfig({ vault: VAULT, person: who });
+    return { ...r, person: who };
+  },
+);
 
 /** The master CV, read as a record: entries, tags, and what actually gets used. */
 app.get<{ Params: { who: string } }>("/api/:who/master", async (req, reply) => {

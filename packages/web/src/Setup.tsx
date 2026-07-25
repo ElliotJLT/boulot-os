@@ -19,9 +19,11 @@ import { collapse } from "./Activity.js";
 type Health = { vault: string; needsSetup: string | null; firstPerson: string | null };
 
 export function Setup({ health, onDone }: { health: Health; onDone: (who: string) => void }) {
-  const [step, setStep] = useState<"name" | "import">(
-    health.needsSetup === "import" ? "import" : "name",
+  const [step, setStep] = useState<"choose" | "existing" | "name" | "import">(
+    health.needsSetup === "import" ? "import" : "choose",
   );
+  const [path, setPath] = useState("");
+  const [people, setPeople] = useState<string[] | null>(null);
   const [name, setName] = useState("");
   const [who, setWho] = useState(health.firstPerson ?? "");
   const [cv, setCv] = useState("");
@@ -42,7 +44,20 @@ export function Setup({ health, onDone }: { health: Health; onDone: (who: string
       const ev = JSON.parse(e.data);
       if (ev.t === "tool") setActivity((a) => [...a, ev.label]);
       else if (ev.t === "file") setActivity((a) => [...a, `Wrote ${ev.path.split("/").pop()}`]);
-      else if (ev.t === "error") setError(ev.message);
+      else if (ev.t === "error") {
+        setBusy(false);
+        /*
+         * Agent failures here are almost always one thing: no Claude account
+         * reachable on this machine. The raw SDK message says nothing a person
+         * can act on, and this is the first ninety seconds of their experience.
+         */
+        const auth = /api key|authentic|unauthor|credit|401|403|not logged/i.test(ev.message);
+        setError(
+          auth
+            ? "Boulot could not reach Claude. It needs either an ANTHROPIC_API_KEY set, or Claude Code signed in on this machine. You can skip this and write your record by hand instead."
+            : ev.message,
+        );
+      }
       else if (ev.t === "result") {
         setBusy(false);
         doneRef.current(whoRef.current);
@@ -50,6 +65,31 @@ export function Setup({ health, onDone }: { health: Health; onDone: (who: string
     };
     return () => socket.close();
   }, []);
+
+  /**
+   * Point at a folder that already exists.
+   *
+   * The path that was missing entirely. Anyone with a vault already, which
+   * includes every existing Boulot user, was being offered a fresh empty one
+   * and no way to say otherwise short of an environment variable.
+   */
+  const useExisting = async (person?: string) => {
+    const p = path.trim();
+    if (!p || busy) return;
+    setBusy(true);
+    setError(null);
+    const r = await fetch("/api/setup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ path: p, person }),
+    });
+    const body = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) return setError(body.error ?? "Could not read that folder.");
+    // More than one career in there. Ask once, then never again.
+    if (body.needsPerson) return setPeople(body.needsPerson);
+    onDone(body.person);
+  };
 
   const createVault = async () => {
     const trimmed = name.trim();
@@ -108,6 +148,72 @@ export function Setup({ health, onDone }: { health: Health; onDone: (who: string
     // to type their own record should not be held on this screen.
     onDone(who);
   };
+
+  if (step === "choose") {
+    return (
+      <div className="setup">
+        <h1>Boulot</h1>
+        <p className="lede">
+          Your career, in files you own. Everything stays on this computer.
+        </p>
+        <div className="choices">
+          <button className="choice" onClick={() => setStep("existing")}>
+            <b>I already have a Boulot folder</b>
+            <span>Point at it and pick up where you left off.</span>
+          </button>
+          <button className="choice" onClick={() => setStep("name")}>
+            <b>Start fresh</b>
+            <span>Make one in <code>{health.vault}</code> and build it from your CV.</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "existing") {
+    return (
+      <div className="setup">
+        <h1>Where is it?</h1>
+        <p className="lede">
+          The folder holding one directory per person, each with an <code>active</code> folder
+          inside.
+        </p>
+        {people ? (
+          <>
+            <label>Found more than one. Which is yours?</label>
+            <div className="choices">
+              {people.map((w) => (
+                <button key={w} className="choice" disabled={busy} onClick={() => void useExisting(w)}>
+                  <b>{w}</b>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <label htmlFor="path">Path to the folder</label>
+            <input
+              id="path"
+              autoFocus
+              value={path}
+              placeholder="~/Documents/Boulot"
+              onChange={(e) => setPath(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void useExisting()}
+            />
+            {error && <p className="setup-error">{error}</p>}
+            <div className="setup-actions">
+              <button className="primary" disabled={!path.trim() || busy} onClick={() => void useExisting()}>
+                {busy ? "Looking…" : "Use this folder"}
+              </button>
+              <button className="linkish" onClick={() => { setError(null); setStep("choose"); }}>
+                Back
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   if (step === "name") {
     return (

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir, platform } from "node:os";
@@ -44,7 +44,25 @@ if (args.includes("--help") || args.includes("-h")) {
   process.exit(0);
 }
 
-const vault = resolve(flag("vault", process.env.BOULOT_VAULT ?? join(homedir(), "Boulot")));
+/*
+ * Which folder to open, most explicit instruction first: the flag someone just
+ * typed, then the environment, then what they chose on first run, then a guess.
+ *
+ * Reading the saved config here as well as in the server matters because this
+ * is what gets printed before anything starts. Printing ~/Boulot and then
+ * opening a different folder would be a small lie told at the worst moment.
+ */
+function savedConfig() {
+  try {
+    return JSON.parse(readFileSync(join(homedir(), ".boulot", "config.json"), "utf8"));
+  } catch {
+    return {};
+  }
+}
+const saved = savedConfig();
+const vault = resolve(
+  flag("vault", process.env.BOULOT_VAULT ?? saved.vault ?? join(homedir(), "Boulot")),
+);
 
 /**
  * Find a port nobody is using.
@@ -98,7 +116,7 @@ const port = await freePort(Number(flag("port", process.env.PORT ?? 4319)));
 const url = `http://localhost:${port}`;
 
 console.log(`\n  Boulot`);
-console.log(`  your files   ${vault}`);
+console.log(`  your files   ${vault}${saved.person ? `  (${saved.person})` : ""}`);
 console.log(`  address      ${url}`);
 console.log(`\n  Starting. Press Ctrl-C to stop.\n`);
 

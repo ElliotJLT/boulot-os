@@ -613,3 +613,15 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 }
 .firstjob h2 { font-size: 17px; margin: 0 0 10px; letter-spacing: -0.01em; }
 .firstjob p { margin: 0 0 20px; color: var(--ink-2); font-size: 13.5px; line-height: 1.65; }
+
+/* First-run fork: use what you have, or make one. */
+.choices { display: grid; gap: 10px; margin-block: 4px 8px; }
+.choice {
+  font: inherit; text-align: start; cursor: pointer; display: grid; gap: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; box-shadow: var(--shadow); color: var(--ink);
+}
+.choice:hover { border-color: var(--ink-3); }
+.choice b { font-size: 14px; font-weight: 600; }
+.choice span { font-size: 13px; color: var(--ink-2); }
+.choice code { font-size: 12px; background: var(--muted-bg); padding: 1px 5px; border-radius: 4px; }
