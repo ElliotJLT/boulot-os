@@ -60,7 +60,10 @@ function describe(name: string, input: Record<string, unknown>): string {
 const DENIED = [
   "Bash",
   "Monitor", // executes shell commands: the second door
-  "Task",
+  // Task is deliberately NOT denied. It is how the three adversarial CV
+  // reviewers spawn, which is the most distinctive thing this product does.
+  // Denying it for tidiness would delete the feature. Subagents inherit this
+  // same deny list, so the shell doors stay shut inside them too (verified).
   "Workflow",
   "ToolSearch",
   "NotebookEdit",
@@ -192,6 +195,7 @@ export async function run({
       // shadows canUseTool for these names, which is why the jail lives inside
       // the tool and in the PreToolUse hook rather than in the callback.
       allowedTools: [
+        "Task",
         "mcp__boulot__boulot_today",
         "mcp__boulot__boulot_render_pdf",
         "Read",
