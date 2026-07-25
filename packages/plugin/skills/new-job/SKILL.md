@@ -49,9 +49,25 @@ Use `boulot_today` for the date. Do not guess it.
 
 ## Step 3: Research, then report
 
-Research the company: what they do, recent funding and news, who the role
-reports to, team size, and anything that reads as a red flag. Prefer primary
-sources over aggregators, and date every claim. Write it to `research.md`.
+**Budget: at most 8 web searches.** Stop when you have enough to answer the four
+questions below, not when you have exhausted the internet. A run that made 130
+searches and read 188 pages cost twelve dollars and told the user nothing they
+could not have got from six.
+
+Answer only:
+
+1. What does this company actually do, and who pays them?
+2. Funding, stage, and headcount, dated.
+3. Who would this role report to, and what team shape.
+4. Anything that reads as a red flag.
+
+**Do not** benchmark salaries across the market, survey competitors, or research
+adjacent companies. If the posting states compensation, record it. If it does
+not, write "not stated" and move on. Market-rate research is a separate request
+the user can make deliberately.
+
+Prefer primary sources over aggregators, and date every claim. Write it to
+`research.md`.
 
 Also check `archive/` for whether this company has been applied to before, and
 whether any active application conflicts with it.

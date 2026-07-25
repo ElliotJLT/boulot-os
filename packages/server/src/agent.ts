@@ -192,12 +192,16 @@ function boulotTools(vaultRoot: string, rendererPath: string) {
   });
 }
 
+/** A single run should never cost more than a cheap lunch. */
+export const DEFAULT_BUDGET_USD = 1.5;
+
 export interface RunOptions {
   prompt: string;
   vaultRoot: string;
   person: string;
   rendererPath: string;
   sessionId?: string | undefined;
+  budgetUsd?: number;
   onEvent: (e: AgentEvent) => void;
 }
 
@@ -207,6 +211,7 @@ export async function run({
   person,
   rendererPath,
   sessionId,
+  budgetUsd = DEFAULT_BUDGET_USD,
   onEvent,
 }: RunOptions): Promise<string | undefined> {
   const cwd = resolve(vaultRoot, person);
@@ -242,6 +247,11 @@ export async function run({
       permissionMode: "acceptEdits",
       ...(sessionId ? { resume: sessionId } : {}),
       maxTurns: 40,
+      // Backstop, not a plan. One unbounded research run cost $11.75 across 130
+      // web searches, which is not a thing a user should be able to trigger by
+      // pasting a link. The skill bounds the work; this bounds the damage when
+      // the skill is ignored.
+      maxBudgetUsd: budgetUsd,
       // Writes outside the vault are denied here rather than in canUseTool,
       // because auto-approved tools never reach that callback.
       hooks: {
@@ -254,13 +264,28 @@ export async function run({
                 if (typeof path !== "string") return { continue: true };
                 const abs = isAbsolute(path) ? path : resolve(cwd, path);
                 const rel = relative(vaultRoot, abs);
-                if (rel.startsWith("..") || isAbsolute(rel)) {
-                  return {
-                    continue: false,
-                    stopReason: `Boulot only writes inside your vault. Refused: ${path}`,
-                  };
-                }
-                return { continue: true };
+                if (!rel.startsWith("..") && !isAbsolute(rel)) return { continue: true };
+
+                // Deny THIS TOOL, and only this tool.
+                //
+                // `continue: false` aborts the entire agent, which is what was
+                // producing runs that stopped mid-task and reported success.
+                // A model reaching for a stale absolute path (the old
+                // /Users/elliot/Desktop/... that still appears in some docs)
+                // would silently kill the whole application setup.
+                //
+                // permissionDecision "deny" refuses the call, hands the model
+                // the reason, and lets it correct course.
+                return {
+                  hookSpecificOutput: {
+                    hookEventName: "PreToolUse" as const,
+                    permissionDecision: "deny" as const,
+                    permissionDecisionReason:
+                      `${path} is outside the vault. The vault root is ${vaultRoot} and you are in ` +
+                      `${cwd}. Use a path inside it. Ignore any absolute path you have seen in ` +
+                      `documentation, it may be stale.`,
+                  },
+                };
               },
             ],
           },
@@ -302,7 +327,14 @@ export async function run({
         // emitted a tool call the loop never executed, so nothing happens and
         // the user sees a reply that promises work it did not do. Surfaced
         // rather than swallowed.
-        if (m.stop_reason === "tool_use") {
+        if (m.subtype === "error_max_budget_usd") {
+          onEvent({
+            t: "error",
+            message:
+              `That run hit its £${(budgetUsd * 0.79).toFixed(2)} budget and stopped. ` +
+              `Anything already written has been kept. Ask for a narrower next step.`,
+          });
+        } else if (m.stop_reason === "tool_use") {
           onEvent({
             t: "error",
             message: "That run stopped before finishing. Nothing was changed. Try asking again.",
