@@ -13,6 +13,9 @@ import {
   archiveCandidates,
   runConsolidation,
   readProfile,
+  createVault,
+  vaultIsPopulated,
+  peopleIn,
   updateFrontmatter,
   today as todayStr,
 } from "@boulot/core";
@@ -74,14 +77,8 @@ const app = Fastify({ logger: false });
 const PERSON = process.env.BOULOT_PERSON ?? null;
 
 function people(vault: string): string[] {
-  if (!existsSync(vault)) return [];
   if (PERSON) return existsSync(join(vault, PERSON)) ? [PERSON] : [];
-  return readdirSync(vault)
-    .filter((n) => !n.startsWith("."))
-    .filter((n) => {
-      const p = join(vault, n);
-      return statSync(p).isDirectory() && existsSync(join(p, "active"));
-    });
+  return peopleIn(vault);
 }
 
 /** A vault folder name, written the way a person would read it. */
@@ -101,14 +98,36 @@ function inVault(...segments: string[]): string {
   return abs;
 }
 
-app.get("/api/health", async () => ({
-  ok: true,
-  vault: VAULT,
-  vaultExists: existsSync(VAULT),
-  people: people(VAULT),
-  authMode: AUTH_MODE,
-  rendererFound: existsSync(RENDERER),
-}));
+app.get("/api/health", async () => {
+  const who = people(VAULT);
+  /*
+   * `needsSetup` exists so the UI never has to infer it from an empty list.
+   *
+   * There are two distinct empty states and they need different screens: no
+   * vault at all, and a vault whose master CV is still the starter template.
+   * Both used to render "No vault at /Users/you/Boulot" and stop.
+   */
+  const populated = who.filter((p) => vaultIsPopulated(join(VAULT, p)));
+  return {
+    ok: true,
+    vault: VAULT,
+    vaultExists: existsSync(VAULT),
+    people: who,
+    needsSetup: who.length === 0 ? "vault" : populated.length === 0 ? "import" : null,
+    firstPerson: who[0] ?? null,
+    authMode: AUTH_MODE,
+    rendererFound: existsSync(RENDERER),
+  };
+});
+
+/** Create a vault. The only write that happens before a vault exists. */
+app.post<{ Body: { name?: string } }>("/api/setup", async (req, reply) => {
+  const name = (req.body?.name ?? "").trim();
+  if (!name) return reply.code(400).send({ error: "name required" });
+  if (name.length > 80) return reply.code(400).send({ error: "name too long" });
+  const r = createVault(VAULT, name);
+  return { ...r, person: r.personDir.split("/").pop() };
+});
 
 /** The master CV, read as a record: entries, tags, and what actually gets used. */
 app.get<{ Params: { who: string } }>("/api/:who/master", async (req, reply) => {

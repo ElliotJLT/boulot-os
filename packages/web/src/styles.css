@@ -574,3 +574,42 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
   font-size: 12px; line-height: 1.6; white-space: pre-wrap; color: var(--ink-2);
 }
+
+/* ── First run ────────────────────────────────────────────────────────── */
+/* Two steps, no form. The previous first-run experience was the string
+   "No vault at /Users/you/Boulot" and nothing else on the page. */
+.setup { max-inline-size: 620px; margin: 8vh auto 0; padding-inline: 8px; }
+.setup h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -0.01em; }
+.setup .lede { color: var(--ink-2); font-size: 14px; line-height: 1.65; margin: 0 0 26px; }
+.setup .lede code {
+  font-size: 12.5px; background: var(--muted-bg); padding: 2px 6px; border-radius: 5px;
+}
+.setup label { display: block; font-size: 13px; color: var(--ink-2); margin-block-end: 7px; }
+.setup input, .setup textarea {
+  font: inherit; font-size: 14px; inline-size: 100%; padding: 11px 14px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--ink); margin-block-end: 16px;
+}
+.setup textarea { font-size: 13px; line-height: 1.55; resize: vertical; }
+.setup input:focus, .setup textarea:focus { outline: 1px solid var(--ink-3); }
+.setup-error { color: var(--urgent); font-size: 13px; margin: 0 0 14px; }
+.setup-actions { display: flex; align-items: center; gap: 16px; }
+
+.setup-activity { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; color: var(--ink-2); }
+.setup-activity p { margin: 0 0 4px; }
+.setup-activity em { font-style: normal; color: var(--ink-3); }
+.spin {
+  inline-size: 13px; block-size: 13px; flex: none; margin-block-start: 2px;
+  border: 2px solid var(--line); border-top-color: var(--ink-3); border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* An empty board offers the one action that makes sense, rather than reporting
+   that there is nothing to report. */
+.firstjob {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 30px 32px; box-shadow: var(--shadow); max-inline-size: 640px;
+}
+.firstjob h2 { font-size: 17px; margin: 0 0 10px; letter-spacing: -0.01em; }
+.firstjob p { margin: 0 0 20px; color: var(--ink-2); font-size: 13.5px; line-height: 1.65; }

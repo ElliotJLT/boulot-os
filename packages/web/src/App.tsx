@@ -4,6 +4,7 @@ import { NewApplication } from "./NewApplication.js";
 import { Career } from "./Career.js";
 import { Insights } from "./Insights.js";
 import { Archive } from "./Archive.js";
+import { Setup } from "./Setup.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
 type App = {
@@ -99,6 +100,7 @@ export function App() {
   const [filing, setFiling] = useState(false);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
+  const [health, setHealth] = useState<{ vault: string; needsSetup: string | null; firstPerson: string | null } | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
@@ -106,8 +108,8 @@ export function App() {
       .then((h) => {
         setPeople(h.people);
         setAuthMode(h.authMode);
+        setHealth(h);
         setWho((w) => w ?? h.people[0] ?? null);
-        if (!h.vaultExists) setError(`No vault at ${h.vault}`);
       })
       .catch(() => setError("Server not reachable"));
   }, []);
@@ -119,6 +121,28 @@ export function App() {
       .then(setBoard)
       .catch(() => setError("Could not load board"));
   }, [who, reload]);
+
+  /*
+   * Onboarding comes before everything, including the error state.
+   *
+   * This used to be `if (!h.vaultExists) setError("No vault at ...")`, which
+   * turned the single most common first experience into a dead end with no
+   * action on it.
+   */
+  if (health?.needsSetup)
+    return (
+      <main>
+        <Setup
+          health={health}
+          onDone={(w) => {
+            setHealth(null);
+            setWho(w);
+            setReload((r) => r + 1);
+            void fetch("/api/health").then((r) => r.json()).then(setHealth);
+          }}
+        />
+      </main>
+    );
 
   if (archive && who)
     return (
@@ -211,6 +235,26 @@ export function App() {
         </nav>
       </header>
 
+      {/*
+        A board with nothing on it.
+        
+        Someone who has just finished onboarding lands here, and the previous
+        version showed them "Nothing needs chasing" over an empty page. That is
+        technically true and reads as a broken app. There is exactly one useful
+        action at this point, so it is the only thing offered.
+      */}
+      {board.applications.length === 0 ? (
+        <section className="firstjob">
+          <h2>Your record is ready. Now find something to point it at.</h2>
+          <p>
+            Paste a job link or the text of an advert. Boulot reads it, maps every requirement to
+            something you have actually done, writes the CV and renders the PDF.
+          </p>
+          <button className="primary" onClick={() => setAdding(true)}>
+            Add your first job
+          </button>
+        </section>
+      ) : (
       <section className="next">
         <h2>Do these three</h2>
         <ol>
@@ -224,6 +268,7 @@ export function App() {
           {board.nextActions.length === 0 && <li className="none">Nothing needs chasing.</li>}
         </ol>
       </section>
+      )}
 
       {board.archivable.length > 0 && (
         <section className={`tidy${filing ? " tidy-open" : ""}`}>
