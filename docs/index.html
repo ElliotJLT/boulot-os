@@ -157,6 +157,41 @@
   .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s cubic-bezier(.2,.6,.2,1),transform .6s cubic-bezier(.2,.6,.2,1)}
   .reveal.in{opacity:1;transform:none}
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+
+/* ── What you actually get ─────────────────────────────── */
+.shows{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(400px,1fr))}
+.show{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;min-width:0}
+.show h3{font-family:var(--serif);font-size:20px;line-height:1.25;margin:0 0 8px}
+.show p{color:var(--muted);font-size:15px;line-height:1.6;margin:0 0 16px}
+.term{background:#2b2822;color:#e9e2d4;border-radius:10px;padding:16px 18px;margin:0;max-width:100%;
+  font:12.5px/1.65 ui-monospace,'SF Mono',Menlo,monospace;overflow-x:auto;white-space:pre}
+.term .c{color:#a49a86}
+.term .g{color:#9ed17d}
+.term .bar{color:var(--leaf)}
+.mapping{width:100%;min-width:0;border-collapse:collapse;font-size:13.5px;table-layout:fixed}
+.mapping th,.mapping td{padding:11px 12px 11px 0}
+.mapping th:nth-child(1),.mapping td:nth-child(1){width:38%}
+.mapping th:nth-child(2),.mapping td:nth-child(2){width:44%}
+.mapping th:nth-child(3),.mapping td:nth-child(3){width:18%;text-align:right;padding-right:0}
+.mapping th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--dim);font-weight:600;padding:0 12px 8px 0;border-bottom:1px solid var(--line)}
+.mapping td{padding:10px 12px 10px 0;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.45}
+.mapping tr:last-child td{border-bottom:0}
+.mapping .hit{color:var(--accent);font-weight:600;white-space:nowrap}
+.mapping .gap{color:#a8622a;font-weight:600;white-space:nowrap}
+.show .cap{font-size:13px;color:var(--dim);margin:12px 0 0;font-style:italic}
+
+/* ── FAQ ───────────────────────────────────────────────── */
+.faq{display:grid;gap:0;max-width:780px}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{font-family:var(--serif);font-size:19px;line-height:1.35;padding:20px 36px 20px 0;
+  cursor:pointer;list-style:none;position:relative;color:var(--ink)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";position:absolute;right:6px;top:19px;font-family:var(--sans);
+  font-size:22px;color:var(--dim);transition:transform .18s ease}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{color:var(--muted);font-size:15.5px;line-height:1.65;margin:0 0 22px;padding-right:36px}
+@media(max-width:720px){.shows{grid-template-columns:1fr}.show{padding:20px}}
 </style>
 </head>
 <body>
@@ -166,7 +201,9 @@
   <div class="links">
     <a href="#problem">The problem</a>
     <a href="#how">How it works</a>
+      <a href="#shows">What you get</a>
     <a href="#proof">Results</a>
+      <a href="#faq">FAQ</a>
     <a class="btn primary sm" href="#contact">Get in touch</a>
   </div>
 </div></nav>
@@ -230,6 +267,75 @@
   </div>
 </div></section>
 
+
+<section id="shows" class="soft"><div class="wrap">
+  <div class="intro reveal">
+    <span class="label">What you actually get</span>
+    <h2 class="head">Not advice about your CV. The CV, and the receipts.</h2>
+    <p class="lead">Every claim on this page is something the system prints. Here is what it actually hands you.</p>
+  </div>
+
+  <div class="shows">
+    <div class="show reveal">
+      <h3>A CV that fits, measured not guessed</h3>
+      <p>Writing a CV, rendering it, finding it runs to three pages and guessing what to cut is a loop that costs an evening. Boulot measures the real page and tells you the number.</p>
+      <pre class="term"><span class="c">─── FIT REPORT ───────────────────────────</span>
+  Pages: 3 (target 2)
+  ✗ Over by ~140mm
+
+  Weight by section:
+       58mm  10%  SUMMARY
+      345mm  59%  EXPERIENCE
+       45mm   8%  SKILLS  <span class="c">← entirely past the mark</span>
+
+  <span class="g">→ Cut ~2093 characters from EXPERIENCE.</span>
+  What spills off the end is not what to cut.</pre>
+    </div>
+
+    <div class="show reveal">
+      <h3>Every requirement, mapped to your evidence</h3>
+      <p>Before a word is written, each line of the job description is matched to something you have actually done. Gaps get named out loud, because a gap you know about is an answer you can prepare.</p>
+      <table class="mapping">
+        <thead><tr><th>They asked for</th><th>Your evidence</th><th>Fit</th></tr></thead>
+        <tbody>
+          <tr><td>Direct AI coding agents</td><td>Code-first culture; 36 PRs as PM</td><td class="hit">Direct</td></tr>
+          <tr><td>Own projects end-to-end, 2–4 engineers</td><td>Sole PM, squad of six</td><td class="hit">Direct</td></tr>
+          <tr><td>TypeScript, React, PostgreSQL</td><td>Ruby, JS, Postgres</td><td class="gap">Gap</td></tr>
+        </tbody>
+      </table>
+      <p class="cap">A real mapping table, abbreviated. The gap is named in the cover letter rather than hidden.</p>
+    </div>
+
+    <div class="show reveal">
+      <h3>The truth about your search, without the bookkeeping</h3>
+      <p>No forms, no logging outcomes. It reads the files you already have and works it out.</p>
+      <pre class="term">  Applied     20  <span class="bar">████████████████████</span>
+  Screen       4  <span class="bar">████</span> 20%
+  Interview    4  <span class="bar">████</span> 20%
+  Offer        1  <span class="bar">█</span>  5%
+
+  median days, applied to closed   <span class="g">21</span>
+  never heard back                 <span class="g">11</span></pre>
+      <p class="cap">Over half of what you send goes silent. That is normal, and it is why volume is the wrong strategy.</p>
+    </div>
+
+    <div class="show reveal">
+      <h3>A record that tells you what is working</h3>
+      <p>Your master CV is not a document, it is a log. Boulot reads it as one, and crosses it with what actually happened.</p>
+      <pre class="term">  <span class="c">WORTH DOING</span>
+  Zero Gravity is still marked "Feb 2022 – Present"
+    <span class="g">→ An out-of-date end date goes out on every CV.</span>
+
+  10 entries carry no figure
+    <span class="g">→ A claim without a number reads as an opinion.</span>
+
+  <span class="c">EARNED AN INTERVIEW</span>
+  3/18  Shipped internal tooling and API integrations…
+  2/3   Drove code-first culture transformation…</pre>
+    </div>
+  </div>
+</div></section>
+
 <section id="different" class="soft"><div class="wrap">
   <div class="intro reveal">
     <span class="label">Why it's different</span>
@@ -272,6 +378,36 @@
       <li>"Tailor my CV for it, then make a PDF."</li>
       <li>"Give me a tough mock interview for this one."</li>
     </ul>
+  </div>
+</div></section>
+
+
+<section id="faq"><div class="wrap">
+  <div class="intro reveal">
+    <span class="label">FAQ</span>
+    <h2 class="head">The things people actually ask.</h2>
+  </div>
+  <div class="faq">
+    <details class="reveal"><summary>What does it cost?</summary>
+      <p>Boulot is free and open source. The AI behind it is not free: you either point it at a Claude subscription you already pay for, or at an API key, where a full application costs pennies rather than pounds. Nothing goes to me either way.</p></details>
+
+    <details class="reveal"><summary>Where does my data go?</summary>
+      <p>Onto your own laptop, and nowhere else. There is no account and no server of mine. Your profile, your CVs and every application stay in a folder you own, and the app is set up so they can never be committed to git by accident. The only thing that leaves is the text you send to the AI you chose.</p></details>
+
+    <details class="reveal"><summary>Will it make things up about me?</summary>
+      <p>It is built not to, and that is the rule it is checked against hardest. Every CV is assembled from a master record of things you actually did; it can reword and reorder, never invent. Where the job asks for something you have not done, it says so rather than papering over it.</p></details>
+
+    <details class="reveal"><summary>Do I need to be technical?</summary>
+      <p>No. It opens in your browser like any other app: paste a job link, press play, read what it wrote. If you are comfortable in a terminal there is a Claude Code path too, but it is not the main road.</p></details>
+
+    <details class="reveal"><summary>Does it apply to jobs for me?</summary>
+      <p>No, and it will not. Auto-apply is the thing that broke reply rates in the first place. Boulot writes the application; you read it, change what you want, and send it.</p></details>
+
+    <details class="reveal"><summary>Can I edit what it writes?</summary>
+      <p>Yes, directly. The CV sits in an editor next to the preview, so a small fix is a small fix rather than a regeneration. Everything is plain markdown in a folder, so you can open it in anything.</p></details>
+
+    <details class="reveal"><summary>Why is it free?</summary>
+      <p>Because the market is hard enough without another subscription, and because it is entirely my own work and mine to give away. I built it for my own search first. It worked, and charging people for a way out of a situation I was recently in did not sit right.</p></details>
   </div>
 </div></section>
 
