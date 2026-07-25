@@ -40,3 +40,6 @@ USER/**/*.canvas
 # Local company CSV used only for rebuilding the database
 shared/companies.csv
 shared/companies.db
+
+# Build output
+dist/

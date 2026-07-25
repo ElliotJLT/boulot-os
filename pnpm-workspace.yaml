@@ -1,0 +1,5 @@
+packages:
+  - "packages/*"
+allowBuilds:
+  # vitest's bundler — needs its postinstall to fetch the platform binary
+  esbuild: true
