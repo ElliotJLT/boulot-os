@@ -15,27 +15,14 @@ This is the route that works today and it is the one to link to.
 ## Next
 
 **Publish `boulot` to npm** so the command is `npx boulot` rather than a clone.
-The launcher is built and works: it picks a free port, waits for the server to
-answer before opening a tab, and prints where your files are. It needs a
-published package and a smoke test on a machine that has never seen the repo.
+This is the front door. The launcher is built and works: it picks a free port,
+waits for the server to answer before opening a tab, and prints where your files
+are. It needs a published package and a smoke test on a machine that has never
+seen the repo.
 
-**Sign and notarise the Mac app.** The `.dmg` builds today at 46MB and installs.
-It is unsigned, so macOS shows "Apple could not verify this app is free of
-malware" on first launch, and a first-time user reads that as "this is a virus".
-That is a worse outcome than the terminal it was meant to replace.
-
-Unblocking it needs an Apple Developer account at
-[$99/year](https://developer.apple.com/help/account/membership/program-enrollment/),
-an App Store Connect API key, and `xcrun notarytool` in the build. The commands
-are written into `packages/desktop/scripts/build-dmg.sh` and fire as soon as
-`APPLE_SIGNING_IDENTITY` is set. Until then the honest instruction is right
-click, Open.
-
-**Windows.** Tauri cross-compiles and the sidecar approach is the same. The
-sticking point is that the Node binary is copied from the build machine, so a
-Windows build has to run on Windows or fetch a Windows Node.
-
-## After that
+It is first because it is the only route that is both easy and unencumbered. A
+Node script is not a quarantined app bundle, so it never meets Gatekeeper, never
+shows a warning, and needs no money to distribute.
 
 **Chromium on first render, with a progress bar.** PDF rendering needs a
 browser, and Chromium is 380MB against a 46MB app, so bundling it would make
@@ -43,6 +30,43 @@ everyone pay for a feature not everyone uses. Right now it resolves whatever
 puppeteer already downloaded, which is true on a developer's machine and false
 on anyone else's. The download needs to happen once, visibly, the first time
 someone exports a PDF.
+
+## Later, when downloads justify it
+
+**Sign and notarise the Mac app.** Deliberately not next, despite being the most
+obvious-looking item on this list.
+
+The `.dmg` builds today at 46MB and installs. It is unsigned, and on macOS 15
+and 26 that is worse than it used to be: the Control-click override
+[was removed in Sequoia](https://www.idownloadblog.com/2024/08/07/apple-macos-sequoia-gatekeeper-change-install-unsigned-apps-mac/),
+so opening it means going to System Settings, finding Privacy and Security,
+clicking Open Anyway, and confirming, all
+[within an hour](https://wiki.hacks.guide/wiki/Open_unsigned_applications_on_macOS_Sequoia_and_newer)
+of first seeing the warning. For a first-time user that is a timed hunt through
+System Settings, prompted by a dialog containing the word malware. It is the same
+cliff the app was built to remove, wearing a different coat.
+
+Fixing it costs
+[$99 a year](https://developer.apple.com/help/account/membership/program-enrollment/)
+for an Apple Developer account, plus an App Store Connect API key. There is no
+free tier: a free Apple account can sign locally but cannot notarise, and
+self-signed certificates do not satisfy Gatekeeper. The commands are written into
+`packages/desktop/scripts/build-dmg.sh` and fire as soon as
+`APPLE_SIGNING_IDENTITY` is set.
+
+It is not next because that money buys exactly one thing: handing a `.dmg` to
+someone who downloads it from the internet. The quarantine flag behind all of
+this only attaches on download, so both other routes avoid it entirely. `npx
+boulot` never meets Gatekeeper, and an app you build yourself with
+`pnpm desktop` opens normally because it was never downloaded. Buying the
+certificate before anyone is downloading anything is solving a problem that does
+not exist yet.
+
+**Windows.** Tauri cross-compiles and the sidecar approach is the same. The
+sticking point is that the Node binary is copied from the build machine, so a
+Windows build has to run on Windows or fetch a Windows Node.
+
+## After that
 
 **Email ingestion.** Rejections, interview invitations and recruiter replies all
 arrive by email, so the status changes a user currently reports by hand are
