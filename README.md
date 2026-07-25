@@ -6,7 +6,7 @@
 
 *Boulot — French slang for "work", "the job", "the daily grind". Free and open source, because the market's hard enough without another subscription.*
 
-[What it is](#what-it-is) · [Why it's different](#why-its-different) · [How to use it](#how-to-use-it) · [Setup](#setup-20-minutes-once) · [Get in touch](#get-in-touch)
+[What it is](#what-it-is) · [Why it's different](#why-its-different) · [How to use it](#how-to-use-it) · [Run it](#two-ways-to-run-it) · [Get in touch](#get-in-touch)
 
 </div>
 
@@ -88,15 +88,42 @@ There are shortcuts for the big jobs:
 
 ---
 
-## Setup (20 minutes, once)
+## Two ways to run it
 
-You do **not** need to be technical. If you get stuck, paste the error into the AI and ask it to fix it. It's genuinely good at that.
+Boulot runs on your own computer either way. Nothing is hosted, there is no
+account, and your files stay in a folder you own.
+
+### The app (recommended)
+
+```bash
+git clone https://github.com/ElliotJLT/boulot-os.git
+cd boulot-os
+pnpm install
+pnpm start
+```
+
+It opens at **http://localhost:4319**. First run asks your name, then asks you to
+paste your current CV, and turns it into your record: every role, every
+achievement, tagged so it can pick the right ones per job. Then paste a job link
+and it writes the CV, the cover letter and the PDF.
+
+Your files land in `~/Boulot`, as plain markdown you can open in anything.
+
+You need [Node 20+](https://nodejs.org) and [pnpm](https://pnpm.io/installation).
+A double-clickable Mac app is [on the roadmap](docs/roadmap.md) and builds
+today; it is not signed yet, which is the one thing standing between it and
+being handed to someone non-technical.
+
+### Through Claude Code
+
+The original way, and still the most flexible if you already live in a terminal.
+The same skills the app uses are a Claude Code plugin.
 
 1. **Get a Claude account.** Sign up at [claude.com](https://claude.com) (a paid plan, Pro or Max, for it to do real work).
 2. **Install Claude Code.** Follow [the install guide](https://docs.claude.com/claude-code). There's a desktop app (no terminal needed) and a command-line version.
-3. **Download Boulot.** Click the green **Code → Download ZIP** button at the top of this page and unzip it. (Or, if you have git: `git clone https://github.com/ElliotJLT/boulot-os.git boulot`.)
-4. **Set yourself up.** Open the boulot folder in Claude Code and type `/start`. Boulot interviews you and writes your profile and master CV from your answers. Nothing to fill in by hand.
-5. **Apply for your first role.** Paste a job link and say *"tailor my CV for this."* You get a tailored CV, a cover letter, company research, and a mock interview. Ask for a PDF and you get one — no extra software to install; Boulot uses a web browser you already have.
+3. **Download Boulot.** Click the green **Code → Download ZIP** button at the top of this page and unzip it. (Or `git clone https://github.com/ElliotJLT/boulot-os.git boulot`.)
+4. **Set yourself up.** Open the boulot folder in Claude Code and type `/start`. Boulot interviews you and writes your profile and master CV from your answers.
+5. **Apply for your first role.** Paste a job link and say *"tailor my CV for this."*
 
 The AI itself will walk you through anything that trips you up.
 

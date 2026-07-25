@@ -183,6 +183,19 @@
 
 /* ── FAQ ───────────────────────────────────────────────── */
 .faq{display:grid;gap:0;max-width:780px}
+/* Getting it: three routes, the working one first and visibly first. */
+.ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:20px;margin-block:34px 26px}
+.way{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;min-width:0;display:flex;flex-direction:column}
+.way-now{border-color:#c4d6c6;box-shadow:0 1px 3px rgb(63 107 74 / 10%),0 8px 24px rgb(63 107 74 / 7%)}
+.way h3{font-family:var(--serif);font-size:21px;margin:10px 0 12px;letter-spacing:-0.01em}
+.way p{font-size:14px;line-height:1.62;color:var(--muted);margin:0 0 18px}
+.way .btn{margin-block-start:auto;align-self:flex-start}
+.tag{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tag-now{color:var(--green)}
+.cmd{background:#2b2822;color:#e9e2d4;border-radius:10px;padding:14px 16px;margin:0 0 16px;font-size:12.5px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.roadnote{font-size:13.5px;color:var(--muted);max-width:70ch;line-height:1.65}
+@media(max-width:720px){.ways{grid-template-columns:1fr}}
+
 .faq details{border-bottom:1px solid var(--line)}
 .faq summary{font-family:var(--serif);font-size:19px;line-height:1.35;padding:20px 36px 20px 0;
   cursor:pointer;list-style:none;position:relative;color:var(--ink)}
@@ -203,6 +216,7 @@
     <a href="#how">How it works</a>
       <a href="#shows">What you get</a>
     <a href="#proof">Results</a>
+      <a href="#run">Get it</a>
       <a href="#faq">FAQ</a>
     <a class="btn primary sm" href="#contact">Get in touch</a>
   </div>
@@ -381,6 +395,40 @@
   </div>
 </div></section>
 
+
+<section id="run"><div class="wrap">
+  <p class="eyebrow">Getting it</p>
+  <h2 class="big">Run it on your own machine.<br>Today.</h2>
+  <p class="sub">Nothing is hosted. No account, no upload, no server holding your career. The app runs on your computer and your files stay in a folder you own.</p>
+
+  <div class="ways">
+    <div class="way way-now">
+      <span class="tag tag-now">Available now</span>
+      <h3>localhost</h3>
+      <pre class="cmd">git clone https://github.com/ElliotJLT/boulot-os
+cd boulot-os
+pnpm install &amp;&amp; pnpm start</pre>
+      <p>Opens at <code>localhost:4319</code>. Paste your CV once, and it builds your record. Needs Node 20 and pnpm.</p>
+      <a class="btn btn-solid" href="https://github.com/ElliotJLT/boulot-os#two-ways-to-run-it">How to run it →</a>
+    </div>
+
+    <div class="way">
+      <span class="tag">Builds today, unsigned</span>
+      <h3>Mac app</h3>
+      <p>A 46&nbsp;MB <code>.dmg</code> you double-click. No terminal, no Node. It builds and installs already; what it does not have yet is Apple notarisation, so macOS warns that it cannot verify the app. That warning is worse than a terminal, so it is not being handed out until it is signed.</p>
+      <a class="btn" href="https://github.com/ElliotJLT/boulot-os/blob/main/docs/roadmap.md">What is left →</a>
+    </div>
+
+    <div class="way">
+      <span class="tag">Also works</span>
+      <h3>Claude Code</h3>
+      <p>The original version. The same skills the app runs are a Claude Code plugin, which is still the most flexible route if you already live in a terminal.</p>
+      <a class="btn" href="https://github.com/ElliotJLT/boulot-os#through-claude-code">Read the guide →</a>
+    </div>
+  </div>
+
+  <p class="roadnote">Next: publishing <code>npx boulot</code>, signing the Mac app, then Windows. The full list, including what has been ruled out and why, is <a href="https://github.com/ElliotJLT/boulot-os/blob/main/docs/roadmap.md">on the roadmap</a>.</p>
+</div></section>
 
 <section id="faq"><div class="wrap">
   <div class="intro reveal">
