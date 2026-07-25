@@ -87,41 +87,72 @@ app.get<{ Params: { who: string } }>("/api/:who/board", async (req, reply) => {
   };
 });
 
-/** The CV for one application, plus whether a rendered PDF exists. */
-app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/cv", async (req, reply) => {
-  const { who, slug } = req.params;
+/**
+ * The documents that make up an application.
+ *
+ * Named rather than freeform: an application is a CV, a cover letter and a set
+ * of application questions, and the UI shows those three as a checklist so the
+ * user can see what exists and what does not.
+ */
+const DOCS = {
+  cv: { file: "cv.md", label: "Tailored CV" },
+  cover: { file: "cover-letter.md", label: "Cover letter" },
+  questions: { file: "application-answers.md", label: "Application questions" },
+  job: { file: "job.md", label: "Job description" },
+  research: { file: "research.md", label: "Research" },
+} as const;
+type DocKey = keyof typeof DOCS;
+
+function jobDir(who: string, slug: string): string | null {
   for (const bucket of ["active", "archive"]) {
     try {
       const dir = inVault(who, bucket, slug);
-      const cv = join(dir, "cv.md");
-      if (!existsSync(cv)) continue;
-      const pdfs = readdirSync(dir).filter((f) => f.endsWith(".pdf"));
-      const fitPath = join(dir, "cv.fit.json");
-      return {
-        markdown: readFileSync(cv, "utf8"),
-        bucket,
-        pdf: pdfs[0] ?? null,
-        fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,
-      };
+      if (existsSync(dir)) return dir;
     } catch {
-      /* fall through */
+      /* outside the vault */
     }
   }
-  return reply.code(404).send({ error: "no cv.md for that application" });
+  return null;
+}
+
+/** Which deliverables exist, plus the fit report if there is one. */
+app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", async (req, reply) => {
+  const dir = jobDir(req.params.who, req.params.slug);
+  if (!dir) return reply.code(404).send({ error: "no such application" });
+  const fitPath = join(dir, "cv.fit.json");
+  return {
+    docs: Object.entries(DOCS).map(([key, d]) => {
+      const p = join(dir, d.file);
+      const exists = existsSync(p);
+      return { key, label: d.label, file: d.file, exists, chars: exists ? readFileSync(p, "utf8").length : 0 };
+    }),
+    pdf: existsSync(join(dir, "cv.pdf")),
+    fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,
+  };
 });
 
-app.put<{ Params: { who: string; slug: string }; Body: { markdown: string } }>(
-  "/api/:who/job/:slug/cv",
+app.get<{ Params: { who: string; slug: string; doc: DocKey } }>(
+  "/api/:who/job/:slug/doc/:doc",
   async (req, reply) => {
-    const { who, slug } = req.params;
+    const meta = DOCS[req.params.doc];
+    if (!meta) return reply.code(400).send({ error: "unknown document" });
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+    const p = join(dir, meta.file);
+    return { markdown: existsSync(p) ? readFileSync(p, "utf8") : "", exists: existsSync(p) };
+  },
+);
+
+app.put<{ Params: { who: string; slug: string; doc: DocKey }; Body: { markdown: string } }>(
+  "/api/:who/job/:slug/doc/:doc",
+  async (req, reply) => {
+    const meta = DOCS[req.params.doc];
+    if (!meta) return reply.code(400).send({ error: "unknown document" });
     if (typeof req.body?.markdown !== "string") return reply.code(400).send({ error: "markdown required" });
-    for (const bucket of ["active", "archive"]) {
-      const cv = join(VAULT, who, bucket, slug, "cv.md");
-      if (!existsSync(cv)) continue;
-      writeFileSync(inVault(who, bucket, slug, "cv.md"), req.body.markdown);
-      return { saved: true };
-    }
-    return reply.code(404).send({ error: "no cv.md for that application" });
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+    writeFileSync(join(dir, meta.file), req.body.markdown);
+    return { saved: true };
   },
 );
 
