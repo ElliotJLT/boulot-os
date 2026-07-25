@@ -3,6 +3,7 @@ import { Workbench } from "./Workbench.js";
 import { NewApplication } from "./NewApplication.js";
 import { Career } from "./Career.js";
 import { Insights } from "./Insights.js";
+import { Archive } from "./Archive.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
 type App = {
@@ -17,7 +18,9 @@ type App = {
   source: string | null;
   warnings: string[];
   flags2: Flag[];
+  bucket: "active" | "archive";
 };
+type Candidate = { slug: string; company: string; role: string; reason: string; outcome: string };
 type Board = {
   person: string;
   applications: App[];
@@ -28,6 +31,8 @@ type Board = {
     medianDaysToClose: number | null;
     presumedGhosted: number;
   };
+  archivable: Candidate[];
+  archived: number;
   warnings: number;
 };
 
@@ -90,6 +95,8 @@ export function App() {
   const [adding, setAdding] = useState(false);
   const [career, setCareer] = useState(false);
   const [insights, setInsights] = useState(false);
+  const [archive, setArchive] = useState(false);
+  const [filing, setFiling] = useState(false);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
 
@@ -112,6 +119,13 @@ export function App() {
       .then(setBoard)
       .catch(() => setError("Could not load board"));
   }, [who, reload]);
+
+  if (archive && who)
+    return (
+      <main>
+        <Archive who={who} onClose={() => setArchive(false)} onChanged={() => setReload((r) => r + 1)} />
+      </main>
+    );
 
   if (insights && who)
     return (
@@ -137,12 +151,37 @@ export function App() {
   if (open && who)
     return (
       <main>
-        <Workbench who={who} slug={open.slug} company={open.company} onClose={() => setOpen(null)} />
+        <Workbench
+          who={who}
+          slug={open.slug}
+          company={open.company}
+          onClose={() => setOpen(null)}
+          onArchived={() => setReload((r) => r + 1)}
+        />
       </main>
     );
 
   if (error) return <main className="empty">{error}</main>;
   if (!board) return <main className="empty">Reading your vault…</main>;
+
+  /**
+   * Move the finished ones in one go.
+   *
+   * Sequential rather than parallel: these are folder renames on the user's
+   * disk, and a dozen concurrent moves through the same path checks buys
+   * nothing worth the race. The board reloads once at the end.
+   */
+  const fileAll = async (cands: Candidate[]) => {
+    for (const c of cands) {
+      await fetch(`/api/${who}/job/${c.slug}/archive`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ outcome: c.outcome }),
+      });
+    }
+    setFiling(false);
+    setReload((r) => r + 1);
+  };
 
   return (
     <main>
@@ -160,6 +199,11 @@ export function App() {
             </span>
           )}
           <button onClick={() => setInsights(true)}>Insights</button>
+          {board.archived > 0 && (
+            <button onClick={() => setArchive(true)}>
+              Archive <em>{board.archived}</em>
+            </button>
+          )}
           <button onClick={() => setCareer(true)}>Career record</button>
           <button className="primary" onClick={() => setAdding(true)}>
             + New application
@@ -181,9 +225,40 @@ export function App() {
         </ol>
       </section>
 
+      {board.archivable.length > 0 && (
+        <section className={`tidy${filing ? " tidy-open" : ""}`}>
+          <p>
+            {board.archivable.length === 1
+              ? "1 application has finished."
+              : `${board.archivable.length} applications have finished.`}{" "}
+            <button className="link" onClick={() => setFiling((f) => !f)}>
+              {filing ? "Hide" : "Show"}
+            </button>
+          </p>
+          {filing && (
+            <>
+              <ul>
+                {board.archivable.map((c) => (
+                  <li key={c.slug}>
+                    <strong>{c.company}</strong>
+                    <span className="reason">{c.reason}</span>
+                  </li>
+                ))}
+              </ul>
+              <button className="primary" onClick={() => void fileAll(board.archivable)}>
+                Move {board.archivable.length === 1 ? "it" : "them"} to the archive
+              </button>
+            </>
+          )}
+        </section>
+      )}
+
       <div className="board">
           {COLUMNS.map((col) => {
             const items = board.applications
+              // The archive is a separate page. An application that ended in
+              // March is not competing for attention with one you sent today.
+              .filter((a) => a.bucket === "active")
               .filter((a) => col.stages.includes(a.stage))
               .sort((a, b) => (a.flags2[0]?.priority ?? 99) - (b.flags2[0]?.priority ?? 99));
             if (!items.length) return null;

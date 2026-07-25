@@ -155,6 +155,11 @@ export const Application = z.object({
   source: z.string().nullable().default(null),
   location: z.string().nullable().default(null),
   notes: z.string().nullable().default(null),
+  /**
+   * Which folder it lives in. `active/` is the board, `archive/` is history.
+   * Both are read: the archive is where the funnel's denominator comes from.
+   */
+  bucket: z.enum(["active", "archive"]).default("active"),
   /** Where this came from, and anything that could not be normalised. */
   path: z.string(),
   warnings: z.array(z.string()).default([]),

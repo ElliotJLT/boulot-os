@@ -17,7 +17,8 @@
     "spike2": "tsx scripts/spike2.ts",
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "try-agent": "tsx scripts/try-agent.ts"
+    "try-agent": "tsx scripts/try-agent.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "tsx": "^4.20.0",

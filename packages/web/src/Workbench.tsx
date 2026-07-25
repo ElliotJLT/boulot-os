@@ -36,6 +36,21 @@ const STEPS = [
 ] as const;
 
 /**
+ * How an application ended.
+ *
+ * Five options, not a free-text box. The outcome is the funnel's denominator,
+ * and a field that accepts "didn't hear back", "ghosted" and "no response" as
+ * three different answers cannot be counted.
+ */
+const OUTCOMES = [
+  { key: "rejected", label: "Rejected" },
+  { key: "ghosted", label: "No reply" },
+  { key: "withdrawn", label: "I withdrew" },
+  { key: "offer_declined", label: "Declined offer" },
+  { key: "offer_accepted", label: "Accepted" },
+] as const;
+
+/**
  * Tabs in two groups: what you will send, and what it was built from.
  *
  * Flat, they mixed outputs with source material, so the CV sat next to the job
@@ -60,12 +75,15 @@ export function Workbench({
   slug,
   company,
   onClose,
+  onArchived,
 }: {
   who: string;
   slug: string;
   company: string;
   onClose: () => void;
+  onArchived?: () => void;
 }) {
+  const [filing, setFiling] = useState(false);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [pdfExists, setPdfExists] = useState(false);
   const [fit, setFit] = useState<Fit | null>(null);
@@ -158,6 +176,28 @@ export function Workbench({
     setActivity([]);
     setSaid([]);
     ws.current.send(JSON.stringify({ prompt, person: who }));
+  };
+
+  /**
+   * File the application away.
+   *
+   * Nothing is deleted: the folder moves to `archive/`, which the funnel and
+   * the career record both still read. Closing back to the board afterwards is
+   * the point of the whole feature, so it happens without asking again.
+   */
+  const archive = async (outcome: string) => {
+    const r = await fetch(`/api/${who}/job/${slug}/archive`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome }),
+    });
+    setFiling(false);
+    if (!r.ok) {
+      setSaid((s) => [...s, "Could not archive that. It may already be filed."]);
+      return;
+    }
+    onArchived?.();
+    onClose();
   };
 
   const done = (key: string) =>
@@ -260,8 +300,28 @@ export function Workbench({
               Download
             </a>
           )}
+          <button className="ghost" onClick={() => setFiling((f) => !f)}>
+            {filing ? "Cancel" : "Archive"}
+          </button>
         </div>
       </header>
+
+      {/*
+        Filing asks for the outcome, and asks in one click rather than a modal.
+        The outcome is the only part of this worth capturing: it is what the
+        funnel divides by, so an application archived as "rejected" and one
+        archived as "ghosted" say completely different things about the search.
+      */}
+      {filing && (
+        <div className="filing">
+          <span>How did it end?</span>
+          {OUTCOMES.map((o) => (
+            <button key={o.key} className="outcome" onClick={() => archive(o.key)}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="bench-body">
         <section className={`pane${flash ? " pane-flash" : ""}`}>

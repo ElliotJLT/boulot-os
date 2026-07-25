@@ -183,6 +183,11 @@ export function readMaster(personDir: string, outcomes?: OutcomeIndex): Master |
       tags,
       hasNumber: NUMBERISH.test(body),
       usedIn: [],
+      // Set at construction, not only in the matching loop below: a bullet with
+      // too short a fingerprint skips that loop and would otherwise serialise
+      // with these keys missing rather than zero.
+      reachedInterview: 0,
+      rejected: 0,
     });
   }
 

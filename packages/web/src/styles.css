@@ -460,3 +460,74 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 }
 .card-panel .note { margin: 14px 0 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.55; }
 .pct { font-style: normal; color: var(--ink-3); font-size: 11px; }
+
+/* ── Tidying up ───────────────────────────────────── */
+/* One quiet line, not a nag. It states a fact and offers a move; it does not
+   turn red, count down, or reappear once dismissed for the session. */
+.tidy {
+  margin-block: 4px 18px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.tidy p { margin: 0; font-size: 13px; color: var(--ink-2); }
+.tidy .link {
+  font: inherit; background: none; border: 0; padding: 0;
+  color: var(--ink); text-decoration: underline; cursor: pointer;
+}
+.tidy ul { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 6px; }
+.tidy li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; }
+.tidy .reason { color: var(--ink-3); font-size: 12px; }
+
+/* ── Archive ──────────────────────────────────────── */
+.archive { padding-block-end: 40px; }
+.empty-note { color: var(--ink-3); font-size: 13.5px; max-inline-size: 46ch; line-height: 1.6; }
+
+.arch-summary { display: flex; flex-wrap: wrap; gap: 18px; margin-block: 18px 16px; font-size: 13px; color: var(--ink-2); }
+.arch-summary b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.arch-search {
+  font: inherit; font-size: 13px; inline-size: 100%; max-inline-size: 320px;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--ink); margin-block-end: 14px;
+}
+.arch-search:focus { outline: 1px solid var(--ink-3); }
+
+.arch-list { list-style: none; margin: 0; padding: 0; }
+.arch-list li {
+  display: grid;
+  grid-template-columns: 1fr 100px 92px 78px;
+  gap: 14px; align-items: baseline;
+  padding: 11px 2px;
+  border-block-end: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.arch-list .role { color: var(--ink-3); font-size: 12.5px; margin-inline-start: 8px; }
+.arch-outcome { color: var(--ink-2); font-size: 12.5px; }
+.arch-date { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+/* The button only earns its ink when you are on the row you want. */
+.arch-list li .ghost { opacity: 0; transition: opacity 120ms; justify-self: end; }
+.arch-list li:hover .ghost, .arch-list li .ghost:focus { opacity: 1; }
+.arch-list li.none { display: block; color: var(--ink-3); border: 0; }
+
+/* ── Filing an application away ───────────────────── */
+.filing {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 10px 16px; background: var(--panel);
+  border-block-end: 1px solid var(--line);
+  font-size: 13px; color: var(--ink-2);
+}
+.outcome {
+  font: inherit; font-size: 12.5px; cursor: pointer;
+  padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
+.outcome:hover { border-color: var(--ink-3); }
+
+/* The archive count sits in the nav as a number, not a badge. */
+.people button em { font-style: normal; color: var(--ink-3); margin-inline-start: 5px; }
+/* A stage the application reached, standing in for an outcome nobody recorded.
+   Quieter than a real outcome, because it is a weaker claim. */
+.arch-inferred { color: var(--ink-3); font-style: italic; }

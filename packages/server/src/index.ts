@@ -1,9 +1,19 @@
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import { WebSocketServer } from "ws";
-import { existsSync, readdirSync, statSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, statSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
 import { join, resolve, relative, isAbsolute } from "node:path";
-import { readVault, buildFunnel, flagsFor, nextActions, readMaster } from "@boulot/core";
+import {
+  readVault,
+  buildFunnel,
+  flagsFor,
+  nextActions,
+  readMaster,
+  readApplication,
+  archiveCandidates,
+  updateFrontmatter,
+  today as todayStr,
+} from "@boulot/core";
 import { run } from "./agent.js";
 
 /**
@@ -115,16 +125,136 @@ app.get<{ Params: { who: string } }>("/api/:who/board", async (req, reply) => {
   return {
     person: req.params.who,
     applications: applications.map((a) => ({ ...a, flags2: flagsFor(a, today) })),
-    nextActions: nextActions(applications, today).map(({ app: a, flag }) => ({
+    /*
+     * Live applications only.
+     *
+     * Screenshotting the board caught this: the three most prominent items on
+     * the page were Tracebit, Runware and Jack & Jill, all "155d overdue", and
+     * none of them were on the board at all. They were archived, and an archived
+     * application is overdue forever because nothing will ever update it again.
+     *
+     * The funnel below deliberately keeps reading everything, because history is
+     * where its numbers come from. A to-do list is the opposite: it should only
+     * ever contain things you can still act on.
+     */
+    nextActions: nextActions(applications.filter((a) => a.bucket === "active"), today).map(({ app: a, flag }) => ({
       slug: a.slug,
       company: a.company,
       role: a.role,
       flag,
     })),
     funnel: buildFunnel(applications, today),
+    // Proposed, not performed. The board shows a single line offering the move
+    // rather than doing it, because an application that vanishes on its own is
+    // worse than one that lingers a fortnight.
+    archivable: archiveCandidates(applications, today),
+    archived: applications.filter((a) => a.bucket === "archive").length,
     skipped,
   };
 });
+
+/**
+ * Move an application out of the way.
+ *
+ * A folder move plus a frontmatter patch, in that order, and nothing is
+ * deleted. `archive/` is read by the funnel and the career record, so archiving
+ * is filing rather than forgetting: the numbers that tell you what is working
+ * come almost entirely from applications that already ended.
+ */
+app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string } }>(
+  "/api/:who/job/:slug/archive",
+  async (req, reply) => {
+    const { who, slug } = req.params;
+    let from: string, to: string;
+    try {
+      from = inVault(who, "active", slug);
+      to = inVault(who, "archive", slug);
+    } catch {
+      return reply.code(400).send({ error: "bad path" });
+    }
+    if (!existsSync(from)) return reply.code(404).send({ error: "not in active" });
+
+    /*
+     * A folder of the same name can already sit in `archive/`. This is not
+     * hypothetical: the vault this was built against has `archive/gradient-labs`
+     * holding a single stray research.md while the real application lives in
+     * `active/gradient-labs`. Refusing the move looked correct and was the worst
+     * option available, because the card then stays on the board forever, which
+     * is the entire bug being fixed.
+     *
+     * So merge. The active copy is the one you were working on, so it wins on a
+     * name clash, and the file it displaces is kept beside it rather than
+     * overwritten. Nothing is deleted by an archive operation, ever.
+     */
+    const merged: string[] = [];
+    if (existsSync(to)) {
+      for (const name of readdirSync(from)) {
+        const target = join(to, name);
+        if (existsSync(target)) {
+          const dot = name.lastIndexOf(".");
+          const stem = dot > 0 ? name.slice(0, dot) : name;
+          const ext = dot > 0 ? name.slice(dot) : "";
+          renameSync(target, join(to, `${stem}.superseded${ext}`));
+          merged.push(name);
+        }
+        renameSync(join(from, name), target);
+      }
+      rmSync(from, { recursive: true });
+    } else {
+      renameSync(from, to);
+    }
+
+    // Record the outcome after the move, so a failed write leaves a filed
+    // application with stale frontmatter rather than a half-moved folder.
+    const status = join(to, "status.md");
+    if (existsSync(status)) {
+      const outcome = req.body?.outcome ?? "rejected";
+      const won = outcome === "offer_accepted";
+      writeFileSync(
+        status,
+        updateFrontmatter(readFileSync(status, "utf8"), {
+          stage: won ? "accepted" : outcome === "ghosted" ? "ghosted" : outcome,
+          outcome,
+          last_updated: todayStr(),
+          next_action: null,
+          next_action_date: null,
+        }),
+      );
+    }
+    return { archived: slug, merged, application: readApplication(status, slug, "archive") };
+  },
+);
+
+/** Put one back. Archiving is reversible or it is a trapdoor. */
+app.post<{ Params: { who: string; slug: string } }>(
+  "/api/:who/job/:slug/restore",
+  async (req, reply) => {
+    const { who, slug } = req.params;
+    let from: string, to: string;
+    try {
+      from = inVault(who, "archive", slug);
+      to = inVault(who, "active", slug);
+    } catch {
+      return reply.code(400).send({ error: "bad path" });
+    }
+    if (!existsSync(from)) return reply.code(404).send({ error: "not in archive" });
+    if (existsSync(to)) return reply.code(409).send({ error: "already active" });
+
+    renameSync(from, to);
+    const status = join(to, "status.md");
+    if (existsSync(status)) {
+      writeFileSync(
+        status,
+        updateFrontmatter(readFileSync(status, "utf8"), {
+          stage: "applied",
+          outcome: null,
+          last_updated: todayStr(),
+        }),
+      );
+    }
+    return { restored: slug };
+  },
+);
 
 /**
  * The documents that make up an application.

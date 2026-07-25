@@ -94,7 +94,11 @@ export function displayCompany(raw: string, slug: string): string {
 }
 
 /** Turn one status.md into an Application. Never throws. */
-export function readApplication(path: string, fallbackSlug?: string): Application {
+export function readApplication(
+  path: string,
+  fallbackSlug?: string,
+  bucket: "active" | "archive" = "active",
+): Application {
   const warnings: string[] = [];
   let text = "";
   try {
@@ -149,6 +153,7 @@ export function readApplication(path: string, fallbackSlug?: string): Applicatio
     })(),
     location: pick(data, "location"),
     notes: pick(data, "notes") ?? (body.trim() ? body.trim().slice(0, 500) : null),
+    bucket,
     path,
     warnings,
   });
@@ -161,6 +166,7 @@ export function readApplication(path: string, fallbackSlug?: string): Applicatio
     slug,
     company: slug,
     stage: "lead",
+    bucket,
     path,
     warnings: [...warnings, `schema: ${parsed.error.issues[0]?.message ?? "invalid"}`],
   });
@@ -185,10 +191,10 @@ export function readVault(personDir: string): VaultRead {
   const applications: Application[] = [];
   const skipped: string[] = [];
 
-  for (const bucket of ["active", "archive"]) {
+  for (const bucket of ["active", "archive"] as const) {
     for (const dir of dirs(join(personDir, bucket))) {
       const status = join(dir, "status.md");
-      if (existsSync(status)) applications.push(readApplication(status));
+      if (existsSync(status)) applications.push(readApplication(status, undefined, bucket));
       else skipped.push(dir);
     }
   }
