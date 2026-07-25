@@ -3,6 +3,8 @@ packages:
 allowBuilds:
   # vitest's bundler — needs its postinstall to fetch the platform binary
   esbuild: true
+  # Fetches the pinned Chromium the CV renderer prints with.
+  puppeteer: true
 minimumReleaseAgeExclude:
   - '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.220'
   - '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.220'

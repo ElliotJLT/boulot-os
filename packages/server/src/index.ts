@@ -16,7 +16,18 @@ import { run } from "./agent.js";
 
 const VAULT = process.env.BOULOT_VAULT ?? resolve(process.env.HOME ?? ".", "Boulot");
 const PORT = Number(process.env.PORT ?? 4319);
-const RENDERER = resolve(VAULT, ".claude/skills/cv-generator/scripts/generate-pdf.mjs");
+/**
+ * The CV renderer ships with the app.
+ *
+ * It used to be resolved out of the user's vault, which meant this repo could
+ * not render a CV at all on a clean machine, and meant two copies of the same
+ * script drifting apart. That is the four-renderers problem the vault already
+ * had, reintroduced one layer up.
+ *
+ * BOULOT_RENDERER overrides it, for working on the renderer itself.
+ */
+const RENDERER =
+  process.env.BOULOT_RENDERER ?? resolve(import.meta.dirname, "../renderer/render-cv.mjs");
 
 /**
  * How the agent authenticates.
