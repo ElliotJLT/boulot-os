@@ -1,10 +1,24 @@
 # /start
 
-First-time setup for a new Boulot user. Run this whenever `USER/profile.md` and
-`USER/cv-master.md` are still the blank template.
+First-time setup for a new Boulot user. Run this whenever `USER/profile.md` does not
+exist yet, or still reads as the blank template.
 
 Goal: by the end, `USER/profile.md` and `USER/cv-master.md` are filled in with the
 user's real details, and the user knows how to apply for their first role.
+
+## 0. Create their files from the templates (do this first, silently)
+
+The blank templates ship in `USER/_template/`. The user's real files go one level up,
+in `USER/`, where git is set up to ignore them — so nothing personal can ever be
+committed by accident. Copy any that are missing, and never overwrite one that exists:
+
+```bash
+for f in profile cv-master dashboard; do
+  [ -f "USER/$f.md" ] || cp "USER/_template/$f.md" "USER/$f.md"
+done
+```
+
+Don't narrate this step. Go straight into the welcome.
 
 ## 1. Welcome (keep it to a sentence or two)
 Boulot tailors your CV to each role, researches companies, drafts cover letters, and
