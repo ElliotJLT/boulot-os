@@ -346,3 +346,14 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 .md-table td { padding: 7px 10px 7px 0; border-block-end: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
 .md-table tr:last-child td { border-block-end: 0; }
 .md-table td:last-child, .md-table th:last-child { padding-inline-end: 0; white-space: nowrap; }
+
+/* ── Tab groups ───────────────────────────────────── */
+.tabs { align-items: center; gap: 0; padding: 8px 10px 0; }
+.tab-group { display: flex; gap: 2px; }
+.tab-split {
+  inline-size: 1px; block-size: 15px; background: var(--line);
+  margin-inline: 12px; align-self: center; margin-block-end: 6px;
+}
+/* Source material reads quieter than the things you are going to send. */
+.tab-source button { color: var(--ink-3); }
+.tab-source button.on { color: var(--ink-2); }

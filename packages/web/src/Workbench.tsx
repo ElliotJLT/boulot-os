@@ -35,7 +35,25 @@ const STEPS = [
   { key: "pdf", label: "Render the PDF", verb: "Rendering the PDF" },
 ] as const;
 
-const EDITABLE = ["cv", "cover", "questions", "job", "research"] as const;
+/**
+ * Tabs in two groups: what you will send, and what it was built from.
+ *
+ * Flat, they mixed outputs with source material, so the CV sat next to the job
+ * description as though they were the same kind of thing. The PDF now sits
+ * beside the CV because it is the same document in the form you actually judge.
+ * Labels are short: the group tells you what these are.
+ */
+const OUTPUTS = [
+  { key: "cv", label: "CV" },
+  { key: "pdf", label: "PDF" },
+  { key: "cover", label: "Cover letter" },
+  { key: "questions", label: "Questions" },
+] as const;
+
+const SOURCES = [
+  { key: "job", label: "Job description" },
+  { key: "research", label: "Research" },
+] as const;
 
 export function Workbench({
   who,
@@ -200,34 +218,48 @@ export function Workbench({
       <div className="bench-body">
         <section className={`pane${flash ? " pane-flash" : ""}`}>
           <div className="tabs">
-            {EDITABLE.map((k) => {
-              const d = docs.find((x) => x.key === k);
-              return (
-                <button
-                  key={k}
-                  className={tab === k ? "on" : ""}
-                  onClick={() => {
-                    chosen.current = true;
-                    setTab(k);
-                    setDirty(false);
-                  }}
-                >
-                  {d?.label ?? k}
-                  {d && !d.exists && <span className="empty-dot" title="not created yet" />}
-                </button>
-              );
-            })}
-            {pdfExists && (
-              <button
-                className={tab === "pdf" ? "on" : ""}
-                onClick={() => {
-                  chosen.current = true;
-                  setTab("pdf");
-                }}
-              >
-                PDF
-              </button>
-            )}
+            <div className="tab-group">
+              {OUTPUTS.map((t) => {
+                if (t.key === "pdf" && !pdfExists) return null;
+                const d = docs.find((x) => x.key === t.key);
+                return (
+                  <button
+                    key={t.key}
+                    className={tab === t.key ? "on" : ""}
+                    onClick={() => {
+                      chosen.current = true;
+                      setTab(t.key);
+                      setDirty(false);
+                    }}
+                  >
+                    {t.label}
+                    {t.key !== "pdf" && d && !d.exists && <span className="empty-dot" title="not written yet" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <span className="tab-split" />
+
+            <div className="tab-group tab-source">
+              {SOURCES.map((t) => {
+                const d = docs.find((x) => x.key === t.key);
+                return (
+                  <button
+                    key={t.key}
+                    className={tab === t.key ? "on" : ""}
+                    onClick={() => {
+                      chosen.current = true;
+                      setTab(t.key);
+                      setDirty(false);
+                    }}
+                  >
+                    {t.label}
+                    {d && !d.exists && <span className="empty-dot" title="not written yet" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {tab === "pdf" ? (
