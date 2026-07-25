@@ -18,6 +18,27 @@ const VAULT = process.env.BOULOT_VAULT ?? resolve(process.env.HOME ?? ".", "Boul
 const PORT = Number(process.env.PORT ?? 4319);
 const RENDERER = resolve(VAULT, ".claude/skills/cv-generator/scripts/generate-pdf.mjs");
 
+/**
+ * How the agent authenticates.
+ *
+ * Two paths, and neither needs the user to understand the difference:
+ *
+ *   api-key      ANTHROPIC_API_KEY is set. Billed per token, real costs come
+ *                back on every run, and a hard budget cap applies.
+ *   subscription No key. The SDK falls back to the Claude Code login on this
+ *                machine. Anthropic's current position (paused 15 Jun 2026) is
+ *                that "Agent SDK, claude -p, and third-party app usage still
+ *                draw from your subscription's usage limits", so this is a
+ *                supported path rather than a loophole. Usage counts against
+ *                the plan's limits, and per-run cost figures are nominal.
+ *
+ * Set BOULOT_AUTH=subscription to ignore a key that is present, which is what
+ * you want when the key has run out of credit.
+ */
+const FORCE_SUBSCRIPTION = process.env.BOULOT_AUTH === "subscription";
+if (FORCE_SUBSCRIPTION) delete process.env.ANTHROPIC_API_KEY;
+const AUTH_MODE = process.env.ANTHROPIC_API_KEY ? "api-key" : "subscription";
+
 const app = Fastify({ logger: false });
 
 function people(vault: string): string[] {
@@ -43,7 +64,7 @@ app.get("/api/health", async () => ({
   vault: VAULT,
   vaultExists: existsSync(VAULT),
   people: people(VAULT),
-  hasKey: Boolean(process.env.ANTHROPIC_API_KEY),
+  authMode: AUTH_MODE,
   rendererFound: existsSync(RENDERER),
 }));
 
@@ -167,12 +188,6 @@ wss.on("connection", (socket) => {
     }
     if (!msg.prompt || !msg.person) return;
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      socket.send(JSON.stringify({ t: "error", message: "No API key. Add one to ~/.boulot/.env and restart." }));
-      socket.send(JSON.stringify({ t: "result", cost: 0, error: true }));
-      return;
-    }
-
     sessionId = await run({
       prompt: msg.prompt,
       vaultRoot: VAULT,
@@ -196,4 +211,6 @@ wss.on("connection", (socket) => {
 console.log(`Boulot on ${address}`);
 console.log(`  vault:  ${VAULT}${existsSync(VAULT) ? "" : "  (not found)"}`);
 console.log(`  people: ${people(VAULT).join(", ") || "none"}`);
-console.log(`  agent:  ${process.env.ANTHROPIC_API_KEY ? "ready" : "no API key (board still works)"}`);
+console.log(
+  `  agent:  ${AUTH_MODE === "api-key" ? "API key (billed per token, capped per run)" : "Claude subscription (counts against your plan's limits)"}`,
+);

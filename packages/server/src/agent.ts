@@ -251,7 +251,10 @@ export async function run({
       // web searches, which is not a thing a user should be able to trigger by
       // pasting a link. The skill bounds the work; this bounds the damage when
       // the skill is ignored.
-      maxBudgetUsd: budgetUsd,
+      // Only meaningful when billed per token. On a subscription the reported
+      // figures are nominal, so a dollar cap there would fire on an amount the
+      // user is not actually being charged.
+      ...(process.env.ANTHROPIC_API_KEY ? { maxBudgetUsd: budgetUsd } : {}),
       // Writes outside the vault are denied here rather than in canUseTool,
       // because auto-approved tools never reach that callback.
       hooks: {

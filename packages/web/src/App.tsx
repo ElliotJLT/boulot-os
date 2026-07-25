@@ -120,12 +120,14 @@ export function App() {
   const [open, setOpen] = useState<{ slug: string; company: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [reload, setReload] = useState(0);
+  const [authMode, setAuthMode] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
       .then((r) => r.json())
       .then((h) => {
         setPeople(h.people);
+        setAuthMode(h.authMode);
         setWho((w) => w ?? h.people[0] ?? null);
         if (!h.vaultExists) setError(`No vault at ${h.vault}`);
       })
@@ -165,6 +167,13 @@ export function App() {
           <h1>Boulot</h1>
         </div>
         <nav className="people">
+          {authMode && (
+            <span className="authmode" title={authMode === "api-key"
+              ? "Billed per token to your Anthropic API key, capped per run."
+              : "Draws on your Claude subscription's usage limits, not API credit."}>
+              {authMode === "api-key" ? "API credit" : "Claude plan"}
+            </span>
+          )}
           <button className="primary" onClick={() => setAdding(true)}>
             + New application
           </button>

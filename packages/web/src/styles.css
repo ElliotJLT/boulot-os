@@ -241,3 +241,8 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 .problem { margin: 0; font-size: 13px; color: var(--urgent); }
 .done { margin: 6px 0 0; font-size: 13px; color: var(--ink-2); }
 .linkish { font: inherit; background: none; border: 0; padding: 0; color: var(--ink); text-decoration: underline; cursor: pointer; }
+
+.authmode {
+  font-size: 11px; color: var(--ink-3); background: var(--muted-bg);
+  padding: 3px 9px; border-radius: 999px; margin-inline-end: 12px; cursor: default;
+}
