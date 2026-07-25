@@ -104,12 +104,12 @@ The AI itself will walk you through anything that trips you up.
 
 ## What's in the box
 
-- **`USER/`** — everything about you and your applications (active roles, pipeline, archive, reusable interview stories, reference CVs).
+- **`USER/`** — everything about you and your applications (active roles, pipeline, archive, reusable interview stories, reference CVs). Blank templates live in `USER/_template/`; `/start` copies them into `USER/` on first run, and everything you write there is gitignored.
 - **`shared/`** — interview frameworks (STAR method, question bank, salary negotiation) and templates, plus an optional script to build a searchable database of target companies from a CSV you provide.
 - **`.claude/`** — the system's brain: the AI agents, commands, and rules.
 - **`CLAUDE.md`** — the master instructions the AI reads every time.
 
-Your real applications and personal data never leave your machine, and are ignored by git so they're never committed.
+Your real applications and personal data never leave your machine. The file you edit is never the file git is watching: templates are tracked, your filled-in copies are not, so you can fork this repo and push it without publishing your phone number.
 
 ---
 

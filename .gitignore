@@ -9,7 +9,31 @@ node_modules/
 .obsidian/graph.json
 .obsidian/bookmarks.json
 
-# Generated CV files (your real applications stay on your machine)
+# ─────────────────────────────────────────────────────────────────────────
+# YOUR CAREER DATA — never committed.
+#
+# Everything you write under USER/ stays on your machine: your profile (name,
+# phone, email, salary target, visa status), your master CV, every tailored
+# CV, cover letter and research note.
+#
+# Only the blank templates in USER/_template/ are tracked. On first run,
+# Boulot copies them into place — so the file you edit is never the file git
+# is watching.
+#
+# Rules below match file extensions, not directories, so the empty-folder
+# .gitkeep markers still ship.
+# ─────────────────────────────────────────────────────────────────────────
+USER/**/*.md
+USER/**/*.pdf
+USER/**/*.docx
+USER/**/*.html
+USER/**/*.txt
+USER/**/*.json
+USER/**/*.canvas
+!USER/_template/**
+
+# Generated CV output anywhere else in the tree.
+# NOTE: no global *.html rule — docs/index.html is the published landing page.
 *.pdf
 *.docx
 
