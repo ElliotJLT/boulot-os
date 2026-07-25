@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, basename } from "node:path";
 import { Application, normaliseStage, type Flags } from "../schema/status.js";
+import { normaliseSource } from "../learning/funnel.js";
 
 /**
  * Read applications from a vault.
@@ -52,13 +53,45 @@ export function parseFrontmatter(text: string): { data: Record<string, string>; 
   return { data, body };
 }
 
+/**
+ * Read the first populated key.
+ *
+ * Treats the literal strings "null" and "none" as absent. They appear in real
+ * files because a template placeholder got serialised rather than removed, and
+ * rendering the word "null" on a card looks like a bug in the app rather than
+ * a gap in the data.
+ */
 const pick = (d: Record<string, string>, ...keys: string[]): string | null => {
   for (const k of keys) {
-    const v = d[k];
-    if (v != null && v.trim() !== "") return v.trim();
+    const v = d[k]?.trim();
+    if (v && !/^(null|none|undefined)$/i.test(v)) return v;
   }
   return null;
 };
+
+/**
+ * Present a company name.
+ *
+ * Folder slugs leak into the `company:` field often enough that the board was
+ * showing "lloyds-banking-group" and "fitxr" next to properly written names.
+ * Only reformat when the value still looks like a slug, so a deliberately
+ * lowercase brand ("ema", "kota") that was actually typed that way survives
+ * only if it carries no slug markers.
+ */
+export function displayCompany(raw: string, slug: string): string {
+  // Slug-shaped means all lowercase. Matching the folder name is the common
+  // case but not required: one real record carries company "lloyds-banking-
+  // group" in a folder called "lloyds-innovation", and it should still render
+  // as a company name.
+  const slugShaped = raw === raw.toLowerCase() && (raw.includes("-") || raw === slug);
+  if (!slugShaped) return raw;
+
+  return raw
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 /** Turn one status.md into an Application. Never throws. */
 export function readApplication(path: string, fallbackSlug?: string): Application {
@@ -97,7 +130,7 @@ export function readApplication(path: string, fallbackSlug?: string): Applicatio
 
   const parsed = Application.safeParse({
     slug,
-    company,
+    company: displayCompany(company, slug),
     role: pick(data, "role") ?? "",
     stage: norm.stage ?? "lead",
     substage: norm.substage,
@@ -110,7 +143,10 @@ export function readApplication(path: string, fallbackSlug?: string): Applicatio
     salary: pick(data, "salary", "salary_range"),
     targetSalary: pick(data, "salary_target"),
     url: pick(data, "url", "link", "greenhouse_url"),
-    source: pick(data, "source"),
+    source: (() => {
+      const s = normaliseSource(pick(data, "source"));
+      return s === "unknown" ? null : s;
+    })(),
     location: pick(data, "location"),
     notes: pick(data, "notes") ?? (body.trim() ? body.trim().slice(0, 500) : null),
     path,

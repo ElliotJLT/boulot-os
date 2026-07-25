@@ -1,0 +1,131 @@
+/* Boulot UI.
+   Restrained on purpose: this is a tool someone opens when they are anxious
+   about work, so it should feel calm and legible rather than dashboard-y.
+   Colour carries one meaning only, which is urgency. */
+
+:root {
+  --bg: #f7f6f3;
+  --panel: #ffffff;
+  --ink: #1b1a17;
+  --ink-2: #5c5850;
+  --ink-3: #8d887e;
+  --line: #e4e1da;
+
+  --urgent: #b4341f;
+  --urgent-bg: #fbeae6;
+  --warn: #8a6410;
+  --warn-bg: #fbf2dd;
+  --muted-fg: #6f6a62;
+  --muted-bg: #eeece7;
+  --accent: #2f5d50;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgb(27 26 23 / 6%), 0 1px 8px rgb(27 26 23 / 4%);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; }
+
+main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
+
+.empty { display: grid; place-items: center; block-size: 70vh; color: var(--ink-3); }
+
+/* ── Header ─────────────────────────────────────── */
+.top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-block-end: 18px; border-block-end: 1px solid var(--line); margin-block-end: 22px;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { font-size: 19px; letter-spacing: -0.01em; }
+.logo {
+  inline-size: 22px; block-size: 22px; border-radius: 6px;
+  background: linear-gradient(145deg, var(--accent), #4b8574);
+}
+.people { display: flex; gap: 4px; }
+.people button {
+  font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 999px;
+  border: 1px solid transparent; background: none; color: var(--ink-2); cursor: pointer;
+}
+.people button:hover { background: var(--muted-bg); }
+.people button.on { background: var(--panel); border-color: var(--line); color: var(--ink); box-shadow: var(--shadow); }
+
+/* ── Next three ─────────────────────────────────── */
+.next {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; margin-block-end: 22px; box-shadow: var(--shadow);
+}
+.next h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); margin-block-end: 12px; }
+.next ol { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px 28px; }
+.next li { display: flex; align-items: center; gap: 10px; }
+.next strong { font-weight: 600; }
+.next .role { color: var(--ink-3); font-size: 13px; }
+.next .none { color: var(--ink-3); }
+
+/* ── Layout ─────────────────────────────────────── */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; align-items: start; }
+
+.board { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+
+.column > header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 4px 10px;
+}
+.column h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); }
+.column .count {
+  font-size: 11px; color: var(--ink-3); background: var(--muted-bg);
+  border-radius: 999px; padding: 1px 7px;
+}
+
+/* ── Card ───────────────────────────────────────── */
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 11px 12px; margin-block-end: 8px; box-shadow: var(--shadow);
+}
+.card-dead { opacity: 0.55; }
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.card h3 { font-size: 14px; line-height: 1.3; }
+.card .role { margin: 3px 0 0; font-size: 12.5px; color: var(--ink-2); }
+.card .substage { margin: 4px 0 0; font-size: 12px; color: var(--accent); font-weight: 500; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 8px; font-size: 11.5px; color: var(--ink-3); }
+.warn-dot { color: var(--warn); }
+
+/* ── Chips ──────────────────────────────────────── */
+.chip {
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+  padding: 2px 7px; border-radius: 999px;
+}
+.chip-urgent { background: var(--urgent-bg); color: var(--urgent); }
+.chip-warn { background: var(--warn-bg); color: var(--warn); }
+.chip-muted { background: var(--muted-bg); color: var(--muted-fg); }
+
+/* ── Funnel ─────────────────────────────────────── */
+.funnel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; box-shadow: var(--shadow); position: sticky; inset-block-start: 20px;
+}
+.funnel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); }
+.derived { margin: 4px 0 14px; font-size: 11.5px; color: var(--ink-3); font-style: italic; }
+.funnel-row { display: grid; grid-template-columns: 62px 1fr 52px; align-items: center; gap: 8px; margin-block-end: 7px; }
+.funnel-label { font-size: 12px; color: var(--ink-2); }
+.funnel-bar { block-size: 8px; border-radius: 3px; background: var(--accent); min-inline-size: 2px; }
+.funnel-count { font-size: 12px; text-align: end; font-variant-numeric: tabular-nums; }
+.funnel-count em { color: var(--ink-3); font-style: normal; font-size: 11px; }
+
+.stats { display: grid; gap: 10px; margin: 16px 0 0; padding-block-start: 14px; border-block-start: 1px solid var(--line); }
+.stats div { display: flex; justify-content: space-between; align-items: baseline; }
+.stats dt { font-size: 12px; color: var(--ink-3); }
+.stats dd { margin: 0; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

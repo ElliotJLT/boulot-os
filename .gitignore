@@ -46,3 +46,6 @@ dist/
 
 # Agent SDK spike scratch
 .spike-workspace/
+
+# Vite build output
+packages/web/dist/
