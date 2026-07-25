@@ -254,8 +254,14 @@ export function App() {
             Add your first job
           </button>
         </section>
-      ) : (
-      <section className="next">
+      ) : /*
+            Only when there is something to do. An empty "Do these three" panel
+            used the top of the page to announce that it had nothing to
+            announce, which is the most valuable space on screen spent on a
+            negative.
+          */
+      board.nextActions.length > 0 ? (
+        <section className="next">
         <h2>Do these three</h2>
         <ol>
           {board.nextActions.map((n) => (
@@ -265,10 +271,9 @@ export function App() {
               <span className="role">{n.role}</span>
             </li>
           ))}
-          {board.nextActions.length === 0 && <li className="none">Nothing needs chasing.</li>}
         </ol>
-      </section>
-      )}
+        </section>
+      ) : null}
 
       {board.archivable.length > 0 && (
         <section className={`tidy${filing ? " tidy-open" : ""}`}>

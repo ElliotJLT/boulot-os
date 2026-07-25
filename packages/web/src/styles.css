@@ -4,23 +4,34 @@
    Colour carries one meaning only, which is urgency. */
 
 :root {
-  --bg: #fafafa;
+  /* Taken from the site rather than invented, so the landing page and the app
+     are recognisably the same product. Warm paper, one green, and colour that
+     only ever means urgency. */
+  --bg: #fcf8f0;
+  --bg-2: #f6efe2;
   --panel: #ffffff;
-  --ink: #17171a;
-  --ink-2: #55565c;
-  --ink-3: #8b8d94;
-  --line: #e6e6e9;
+  --ink: #332f28;
+  --ink-2: #736c61;
+  --ink-3: #9a9286;
+  --line: #ece3d2;
+  --line-2: #e2d7c2;
 
-  --urgent: #a32b1e;
-  --urgent-bg: #fbecea;
-  --warn: #7a5a12;
-  --warn-bg: #faf3e2;
-  --muted-fg: #6c6e74;
-  --muted-bg: #eeeef1;
-  --accent: #17171a;
+  --accent: #3f6b4a;
+  --accent-deep: #2f5238;
+  --accent-soft: #e7ede1;
 
-  --radius: 10px;
-  --shadow: 0 1px 2px rgb(27 26 23 / 6%), 0 1px 8px rgb(27 26 23 / 4%);
+  --urgent: #a3401e;
+  --urgent-bg: #f9e9e1;
+  --warn: #8a6410;
+  --warn-bg: #fdf1d6;
+  --muted-fg: #736c61;
+  --muted-bg: #f1ebdd;
+
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --radius: 12px;
+  /* Two elevations only: resting, and things you can press. */
+  --shadow: 0 1px 2px rgb(51 47 40 / 5%), 0 4px 14px rgb(51 47 40 / 4%);
+  --shadow-lift: 0 8px 24px -10px rgb(51 47 40 / 22%);
 }
 
 * { box-sizing: border-box; }
@@ -29,11 +40,14 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+  font: 15px/1.5 Inter, ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3 { margin: 0; font-weight: 600; }
+/* Headings carry the serif, body stays sans. The same split as the site: it is
+   what stops a dense board reading like a spreadsheet. */
+h1, h2, .bench-top h2, .brand h1 { font-family: var(--serif); letter-spacing: -0.01em; }
 
 main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 
@@ -47,8 +61,8 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand h1 { font-size: 19px; letter-spacing: -0.01em; }
 .logo {
-  inline-size: 20px; block-size: 20px; border-radius: 5px;
-  background: var(--ink);
+  inline-size: 20px; block-size: 20px; border-radius: 6px;
+  background: var(--accent);
 }
 .people { display: flex; gap: 4px; }
 .people button {
@@ -81,8 +95,9 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 }
 .column h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); }
 .column .count {
-  font-size: 11px; color: var(--ink-3); background: var(--muted-bg);
-  border-radius: 999px; padding: 1px 7px;
+  font-size: 11px; font-weight: 500; color: var(--accent-deep);
+  background: var(--accent-soft); border-radius: 999px; padding: 2px 8px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Card ───────────────────────────────────────── */
@@ -225,11 +240,9 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 .card:hover { border-color: var(--ink-3); }
 
 /* ── New application ──────────────────────────────── */
-.people .primary {
-  background: var(--ink); color: #fff; border-color: var(--ink);
-  margin-inline-end: 10px; font-weight: 500;
-}
-.people .primary:hover { background: #000; }
+/* Kept only for spacing now. The colour comes from the shared button rules, so
+   this stopped being an ink-coloured pill left over from before the palette. */
+.people .primary { margin-inline-start: 8px; }
 
 .newapp {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
@@ -625,3 +638,81 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 .choice b { font-size: 14px; font-weight: 600; }
 .choice span { font-size: 13px; color: var(--ink-2); }
 .choice code { font-size: 12px; background: var(--muted-bg); padding: 1px 5px; border-radius: 4px; }
+
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+/* Previously most of these fell through to the browser default, so the board's
+   most important action rendered as a grey system button. Three kinds only:
+   the thing to press, the thing beside it, and a link that happens to be a
+   button. Lift on hover, borrowed from the site, because a control that moves
+   under the cursor reads as pressable without needing a colour to say so. */
+button, .btn {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 9px 18px;
+  cursor: pointer;
+  background: none;
+  color: var(--ink);
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 6px 18px -8px rgb(47 82 56 / 55%);
+}
+button.primary:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.05); }
+
+button.ghost {
+  background: var(--panel);
+  border-color: var(--line-2);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+button.ghost:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  box-shadow: var(--shadow-lift);
+}
+
+button.linkish, button.link, .tidy .link {
+  padding: 0; border-radius: 0; background: none; border: 0;
+  color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px;
+  font-size: 13px;
+}
+button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent-deep); }
+
+/* Nav items are quiet until you reach for them. */
+.people button {
+  background: none; border: 0; color: var(--ink-2); box-shadow: none; padding: 8px 12px;
+}
+.people button:hover { color: var(--ink); transform: none; }
+/* Specificity matters here: `.people button` above zeroes the background, and
+   it out-ranks `button.primary`, so the call to action rendered as white text
+   on cream and vanished. Restate everything it needs. */
+.people button.primary {
+  background: var(--accent);
+  color: #fff;
+  padding: 9px 18px;
+  box-shadow: 0 6px 18px -8px rgb(47 82 56 / 55%);
+}
+.people button.primary:hover { transform: translateY(-2px); filter: brightness(1.05); color: #fff; }
+
+/* Cards sit on paper, so they need a hairline as well as a shadow. */
+.card, .card-panel, .column .card, .stat, .choice, .memory-line, .getit-main {
+  border-color: var(--line);
+}
+.card { transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease; }
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: var(--line-2); }
+
+/* Column headers: small caps, generous tracking, no heavy rules. */
+.column > header h2, .next h2, .career-stats + .tagrow, .section-title {
+  font-family: Inter, sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--ink-3);
+}
