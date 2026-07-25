@@ -15,3 +15,12 @@ No API key is needed for the board, the funnel, or the PDF preview. Only the
 agent features require one, and they read `~/.boulot/.env`.
 
 To stop it: `lsof -ti:4319 | xargs kill`
+
+## Single user
+
+```bash
+export BOULOT_PERSON=ELLIOT
+```
+
+Pins the app to one folder in the vault. The vault format supports several
+people; the app is for one.

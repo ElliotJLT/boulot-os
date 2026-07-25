@@ -3,7 +3,7 @@ import fastifyStatic from "@fastify/static";
 import { WebSocketServer } from "ws";
 import { existsSync, readdirSync, statSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve, relative, isAbsolute } from "node:path";
-import { readVault, buildFunnel, flagsFor, nextActions } from "@boulot/core";
+import { readVault, buildFunnel, flagsFor, nextActions, readMaster } from "@boulot/core";
 import { run } from "./agent.js";
 
 /**
@@ -41,8 +41,18 @@ const AUTH_MODE = process.env.ANTHROPIC_API_KEY ? "api-key" : "subscription";
 
 const app = Fastify({ logger: false });
 
+/**
+ * Whose vault this is.
+ *
+ * BOULOT_PERSON pins it to one folder. The vault format supports several
+ * people, but the app is for one: a switcher between two careers is a feature
+ * nobody asked for and a way to write into the wrong person's files.
+ */
+const PERSON = process.env.BOULOT_PERSON ?? null;
+
 function people(vault: string): string[] {
   if (!existsSync(vault)) return [];
+  if (PERSON) return existsSync(join(vault, PERSON)) ? [PERSON] : [];
   return readdirSync(vault)
     .filter((n) => !n.startsWith("."))
     .filter((n) => {
@@ -67,6 +77,14 @@ app.get("/api/health", async () => ({
   authMode: AUTH_MODE,
   rendererFound: existsSync(RENDERER),
 }));
+
+/** The master CV, read as a record: entries, tags, and what actually gets used. */
+app.get<{ Params: { who: string } }>("/api/:who/master", async (req, reply) => {
+  const dir = join(VAULT, req.params.who);
+  if (!existsSync(dir)) return reply.code(404).send({ error: "no such person" });
+  const m = readMaster(dir);
+  return m ?? reply.code(404).send({ error: "no cv-master.md" });
+});
 
 app.get<{ Params: { who: string } }>("/api/:who/board", async (req, reply) => {
   const dir = join(VAULT, req.params.who);

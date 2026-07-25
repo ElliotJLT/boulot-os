@@ -3,3 +3,4 @@ export * from "./schema/status.js";
 export * from "./pipeline/flags.js";
 export * from "./vault/read.js";
 export * from "./learning/funnel.js";
+export * from "./vault/master.js";

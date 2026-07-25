@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Workbench } from "./Workbench.js";
 import { NewApplication } from "./NewApplication.js";
+import { Career } from "./Career.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
 type App = {
@@ -119,6 +120,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<{ slug: string; company: string } | null>(null);
   const [adding, setAdding] = useState(false);
+  const [career, setCareer] = useState(false);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
 
@@ -141,6 +143,13 @@ export function App() {
       .then(setBoard)
       .catch(() => setError("Could not load board"));
   }, [who, reload]);
+
+  if (career && who)
+    return (
+      <main>
+        <Career who={who} onClose={() => setCareer(false)} />
+      </main>
+    );
 
   if (adding && who)
     return (
@@ -174,14 +183,10 @@ export function App() {
               {authMode === "api-key" ? "API credit" : "Claude plan"}
             </span>
           )}
+          <button onClick={() => setCareer(true)}>Career record</button>
           <button className="primary" onClick={() => setAdding(true)}>
             + New application
           </button>
-          {people.map((p) => (
-            <button key={p} className={p === who ? "on" : ""} onClick={() => setWho(p)}>
-              {p[0] + p.slice(1).toLowerCase()}
-            </button>
-          ))}
         </nav>
       </header>
 
