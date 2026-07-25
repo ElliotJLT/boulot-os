@@ -51,7 +51,11 @@ export function Workbench({
   const [docs, setDocs] = useState<Doc[]>([]);
   const [pdfExists, setPdfExists] = useState(false);
   const [fit, setFit] = useState<Fit | null>(null);
+  // Opens on the PDF when one exists, because that is the thing you are
+  // actually judging. The markdown is how you change it, not how you read it.
+  // Only applies until the user picks a tab themselves.
   const [tab, setTab] = useState<string>("cv");
+  const chosen = useRef(false);
   const [text, setText] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -73,6 +77,11 @@ export function Workbench({
     const d = await fetch(`/api/${who}/job/${slug}/docs`).then((r) => r.json());
     setDocs(d.docs ?? []);
     setPdfExists(Boolean(d.pdf));
+    if (d.pdf && !chosen.current) {
+      chosen.current = true;
+      tabRef.current = "pdf";
+      setTab("pdf");
+    }
     setFit(d.fit ?? null);
     const active = tabRef.current;
     if (active === "pdf") return;
@@ -198,6 +207,7 @@ export function Workbench({
                   key={k}
                   className={tab === k ? "on" : ""}
                   onClick={() => {
+                    chosen.current = true;
                     setTab(k);
                     setDirty(false);
                   }}
@@ -208,7 +218,13 @@ export function Workbench({
               );
             })}
             {pdfExists && (
-              <button className={tab === "pdf" ? "on" : ""} onClick={() => setTab("pdf")}>
+              <button
+                className={tab === "pdf" ? "on" : ""}
+                onClick={() => {
+                  chosen.current = true;
+                  setTab("pdf");
+                }}
+              >
                 PDF
               </button>
             )}
