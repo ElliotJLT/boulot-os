@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Markdown } from "./Activity.js";
 
 /**
  * The application workbench: CV on the left, agent on the right.
@@ -210,9 +211,11 @@ export function Workbench({
                   {t.label}
                 </p>
               ) : (
-                <p className={t.role === "you" ? "you" : "boulot"} key={i}>
-                  {t.text}
-                </p>
+                t.role === "you" ? (
+                  <p className="you" key={i}>{t.text}</p>
+                ) : (
+                  <div className="answer" key={i}><Markdown text={t.text} /></div>
+                )
               ),
             )}
             {busy && <p className="activity pulse">Thinking</p>}

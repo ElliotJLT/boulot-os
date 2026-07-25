@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Markdown, Phases, collapse, phaseOf, type Phase } from "./Activity.js";
 
 /**
  * Starting an application.
@@ -34,6 +35,7 @@ export function NewApplication({
   const [done, setDone] = useState(false);
   const [lines, setLines] = useState<Line[]>([]);
   const [cost, setCost] = useState(0);
+  const [phases, setPhases] = useState<Set<Phase>>(new Set());
   const ws = useRef<WebSocket | null>(null);
   const log = useRef<HTMLDivElement>(null);
   // Held in a ref so the socket effect can depend on nothing. An inline
@@ -47,7 +49,10 @@ export function NewApplication({
     ws.current = socket;
     socket.onmessage = (e) => {
       const ev: Event = JSON.parse(e.data);
-      if (ev.t === "tool") setLines((l) => [...l, { kind: "activity", text: ev.label }]);
+      if (ev.t === "tool") {
+        setLines((l) => [...l, { kind: "activity", text: ev.label }]);
+        setPhases((p) => new Set(p).add(phaseOf(ev.label)));
+      }
       else if (ev.t === "file")
         setLines((l) => [...l, { kind: "activity", text: `Created ${ev.path.split("/").slice(-2).join("/")}` }]);
       else if (ev.t === "text") setLines((l) => [...l, { kind: "said", text: ev.text }]);
@@ -71,6 +76,7 @@ export function NewApplication({
     if (!raw || running || !ws.current) return;
     setRunning(true);
     setLines([]);
+    setPhases(new Set());
     setDone(false);
 
     const prompt = looksLikeUrl(raw)
@@ -115,21 +121,40 @@ export function NewApplication({
 
         {(lines.length > 0 || running) && (
           <div className="log newapp-log" ref={log}>
-            {lines.map((l, i) =>
-              l.kind === "activity" ? (
-                <p className="activity" key={i}>
-                  {l.text}
-                </p>
-              ) : (
-                <p className={l.kind === "problem" ? "problem" : "boulot"} key={i}>
-                  {l.text}
-                </p>
-              ),
-            )}
-            {running && <p className="activity pulse">Thinking</p>}
+            <Phases active={running} seen={phases} />
+
+            {(() => {
+              const activity = collapse(lines.filter((l) => l.kind === "activity").map((l) => l.text));
+              const said = lines.filter((l) => l.kind !== "activity");
+              return (
+                <>
+                  <details className="steps" open={running}>
+                    <summary>{activity.length} step{activity.length === 1 ? "" : "s"}</summary>
+                    {activity.map((a, i) => (
+                      <p className="activity" key={i}>
+                        {a.text}
+                        {a.count > 1 && <span className="times"> ×{a.count}</span>}
+                      </p>
+                    ))}
+                  </details>
+
+                  {said.map((l, i) =>
+                    l.kind === "problem" ? (
+                      <p className="problem" key={i}>{l.text}</p>
+                    ) : (
+                      <div className="answer" key={i}>
+                        <Markdown text={l.text} />
+                      </div>
+                    ),
+                  )}
+                </>
+              );
+            })()}
+
+            {running && <p className="activity pulse">Working</p>}
             {done && (
               <p className="done">
-                Done. <button className="linkish" onClick={onClose}>Back to the board</button> to open it.
+                <button className="linkish" onClick={onClose}>Back to the board</button> to open it.
               </p>
             )}
           </div>
