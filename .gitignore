@@ -43,3 +43,6 @@ shared/companies.db
 
 # Build output
 dist/
+
+# Agent SDK spike scratch
+.spike-workspace/
