@@ -105,6 +105,16 @@ const OUTPUTS = [
   { key: "pdf", label: "PDF" },
 ] as const;
 
+/**
+ * Yours and its, in the same file.
+ *
+ * prep.md is the one artifact an interview needs and the only one both sides
+ * write to: ask the agent something and the answer lands here, type your own
+ * note and it sits next to it. A pane you can only read is a transcript, and a
+ * transcript is not what you take into the room.
+ */
+const PREP = { key: "prep", label: "Prep" } as const;
+
 const SOURCES = [
   { key: "job", label: "Job description" },
   { key: "research", label: "Research" },
@@ -205,7 +215,15 @@ export function Workbench({
     // Always keep cv and job in memory: the tweak box attaches them regardless
     // of which tab is showing, and the PDF tab has no markdown of its own.
     const active = tabRef.current;
-    const needed = [...new Set([active === "pdf" ? "cv" : active, "cv", "job"])];
+    const needed = [
+      ...new Set([
+        active === "pdf" ? "cv" : active,
+        "cv",
+        "job",
+        // The prep conversation attaches these whatever tab is showing.
+        ...(d.stage && d.stage !== "drafting" && d.stage !== "lead" ? ["research", "prep"] : []),
+      ]),
+    ];
     const loaded = await Promise.all(
       needed.map((k) =>
         fetch(`/api/${who}/job/${slug}/doc/${k}`)
@@ -445,6 +463,21 @@ export function Workbench({
     onClose();
   };
 
+  /*
+   * Sent, so there is nothing left to build.
+   *
+   * The checklist offered to tailor a CV for an application that had already
+   * gone, over an empty CV pane, which is an invitation to edit a document the
+   * employer is holding. Past drafting the work changes shape: the documents
+   * are finished and the only thing left is the interview.
+   *
+   * What replaces it is not a second checklist. The job description and the
+   * research are already here, which is all the context a conversation about
+   * the interview needs, so the panel becomes the conversation and a place to
+   * write things down.
+   */
+  const sent = ["applied", "screening", "interviewing", "offer"].includes(stage) || justApplied;
+
   const done = (key: string) =>
     key === "pdf" ? pdfExists : Boolean(docs.find((d) => d.key === key)?.exists);
   const allDone = STEPS.every((s) => done(s.key));
@@ -644,6 +677,39 @@ export function Workbench({
       body.trim() ? `\n\n<${label} path="active/${slug}/${file}">\n${body.trim()}\n</${label}>` : "";
 
     setTurns((t) => [...t, { who: "you", text: q }]);
+
+    /*
+     * A sent application is a different conversation.
+     *
+     * Handed the CV and told to use Edit, the agent will edit the CV, which is
+     * the one thing that must not happen once the employer has it. So past
+     * drafting it gets the job description, the research and the prep notes
+     * instead, and one place to write.
+     */
+    if (sent) {
+      send(
+        `Application: active/${slug}. This has already been sent and the interview is what ` +
+          `is left. Do not edit cv.md, cover-letter.md or application-answers.md, and do not ` +
+          `write any new document: the employer already has them.` +
+          attach("job_description", job, "job.md") +
+          attach("research", text.research ?? "", "research.md") +
+          attach("prep_notes", text.prep ?? "", "prep.md") +
+          `\n\nQuestion: ${q}\n\n` +
+          `Answer in the conversation. If the answer is worth having in the room, append it to ` +
+          `active/${slug}/prep.md under a heading of its own, creating the file if needed, and ` +
+          `leave everything already in that file alone: the notes there are the user's own and ` +
+          `some of them will be theirs rather than yours. Be specific to this company and this ` +
+          `job description. Generic interview advice is worse than nothing, because it reads as ` +
+          `preparation and is not.`,
+        "Working",
+        "tweak",
+        MODELS.tailor,
+        q,
+      );
+      setAsk("");
+      return;
+    }
+
     send(
       `Application: active/${slug}\n\n` +
         `The current contents of the files are included below, so you do not need to open them. ` +
@@ -768,6 +834,7 @@ export function Workbench({
                     !NO_DOCUMENT.has(e.key) &&
                     (include.has(e.key) || docs.find((d) => d.key === e.key)?.exists),
                 ).map((e) => ({ key: e.key, label: e.key === "cover" ? "Cover letter" : "Questions" })),
+                ...(sent ? [PREP] : []),
               ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
                 const d = docs.find((x) => x.key === t.key);
@@ -860,6 +927,23 @@ export function Workbench({
         </section>
 
         <section className="pane side">
+          {sent ? (
+            <div className="checklist">
+              <div className="checklist-top">
+                <h3>{running ? (running ?? "Working") : "Prepare"}</h3>
+                {running && (
+                  <span className="play busy">
+                    <span className="pip" />
+                  </span>
+                )}
+              </div>
+              <p className="prep-lede">
+                Sent. The job description and the research are on the left, so ask about the
+                interview and the answer goes in <b>Prep</b>, where you can write your own notes
+                beside it.
+              </p>
+            </div>
+          ) : (
           <div className="checklist">
             <div className="checklist-top">
               <h3>
@@ -920,6 +1004,7 @@ export function Workbench({
             </ol>
             {cost > 0 && <p className="cost">£{(cost * 0.79).toFixed(2)} this session</p>}
           </div>
+          )}
 
           <div className="log">
             {/*
@@ -991,8 +1076,9 @@ export function Workbench({
             )}
             {!running && !activity.length && !turns.length && (
               <p className="hint">
-                Press play and Boulot writes the whole application, updating the documents on the left as it
-                goes. Edit anything yourself, or ask for a change below.
+                {sent
+                  ? "Ask what they are likely to push on, how to answer something, or what to ask them. Anything worth keeping goes into Prep."
+                  : "Press play and Boulot writes the whole application, updating the documents on the left as it goes. Edit anything yourself, or ask for a change below."}
               </p>
             )}
           </div>
@@ -1001,7 +1087,7 @@ export function Workbench({
             <textarea
               rows={2}
               value={ask}
-              placeholder="Tweak something…"
+              placeholder={sent ? "Ask about the interview…" : "Tweak something…"}
               onChange={(e) => setAsk(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) tweak();

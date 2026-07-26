@@ -447,7 +447,7 @@ app.post<{ Params: { who: string; slug: string } }>(
 
     // Everything here is regenerable. job.md, research.md and status.md are not
     // touched: they are the inputs, not the output.
-    const OUTPUTS = ["cv.md", "cover-letter.md", "application-answers.md", "cv.pdf", "cv.fit.json", "cv.html"];
+    const OUTPUTS = ["cv.md", "cover-letter.md", "application-answers.md", "prep.md", "cv.pdf", "cv.fit.json", "cv.html"];
     const removed: string[] = [];
     for (const f of OUTPUTS) {
       const path = join(dir, f);
@@ -501,6 +501,7 @@ const DOCS = {
   cv: { file: "cv.md", label: "Tailored CV" },
   cover: { file: "cover-letter.md", label: "Cover letter" },
   questions: { file: "application-answers.md", label: "Application questions" },
+  prep: { file: "prep.md", label: "Prep" },
   job: { file: "job.md", label: "Job description" },
   research: { file: "research.md", label: "Research" },
 } as const;
