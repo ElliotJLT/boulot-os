@@ -502,7 +502,14 @@ export function Workbench({
               Mark as applied
             </button>
           )}
-          {(done("cv") || pdfExists) && (
+          {/*
+            Anything regenerable counts.
+            
+            This checked only for a CV or a PDF, so an application that had a
+            cover letter and nothing else offered no way to start over, which is
+            exactly the state a first attempt leaves you in.
+          */}
+          {(pdfExists || ["cv", "cover", "questions"].some((k) => done(k))) && (
             <button className="ghost" disabled={Boolean(running)} onClick={() => void reset()}>
               Start over
             </button>

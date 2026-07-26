@@ -582,6 +582,8 @@ app.get("/api/jobs", async () => ({
   jobs: [...jobs.values()].map((j) => ({
     id: j.id,
     slug: j.slug,
+    company: j.company,
+    role: j.role,
     label: j.label,
     running: j.running,
     startedAt: j.startedAt,
@@ -614,6 +616,9 @@ interface Job {
   id: string;
   /** Application folder, once it is known. New applications learn it mid-run. */
   slug: string | null;
+  /** Who it is for, as well as we currently know. Improves as the run goes. */
+  company: string | null;
+  role: string | null;
   label: string;
   events: unknown[];
   running: boolean;
@@ -641,7 +646,14 @@ wss.on("connection", (socket) => {
   socket.on("close", () => sockets.delete(socket));
 
   socket.on("message", async (raw) => {
-    let msg: { prompt?: string; person?: string; job?: string; label?: string; slug?: string };
+    let msg: {
+      prompt?: string;
+      person?: string;
+      job?: string;
+      label?: string;
+      slug?: string;
+      company?: string;
+    };
     try {
       msg = JSON.parse(String(raw));
     } catch {
@@ -669,13 +681,24 @@ wss.on("connection", (socket) => {
     const job: Job = {
       id,
       slug: msg.slug ?? null,
+      /*
+       * A first guess from what the user pasted, replaced by the real thing the
+       * moment status.md exists.
+       *
+       * A card that says "Reading the job" for forty seconds is a card you
+       * cannot tell apart from the other one you just started. The guess costs
+       * nothing and is right often enough, and it is never written anywhere: it
+       * is a label on a placeholder, not a fact about the application.
+       */
+      company: msg.company ?? null,
+      role: null,
       label: msg.label ?? "Working",
       events: [],
       running: true,
       startedAt: Date.now(),
     };
     jobs.set(id, job);
-    broadcast({ t: "job", job: id, slug: job.slug, label: job.label, running: true });
+    broadcast({ t: "job", job: id, slug: job.slug, company: job.company, label: job.label, running: true });
 
     try {
       await run({
@@ -693,7 +716,22 @@ wss.on("connection", (socket) => {
             const m = /(?:^|\/)(?:active|archive)\/([^/]+)\//.exec(e.path);
             if (m) {
               job.slug = m[1] ?? null;
-              broadcast({ t: "job", job: id, slug: job.slug, label: job.label, running: true });
+              /*
+               * Read the truth rather than keep the guess. status.md is written
+               * early in the run and carries the company and the role, so from
+               * here on the card can say what it actually is.
+               */
+              try {
+                const status = join(VAULT, msg.person!, "active", job.slug!, "status.md");
+                if (existsSync(status)) {
+                  const a = readApplication(status, job.slug!);
+                  job.company = a.company || job.company;
+                  job.role = a.role || null;
+                }
+              } catch {
+                /* the guess stands */
+              }
+              broadcast({ t: "job", job: id, slug: job.slug, company: job.company, role: job.role, label: job.label, running: true });
             }
           }
           const tagged = { ...e, job: id, slug: job.slug };
@@ -706,7 +744,7 @@ wss.on("connection", (socket) => {
       });
     } finally {
       job.running = false;
-      broadcast({ t: "job", job: id, slug: job.slug, label: job.label, running: false });
+      broadcast({ t: "job", job: id, slug: job.slug, company: job.company, label: job.label, running: false });
     }
   });
 });

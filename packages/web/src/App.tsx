@@ -127,7 +127,11 @@ export function App() {
   const [filing, setFiling] = useState(false);
   const [dragOver, setDragOver] = useState<string | null>(null);
   /** Applications an agent is working on right now, from the server. */
-  const [busy, setBusy] = useState<Array<{ slug: string | null; label: string }>>([]);
+  const [busy, setBusy] = useState<
+    Array<{ id: string; slug: string | null; company: string | null; role: string | null; label: string }>
+  >([]);
+  /** A running job being watched from the board, before it has a folder. */
+  const [watching, setWatching] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [health, setHealth] = useState<{ vault: string; needsSetup: string | null; firstPerson: string | null } | null>(null);
@@ -156,7 +160,12 @@ export function App() {
     const poll = () =>
       fetch("/api/jobs")
         .then((r) => r.json())
-        .then((d: { jobs: Array<{ slug: string | null; label: string; running: boolean }> }) => {
+        .then((d: {
+          jobs: Array<{
+            id: string; slug: string | null; company: string | null; role: string | null;
+            label: string; running: boolean;
+          }>;
+        }) => {
           const live = d.jobs.filter((j) => j.running);
           setBusy(live);
           // A run that just ended may have written files the board shows.
@@ -222,12 +231,16 @@ export function App() {
       </main>
     );
 
-  if (adding && who)
+  if ((adding || watching) && who)
     return (
       <main>
         <NewApplication
+          {...(watching ? { watch: watching } : {})}
           who={who}
-          onClose={() => setAdding(false)}
+          onClose={() => {
+            setAdding(false);
+            setWatching(null);
+          }}
           onCreated={() => setReload((r) => r + 1)}
           onOpen={(slug, company) => {
             setReload((r) => r + 1);
@@ -404,10 +417,16 @@ export function App() {
                 {col.key === "drafting" &&
                   busy
                     .filter((b) => !b.slug)
-                    .map((b, i) => (
-                      <article className="card card-working" key={`pending${i}`}>
-                        <h3>Reading the job</h3>
-                        <p className="role">{b.label}</p>
+                    .map((b) => (
+                      <article
+                        className="card card-working"
+                        key={b.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setWatching(b.id)}
+                      >
+                        <h3>{b.company ?? "Reading the job"}</h3>
+                        <p className="role">{b.role ?? b.label}</p>
                       </article>
                     ))}
                 {!items.length && <p className="col-empty">Drop here</p>}

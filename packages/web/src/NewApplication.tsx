@@ -26,12 +26,15 @@ export function NewApplication({
   onClose,
   onCreated,
   onOpen,
+  watch,
 }: {
   who: string;
   onClose: () => void;
   onCreated: () => void;
   /** Called once the folder exists, so the user can watch the rest happen in it. */
   onOpen?: (slug: string, company: string) => void;
+  /** A run already in progress to attach to, instead of starting a new one. */
+  watch?: string;
 }) {
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
@@ -51,7 +54,59 @@ export function NewApplication({
   // Only hand off once, however many files the run writes.
   const handedOff = useRef(false);
   // Its own id, because a new application has no folder to be named after yet.
-  const jobId = useRef(`new-${Date.now()}`);
+  const jobId = useRef(watch ?? `new-${Date.now()}`);
+
+  /**
+   * A name for the card, from what was pasted.
+   *
+   * The board shows a placeholder the moment you press Start, and "Reading the
+   * job" is indistinguishable from the other one you started a minute ago. Job
+   * pages almost always open with the company name, and a URL carries it in the
+   * host, so the first useful line is a good enough guess. It is replaced by
+   * status.md as soon as that exists and is never written to disk.
+   */
+  const guessCompany = (input: string): string | undefined => {
+    const t = input.trim();
+    if (!t) return undefined;
+    const url = /^https?:\/\/([^/]+)/i.exec(t);
+    if (url) {
+      const host = (url[1] ?? "").replace(/^www\./, "").split(".")[0] ?? "";
+      // Board hosts name the board, not the employer, and the slug after them
+      // usually does name the employer.
+      if (/^(boards|jobs|apply|job-boards|careers|hire|ashbyhq|greenhouse|lever|workable)$/i.test(host)) {
+        const seg = t.split("/").filter(Boolean)[2] ?? "";
+        return seg ? seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : undefined;
+      }
+      return host ? host.charAt(0).toUpperCase() + host.slice(1) : undefined;
+    }
+    const line = t.split("\n").map((l) => l.trim()).find((l) => l.length > 1 && l.length < 60);
+    return line;
+  };
+
+  /*
+   * Attach to a run already going.
+   *
+   * Clicking the shimmering card comes back here, and the events are kept on
+   * the server, so the log picks up where it is rather than starting blank.
+   */
+  useEffect(() => {
+    if (!watch) return;
+    setRunning(true);
+    void fetch("/api/jobs")
+      .then((r) => r.json())
+      .then((d: { jobs: Array<{ id: string; running: boolean; events: Array<Record<string, unknown>> }> }) => {
+        const mine = d.jobs.find((j) => j.id === watch);
+        if (!mine) return setRunning(false);
+        setRunning(mine.running);
+        const replay: Line[] = [];
+        for (const e of mine.events) {
+          if (e.t === "tool") replay.push({ kind: "activity", text: String(e.label) });
+          else if (e.t === "text") replay.push({ kind: "said", text: String(e.text) });
+        }
+        setLines(replay);
+      })
+      .catch(() => setRunning(false));
+  }, [watch]);
 
   useEffect(() => {
     const socket = new WebSocket(`ws://${location.host}/ws`);
@@ -115,7 +170,15 @@ export function NewApplication({
         `If you cannot read the page, say so plainly and ask me to paste the description. Do not guess at its contents.`
       : `Use the boulot:new-job skill to start a new application. Here is the job description:\n\n${raw}`;
 
-    ws.current.send(JSON.stringify({ prompt, person: who, job: jobId.current, label: "Logging the role" }));
+    ws.current.send(
+      JSON.stringify({
+        prompt,
+        person: who,
+        job: jobId.current,
+        label: "Reading the job",
+        company: guessCompany(input),
+      }),
+    );
   };
 
   return (
