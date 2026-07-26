@@ -158,7 +158,16 @@ export function Workbench({
    */
   const [runKind, setRunKind] = useState<"build" | "tweak" | "adopted" | null>(null);
   const [activity, setActivity] = useState<string[]>([]);
-  const [said, setSaid] = useState<string[]>([]);
+  /*
+   * Both sides of the conversation, in order.
+   *
+   * This was an array of the agent's replies, so what you asked for vanished
+   * the moment you pressed Send and the answer arrived with no question above
+   * it. Half a transcript is worse than none: you cannot tell which reply
+   * belongs to which request, and after two exchanges you cannot remember what
+   * you asked.
+   */
+  const [turns, setTurns] = useState<Array<{ who: "you" | "boulot"; text: string }>>([]);
   const [ask, setAsk] = useState("");
   const [cost, setCost] = useState(0);
   const [pdfKey, setPdfKey] = useState(0);
@@ -224,7 +233,11 @@ export function Workbench({
         const mine = d.jobs.find((j) => j.slug === slug);
         if (!mine) return;
         setActivity(mine.events.filter((e) => e.t === "tool").map((e) => (e as { label: string }).label));
-        setSaid(mine.events.filter((e) => e.t === "text").map((e) => (e as { text: string }).text));
+        setTurns(
+          mine.events
+            .filter((e) => e.t === "text")
+            .map((e) => ({ who: "boulot" as const, text: (e as { text: string }).text })),
+        );
         if (mine.running) {
           setRunning(mine.label);
           setRunKind("adopted");
@@ -284,8 +297,8 @@ export function Workbench({
           setTab(next);
         }
         void refresh();
-      } else if (ev.t === "text") setSaid((s) => [...s, ev.text]);
-      else if (ev.t === "error") setSaid((s) => [...s, ev.message]);
+      } else if (ev.t === "text") setTurns((t) => [...t, { who: "boulot", text: ev.text }]);
+      else if (ev.t === "error") setTurns((t) => [...t, { who: "boulot", text: ev.message }]);
       else if (ev.t === "result") {
         setRunning(null);
         setRunKind(null);
@@ -307,7 +320,7 @@ export function Workbench({
     setRunKind(kind);
     setRunning(label);
     setActivity([]);
-    setSaid([]);
+    setActivity([]);
     ws.current.send(JSON.stringify({ prompt, person: who, job: slug, slug, label, model }));
   };
 
@@ -355,7 +368,7 @@ export function Workbench({
     });
     setFiling(false);
     if (!r.ok) {
-      setSaid((s) => [...s, "Could not archive that. It may already be filed."]);
+      setTurns((t) => [...t, { who: "boulot", text: "Could not archive that. It may already be filed." }]);
       return;
     }
     onArchived?.();
@@ -516,6 +529,7 @@ export function Workbench({
     const attach = (label: string, body: string, file: string) =>
       body.trim() ? `\n\n<${label} path="active/${slug}/${file}">\n${body.trim()}\n</${label}>` : "";
 
+    setTurns((t) => [...t, { who: "you", text: q }]);
     send(
       `Application: active/${slug}\n\n` +
         `The current contents of the files are included below, so you do not need to open them. ` +
@@ -773,17 +787,23 @@ export function Workbench({
                 ))}
               </details>
             )}
-            {said.map((t, i) => (
-              <div className="answer" key={i}>
-                <Markdown text={t} />
-              </div>
-            ))}
+            {turns.map((t, i) =>
+              t.who === "you" ? (
+                <div className="asked" key={i}>
+                  {t.text}
+                </div>
+              ) : (
+                <div className="answer" key={i}>
+                  <Markdown text={t.text} />
+                </div>
+              ),
+            )}
             {Boolean(running) && (
               <p className="keeps-going">
                 This keeps running if you leave. Go back to the board and start another one.
               </p>
             )}
-            {!running && !activity.length && !said.length && (
+            {!running && !activity.length && !turns.length && (
               <p className="hint">
                 Press play and Boulot writes the whole application, updating the documents on the left as it
                 goes. Edit anything yourself, or ask for a change below.
