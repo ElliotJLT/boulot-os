@@ -385,7 +385,39 @@ export function App() {
               // March is not competing for attention with one you sent today.
               .filter((a) => a.bucket === "active")
               .filter((a) => col.stages.includes(a.stage))
-              .sort((a, b) => (a.flags2[0]?.priority ?? 99) - (b.flags2[0]?.priority ?? 99));
+              /*
+               * Applied sorts by when it went out, newest first.
+               *
+               * The other columns sort by what needs attention, which is right
+               * for work in progress: the thing about to go stale should be at
+               * the top. Applied is not work in progress, it is a record of
+               * what you sent and when, and the only reading anyone does of it
+               * is chronological. Sorting it by flag put a three-week-old
+               * application above one sent this morning.
+               *
+               * Undated applications sort last rather than first, because a
+               * missing date is unknown rather than ancient.
+               */
+              .sort((a, b) => {
+                if (col.key === "applied") {
+                  /*
+                   * The applied date, and only that.
+                   *
+                   * Falling back to lastUpdated sorted an application with no
+                   * applied date into the middle of today's, where its card
+                   * said "(no date)" while sitting above one dated three days
+                   * ago. An order the eye cannot verify from the cards is worse
+                   * than a cruder one it can.
+                   */
+                  const when = (x: typeof a) => x.appliedDate ?? "";
+                  const [l, r] = [when(a), when(b)];
+                  if (l && r) return r.localeCompare(l);
+                  // A date beats no date; two blanks fall through to the flag.
+                  if (l) return -1;
+                  if (r) return 1;
+                }
+                return (a.flags2[0]?.priority ?? 99) - (b.flags2[0]?.priority ?? 99);
+              });
             // Empty columns stay on screen now: a column you cannot drop into
             // is not a column, and hiding them made the board rearrange itself
             // mid-drag.
