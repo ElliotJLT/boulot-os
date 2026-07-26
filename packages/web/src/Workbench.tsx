@@ -462,12 +462,32 @@ export function Workbench({
      * than from the tailored one, and the PDF has to come last or it renders a
      * CV that is about to change.
      */
-    const plan = [
-      STEPS[0],
-      ...EXTRAS.filter((e) => include.has(e.key)),
-      STEPS[1],
-    ] as ReadonlyArray<{ key: string; label: string; verb: string }>;
-    const missing = plan.filter((s) => !done(s.key));
+    const ticked = EXTRAS.filter((e) => include.has(e.key));
+    const plan = [STEPS[0], ...ticked, STEPS[1]] as ReadonlyArray<{
+      key: string;
+      label: string;
+      verb: string;
+    }>;
+
+    /*
+     * A ticked box is the instruction. Do not second-guess it with the file
+     * system.
+     *
+     * This filtered every step whose document already existed, which is right
+     * for the CV and wrong for the extras. Pasting the questions into the
+     * Questions tab creates application-answers.md, so the file existed, so
+     * "Answer their questions" counted as done and was dropped from the plan
+     * before the run started. The questions were pasted, the box was ticked,
+     * the run went ahead, and nothing answered them.
+     *
+     * The CV and the PDF still skip when they exist, because there Start over
+     * is the way to redo them. An extra you have just asked for is not
+     * something you have already got.
+     */
+    const missing = plan.filter((s) => {
+      const optional = EXTRAS.some((e) => e.key === s.key);
+      return optional ? include.has(s.key) : !done(s.key);
+    });
     if (!missing.length) return;
     /*
      * Hand it the documents rather than making it find them.
@@ -488,7 +508,7 @@ export function Workbench({
         : key === "cover"
           ? `Use the boulot:application-answers skill to write a cover letter to active/${slug}/cover-letter.md.`
           : key === "questions"
-            ? `Answer the questions already written in active/${slug}/application-answers.md, in that file, beneath each one. Answer only what is written there.`
+            ? `active/${slug}/application-answers.md already contains the employer's questions and no answers. Write an answer beneath each question, in that same file, keeping the questions in place. Answer only the questions written there and do not invent others.`
             : key === "review"
               ? `Run the three adversarial reviewers described in boulot:tailor-cv, then apply their edits to cv.md.`
               : `Call boulot_render_pdf on active/${slug}/cv.md to active/${slug}/cv.pdf and report the fit.`;
