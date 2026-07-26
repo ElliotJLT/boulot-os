@@ -623,6 +623,17 @@ interface Job {
   events: unknown[];
   running: boolean;
   startedAt: number;
+  /*
+   * One conversation per application, not per tab.
+   *
+   * The agent resumes its own session so a tweak remembers the CV it just
+   * wrote. That used to be keyed to the websocket, which was survivable when
+   * only one thing could run and actively wrong the moment three could: three
+   * applications sharing a tab would have shared a conversation, and one
+   * company's job description would have been in context while another's CV
+   * was written. Keying it to the application is what makes concurrency safe.
+   */
+  sessionId?: string | undefined;
 }
 
 const jobs = new Map<string, Job>();
@@ -678,8 +689,10 @@ wss.on("connection", (socket) => {
       return;
     }
 
+    const previous = jobs.get(id);
     const job: Job = {
       id,
+      ...(previous?.sessionId ? { sessionId: previous.sessionId } : {}),
       slug: msg.slug ?? null,
       /*
        * A first guess from what the user pasted, replaced by the real thing the
@@ -693,7 +706,7 @@ wss.on("connection", (socket) => {
       company: msg.company ?? null,
       role: null,
       label: msg.label ?? "Working",
-      events: [],
+      events: previous?.events ?? [],
       running: true,
       startedAt: Date.now(),
     };
@@ -701,11 +714,13 @@ wss.on("connection", (socket) => {
     broadcast({ t: "job", job: id, slug: job.slug, company: job.company, label: job.label, running: true });
 
     try {
-      await run({
+      job.sessionId = await run({
         prompt: msg.prompt,
         vaultRoot: VAULT,
         person: msg.person,
         rendererPath: RENDERER,
+        // Continues this application's conversation, and only this one's.
+        ...(job.sessionId ? { sessionId: job.sessionId } : {}),
         onEvent: (e) => {
           /*
            * A new application does not know its own folder when it starts, so

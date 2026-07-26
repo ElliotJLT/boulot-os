@@ -132,6 +132,7 @@ export function App() {
   >([]);
   /** A running job being watched from the board, before it has a folder. */
   const [watching, setWatching] = useState<string | null>(null);
+  const [maxAgents, setMaxAgents] = useState(3);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [health, setHealth] = useState<{ vault: string; needsSetup: string | null; firstPerson: string | null } | null>(null);
@@ -161,12 +162,14 @@ export function App() {
       fetch("/api/jobs")
         .then((r) => r.json())
         .then((d: {
+          max?: number;
           jobs: Array<{
             id: string; slug: string | null; company: string | null; role: string | null;
             label: string; running: boolean;
           }>;
         }) => {
           const live = d.jobs.filter((j) => j.running);
+          if (typeof d.max === "number") setMaxAgents(d.max);
           setBusy(live);
           // A run that just ended may have written files the board shows.
           setBusy((prev) => {
@@ -318,6 +321,19 @@ export function App() {
           <h1>Boulot</h1>
         </div>
         <nav className="people">
+          {/*
+            How many agents are working, always.
+            
+            Runs outlive the tab, so without this the only way to know whether
+            anything is happening is to remember. It also says the ceiling,
+            because "you can have three of these going" is not discoverable and
+            is the main thing that makes the app faster to use than doing it by
+            hand.
+          */}
+          <span className={busy.length ? "agents on" : "agents"} title="Applications being worked on right now">
+            <span className="agent-dot" />
+            {busy.length}/{maxAgents} agents
+          </span>
           {authMode && (
             <span className="authmode" title={authMode === "api-key"
               ? "Billed per token to your Anthropic API key, capped per run."
