@@ -27,13 +27,30 @@ type Event =
   | { t: "result"; cost: number; error: boolean }
   | { t: "error"; message: string };
 
-/** Deliverables, in the order they should be produced. */
+/**
+ * What every application needs, and nothing else.
+ *
+ * A cover letter and a set of answers used to be part of the build, so every
+ * run wrote both whether or not the employer had asked for either. Artificial
+ * Societies wanted neither, and it got both: two documents nobody reads, paid
+ * for in tokens and in the minutes spent watching them being written.
+ *
+ * Both are one click away below. Making them opt-in costs a click on the
+ * applications that want them and saves the work on the ones that do not.
+ */
 const STEPS = [
   { key: "cv", label: "Tailor the CV", verb: "Tailoring the CV" },
-  { key: "cover", label: "Draft a cover letter", verb: "Drafting the cover letter" },
-  { key: "questions", label: "Answer their questions", verb: "Answering their questions" },
   { key: "pdf", label: "Render the PDF", verb: "Rendering the PDF" },
 ] as const;
+
+/** Asked for per application, because most applications ask for neither. */
+const EXTRAS = [
+  { key: "cover", label: "Cover letter", add: "Write a cover letter" },
+  { key: "questions", label: "Questions", add: "Answer their questions" },
+] as const;
+
+/** Documents that are read rather than edited, so they render rather than sit in a textarea. */
+const READ_ONLY = new Set(["job", "research"]);
 
 /**
  * How an application ended.
@@ -61,14 +78,19 @@ const OUTCOMES = [
 const OUTPUTS = [
   { key: "cv", label: "CV" },
   { key: "pdf", label: "PDF" },
-  { key: "cover", label: "Cover letter" },
-  { key: "questions", label: "Questions" },
 ] as const;
 
 const SOURCES = [
   { key: "job", label: "Job description" },
   { key: "research", label: "Research" },
 ] as const;
+
+/** Frontmatter is plumbing; it should not be the first thing you read. */
+function stripFrontmatter(md: string): string {
+  if (!md.startsWith("---")) return md;
+  const end = md.indexOf("\n---", 3);
+  return end === -1 ? md : md.slice(end + 4).replace(/^\n+/, "");
+}
 
 export function Workbench({
   who,
@@ -244,6 +266,38 @@ export function Workbench({
     key === "pdf" ? pdfExists : Boolean(docs.find((d) => d.key === key)?.exists);
   const allDone = STEPS.every((s) => done(s.key));
 
+  /**
+   * Produce one of the optional documents.
+   *
+   * Questions is deliberately not run from here: the tab opens empty so the
+   * user can paste what the employer actually asked, and the play button then
+   * answers those. Guessing the questions from the job description produces
+   * confident answers to questions nobody asked.
+   */
+  const askFor = (key: string) => {
+    if (running) return;
+    if (key === "cover") {
+      send(
+        `For the application in active/${slug}, use the boulot:application-answers skill to write a ` +
+          `cover letter to active/${slug}/cover-letter.md. Read cv.md, job.md and research.md first.`,
+        "Writing the cover letter",
+      );
+    }
+  };
+
+  /** Answer whatever the user pasted, after making sure it is on disk. */
+  const answerQuestions = async () => {
+    if (running || !text.questions?.trim()) return;
+    if (dirty) await save();
+    send(
+      `For the application in active/${slug}, answer the questions in ` +
+        `active/${slug}/application-answers.md using the boulot:application-answers skill. ` +
+        `Answer only the questions written there. Read cv.md, job.md and research.md first, ` +
+        `and write the answers back into that same file beneath each question.`,
+      "Answering their questions",
+    );
+  };
+
   const runAll = () => {
     const missing = STEPS.filter((s) => !done(s.key));
     if (!missing.length) return;
@@ -368,7 +422,11 @@ export function Workbench({
         <section className={`pane${flash ? " pane-flash" : ""}`}>
           <div className="tabs">
             <div className="tab-group">
-              {OUTPUTS.map((t) => {
+              {[
+                ...OUTPUTS,
+                // An extra earns a tab by existing. Until then it is a button.
+                ...EXTRAS.filter((e) => docs.find((d) => d.key === e.key)?.exists),
+              ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
                 const d = docs.find((x) => x.key === t.key);
                 return (
@@ -387,6 +445,30 @@ export function Workbench({
                 );
               })}
             </div>
+
+            {/*
+              Ask for the extras rather than always producing them.
+              
+              Questions opens the tab first so the user can paste what was
+              actually asked: answering questions the agent inferred from a job
+              description is how you end up answering the wrong ones.
+            */}
+            {EXTRAS.filter((e) => !docs.find((d) => d.key === e.key)?.exists).map((e) => (
+              <button
+                key={e.key}
+                className="add-tab"
+                disabled={Boolean(running)}
+                title={e.add}
+                onClick={() => {
+                  chosen.current = true;
+                  setTab(e.key);
+                  setDirty(false);
+                  if (e.key === "cover") askFor(e.key);
+                }}
+              >
+                + {e.label}
+              </button>
+            ))}
 
             <span className="tab-split" />
 
@@ -411,10 +493,36 @@ export function Workbench({
             </div>
           </div>
 
+          {/*
+            Questions get their own action because they are the one document the
+            agent must not invent. Pasting what was actually asked, then
+            answering that, beats reading questions out of a job description.
+          */}
+          {tab === "questions" && Boolean(text.questions?.trim()) && (
+            <div className="pane-action">
+              <button className="primary" disabled={Boolean(running)} onClick={() => void answerQuestions()}>
+                Answer these
+              </button>
+              <span>Paste what they actually asked. Nothing is inferred from the job description.</span>
+            </div>
+          )}
+
           {tab === "pdf" ? (
             <iframe className="pdf" key={pdfKey} title="CV" src={`/api/${who}/job/${slug}/file/cv.pdf?v=${pdfKey}`} />
           ) : text[tab] === undefined ? (
             <p className="hint">Loading…</p>
+          ) : READ_ONLY.has(tab) ? (
+            /*
+             * Reference, not a draft.
+             *
+             * The job description and the research were shown as raw markdown in
+             * a monospace box, frontmatter and all, so the most useful reading
+             * on the screen was the least readable thing on it. These are the
+             * two documents nobody edits, so they render.
+             */
+            <div className="reading">
+              <Markdown text={stripFrontmatter(text[tab] ?? "")} />
+            </div>
           ) : (
             <textarea
               className="editor"

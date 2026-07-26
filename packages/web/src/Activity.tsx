@@ -72,65 +72,146 @@ export function collapse(labels: string[]): Array<{ text: string; count: number 
  * is rendered as React elements and can never become markup.
  */
 export function Markdown({ text }: { text: string }) {
-  const blocks = text.trim().split(/\n{2,}/);
-  return (
-    <>
-      {blocks.map((block, bi) => {
-        const lines = block.split("\n");
+  /*
+   * Line-driven rather than block-driven.
+   *
+   * The first version treated a blank-line-separated block as one thing, which
+   * works for chat output and fails on real documents: a heading followed
+   * directly by its paragraph is a single block, so the whole thing rendered as
+   * prose with a literal "##" at the front. Research files are written that way
+   * throughout, so almost none of their structure survived.
+   *
+   * Tables still need the block view, because a table is defined by its second
+   * line, so they are matched first and everything else walks line by line.
+   */
+  const out: ReactNode[] = [];
+  const lines = text.trim().split("\n");
 
-        // Tables. The JD mapping table is the most important thing tailor-cv
-        // produces, and without this it renders as an unreadable run of pipes.
-        // Handled before lists because a table row also starts with a symbol.
-        if (lines.length >= 2 && lines[0]?.includes("|") && /^[\s|:-]+$/.test(lines[1] ?? "")) {
-          const cells = (row: string) =>
-            row.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
-          const head = cells(lines[0] ?? "");
-          const body = lines.slice(2).filter((l) => l.includes("|")).map(cells);
-          return (
-            <table key={bi} className="md-table">
-              <thead>
-                <tr>{head.map((h, i) => <th key={i}>{inline(h)}</th>)}</tr>
-              </thead>
-              <tbody>
-                {body.map((row, ri) => (
-                  <tr key={ri}>
-                    {head.map((_, ci) => <td key={ci}>{inline(row[ci] ?? "")}</td>)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          );
-        }
+  let para: string[] = [];
+  let list: string[] = [];
 
-        const isList = lines.every((l) => /^\s*[-*]\s+/.test(l));
-        if (isList) {
-          return (
-            <ul key={bi}>
-              {lines.map((l, li) => (
-                <li key={li}>{inline(l.replace(/^\s*[-*]\s+/, ""))}</li>
-              ))}
-            </ul>
-          );
-        }
-        const heading = /^(#{2,4})\s+(.*)$/.exec(block);
-        if (heading) return <h4 key={bi}>{inline(heading[2] ?? "")}</h4>;
-        return <p key={bi}>{inline(block)}</p>;
-      })}
-    </>
-  );
+  const flushPara = () => {
+    if (!para.length) return;
+    out.push(<p key={`p${out.length}`}>{inline(para.join(" "))}</p>);
+    para = [];
+  };
+  const flushList = () => {
+    if (!list.length) return;
+    out.push(
+      <ul key={`u${out.length}`}>
+        {list.map((l, i) => (
+          <li key={i}>{inline(l)}</li>
+        ))}
+      </ul>,
+    );
+    list = [];
+  };
+  const flush = () => {
+    flushList();
+    flushPara();
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+
+    // A table: this line has pipes and the next is the separator row.
+    if (line.includes("|") && /^[\s|:-]+$/.test(lines[i + 1] ?? "") && (lines[i + 1] ?? "").includes("|")) {
+      flush();
+      const cells = (row: string) =>
+        row.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
+      const head = cells(line);
+      const body: string[][] = [];
+      let j = i + 2;
+      for (; j < lines.length && (lines[j] ?? "").includes("|"); j++) body.push(cells(lines[j] ?? ""));
+      out.push(
+        <table key={`t${out.length}`} className="md-table">
+          <thead>
+            <tr>{head.map((h, k) => <th key={k}>{inline(h)}</th>)}</tr>
+          </thead>
+          <tbody>
+            {body.map((row, ri) => (
+              <tr key={ri}>{head.map((_, ci) => <td key={ci}>{inline(row[ci] ?? "")}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>,
+      );
+      i = j - 1;
+      continue;
+    }
+
+    if (!line.trim()) {
+      flush();
+      continue;
+    }
+
+    const heading = /^(#{1,4})\s+(.*)$/.exec(line);
+    if (heading) {
+      flush();
+      const depth = (heading[1] ?? "#").length;
+      const body = inline(heading[2] ?? "");
+      out.push(
+        depth === 1 ? <h1 key={`h${out.length}`}>{body}</h1>
+        : depth === 2 ? <h2 key={`h${out.length}`}>{body}</h2>
+        : <h3 key={`h${out.length}`}>{body}</h3>,
+      );
+      continue;
+    }
+
+    const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
+    if (bullet) {
+      flushPara();
+      list.push(bullet[1] ?? "");
+      continue;
+    }
+
+    const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+    if (numbered) {
+      flushPara();
+      list.push(numbered[1] ?? "");
+      continue;
+    }
+
+    flushList();
+    para.push(line);
+  }
+  flush();
+
+  return <>{out}</>;
 }
 
 /** **bold**, *italic* and `code`, as elements. */
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
+  /*
+   * Links included, because research is mostly citations.
+   *
+   * Without them a research document reads as prose interrupted every other
+   * sentence by a raw URL in brackets, which is the form least useful to both
+   * a reader and a clicker. Matched before emphasis so a URL containing an
+   * asterisk cannot be mistaken for italics.
+   */
+  const re = /(\[[^\]]+\]\([^)\s]+\)|\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let key = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) out.push(text.slice(last, m.index));
     const tok = m[0];
-    if (tok.startsWith("**")) out.push(<strong key={key++}>{tok.slice(2, -2)}</strong>);
+    if (tok.startsWith("[")) {
+      const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(tok);
+      const href = link?.[2] ?? "";
+      // Only http(s). A rendered document should never be a way to invoke
+      // javascript: or file: from something an agent wrote.
+      out.push(
+        /^https?:\/\//i.test(href) ? (
+          <a key={key++} href={href} target="_blank" rel="noreferrer noopener">
+            {link?.[1]}
+          </a>
+        ) : (
+          <span key={key++}>{link?.[1]}</span>
+        ),
+      );
+    } else if (tok.startsWith("**")) out.push(<strong key={key++}>{tok.slice(2, -2)}</strong>);
     else if (tok.startsWith("`")) out.push(<code key={key++}>{tok.slice(1, -1)}</code>);
     else out.push(<em key={key++}>{tok.slice(1, -1)}</em>);
     last = m.index + tok.length;
