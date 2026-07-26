@@ -219,3 +219,81 @@ function inline(text: string): ReactNode[] {
   if (last < text.length) out.push(text.slice(last));
   return out;
 }
+
+
+/**
+ * The stages of building an application, as opposed to its tool calls.
+ *
+ * A build reads the same three files a dozen times because three reviewers each
+ * read them independently, which is correct and reads as flailing. The list of
+ * calls is still there for anyone who wants it; this is the version that says
+ * where the work has got to.
+ */
+export type BuildStage =
+  | "loading"
+  | "mapping"
+  | "drafting"
+  | "reviewing"
+  | "editing"
+  | "rendering";
+
+export const BUILD_STAGES: Array<{ key: BuildStage; label: string }> = [
+  { key: "loading", label: "Loading your record" },
+  { key: "mapping", label: "Mapping the job description" },
+  { key: "drafting", label: "Writing the draft" },
+  { key: "reviewing", label: "Three reviewers reading it" },
+  { key: "editing", label: "Applying their edits" },
+  { key: "rendering", label: "Rendering the page" },
+];
+
+/** Which stage a tool label belongs to. Order matters: later wins. */
+export function buildStageOf(label: string): BuildStage | null {
+  if (/Rendering the PDF/i.test(label)) return "rendering";
+  if (/^Updating/i.test(label)) return "editing";
+  if (/is scoring|is finding|is looking for/i.test(label)) return "reviewing";
+  if (/^(Writing|Saved|Created)/i.test(label)) return "drafting";
+  if (/career record|Running a skill|research on/i.test(label)) return "loading";
+  if (/job description/i.test(label)) return "mapping";
+  return null;
+}
+
+/**
+ * The furthest stage reached, and everything before it.
+ *
+ * Progress only moves forward. A reviewer re-reading the job description after
+ * the draft exists should not drag the rail back to "mapping", because the work
+ * has not gone backwards.
+ */
+export function stagesReached(labels: string[]): Set<BuildStage> {
+  const order = BUILD_STAGES.map((s) => s.key);
+  let furthest = -1;
+  for (const l of labels) {
+    const stage = buildStageOf(l);
+    if (!stage) continue;
+    furthest = Math.max(furthest, order.indexOf(stage));
+  }
+  return new Set(order.slice(0, furthest + 1));
+}
+
+export function BuildProgress({ labels, running }: { labels: string[]; running: boolean }) {
+  const reached = stagesReached(labels);
+  if (!reached.size) return null;
+  const keys = BUILD_STAGES.map((s) => s.key);
+  const current = keys.filter((k) => reached.has(k)).at(-1);
+
+  return (
+    <ol className="rail">
+      {BUILD_STAGES.map((s) => {
+        const done = reached.has(s.key) && s.key !== current;
+        const live = running && s.key === current;
+        const doneNow = reached.has(s.key) && !running;
+        return (
+          <li key={s.key} className={live ? "rail-live" : done || doneNow ? "rail-done" : "rail-todo"}>
+            <span className="rail-mark">{live ? <span className="dot" /> : done || doneNow ? "✓" : ""}</span>
+            {s.label}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}

@@ -2,7 +2,7 @@ import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk"
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
 import { resolve, relative, isAbsolute, dirname } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { fetchJob } from "./boards.js";
 
 /**
@@ -78,13 +78,29 @@ function describe(name: string, input: Record<string, unknown>): string {
     case "WebFetch":
       return `Reading ${String(input.url ?? "").replace(/^https?:\/\//, "").split("/")[0]}`;
     case "Task": {
-      const who = String(input.subagent_type ?? "");
+      /*
+       * Name the reviewer, whatever it was spawned as.
+       *
+       * The log showed "Working" three times in a row for the most distinctive
+       * thing this app does. subagent_type is the reliable field when it is
+       * there, but the model does not always set it, so the description and the
+       * prompt are searched for who this actually is. A run that says "Hiring
+       * Manager is scoring your bullets" reads as three specialists at work; a
+       * run that says "Working" three times reads as a stuck spinner.
+       */
       const named: Record<string, string> = {
         "hiring-manager": "Hiring Manager is scoring your bullets",
         reviewer: "Reviewer is finding the three biggest edits",
         strategist: "Strategist is looking for what you left out",
       };
-      return named[who] ?? String(input.description ?? "Working");
+      const who = String(input.subagent_type ?? "");
+      if (named[who]) return named[who]!;
+
+      const haystack = `${input.description ?? ""} ${input.prompt ?? ""}`.toLowerCase();
+      if (/hiring manager/.test(haystack)) return named["hiring-manager"]!;
+      if (/left out|underplay|strategist/.test(haystack)) return named.strategist!;
+      if (/second reader|three edits|reviewer/.test(haystack)) return named.reviewer!;
+      return String(input.description ?? "Working");
     }
     case "Skill":
       return `Running ${String(input.command ?? input.name ?? "a skill")}`;
@@ -140,6 +156,32 @@ const DENIED = [
  * @param cwd Where the agent stands, which is the person's folder rather than
  *            the vault root. Relative paths it hands us are relative to this.
  */
+/**
+ * Whether a path is inside the vault, comparing real paths.
+ *
+ * Two checks needed this and only one of them had it, which is the usual result
+ * of writing the same logic twice. On macOS /tmp is a symlink to /private/tmp,
+ * so a vault at /tmp/x holds files that resolve to /private/tmp/x and a naive
+ * comparison calls them outsiders. Nobody with a vault under their home
+ * directory would ever see it, which is why it survived.
+ */
+export function insideVault(vaultRoot: string, target: string): boolean {
+  const realOf = (p: string) => {
+    try {
+      return realpathSync(p);
+    } catch {
+      // A file being written does not exist yet, so its parent is the test.
+      try {
+        return resolve(realpathSync(dirname(p)), p.split("/").pop() ?? "");
+      } catch {
+        return p;
+      }
+    }
+  };
+  const rel = relative(realOf(vaultRoot), realOf(target));
+  return !rel.startsWith("..") && !isAbsolute(rel);
+}
+
 function boulotTools(vaultRoot: string, rendererPath: string, cwd: string) {
   return createSdkMcpServer({
     name: "boulot",
@@ -219,8 +261,7 @@ function boulotTools(vaultRoot: string, rendererPath: string, cwd: string) {
             : resolve(dirname(cv), outputPath.split("/").pop() ?? "cv.pdf");
 
           for (const [label, abs] of [["cvPath", cv], ["outputPath", pdfOut]] as const) {
-            const rel = relative(vaultRoot, abs);
-            if (rel.startsWith("..") || isAbsolute(rel)) {
+            if (!insideVault(vaultRoot, abs)) {
               return {
                 content: [
                   {
@@ -485,8 +526,7 @@ export async function run({
                 const path = i.tool_input?.file_path;
                 if (typeof path !== "string") return { continue: true };
                 const abs = isAbsolute(path) ? path : resolve(cwd, path);
-                const rel = relative(vaultRoot, abs);
-                if (!rel.startsWith("..") && !isAbsolute(rel)) return { continue: true };
+                if (insideVault(vaultRoot, abs)) return { continue: true };
 
                 /*
                  * Say that it was refused.

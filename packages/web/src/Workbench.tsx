@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Markdown, collapse } from "./Activity.js";
+import { BuildProgress, Markdown, collapse } from "./Activity.js";
 import { MODELS } from "./models.js";
 
 /**
@@ -839,8 +839,19 @@ export function Workbench({
           </div>
 
           <div className="log">
+            {/*
+              Where the work has got to, above the list of what it touched.
+              
+              A build reads the job description three times because three
+              reviewers each read it, which is correct and reads as a stuck
+              loop. The calls are still here, one fold down, for anyone who
+              wants them.
+            */}
+            {activity.length > 0 && runKind !== "tweak" && (
+              <BuildProgress labels={activity} running={Boolean(running)} />
+            )}
             {activity.length > 0 && (
-              <details className="steps" open={Boolean(running)}>
+              <details className="steps" open={false}>
                 <summary>{collapse(activity).length} steps</summary>
                 {collapse(activity).map((a, i) => (
                   <p className="activity" key={i}>

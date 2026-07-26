@@ -902,3 +902,55 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 /* An arrow already says "back". */
 .back { font-size: 16px; padding: 6px 10px; color: var(--ink-3); }
 .back:hover { color: var(--ink); transform: translateX(-2px); }
+
+/* ── Where the work has got to ────────────────────────────────────────── */
+/* The tool log is honest and unreadable: three reviewers each read the same
+   two files, so it looks like a stuck loop. This is the same run described in
+   the six things it is actually doing. */
+.rail { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 2px; }
+.rail li {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; padding: 5px 0; color: var(--ink-3);
+  transition: color 200ms ease;
+}
+.rail-mark {
+  inline-size: 16px; block-size: 16px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-size: 10px;
+  border: 1px solid var(--line-2); color: transparent;
+}
+.rail-done { color: var(--ink-2); }
+.rail-done .rail-mark { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-deep); }
+.rail-live { color: var(--ink); font-weight: 500; }
+.rail-live .rail-mark { border-color: var(--accent); background: none; }
+.rail-live .dot {
+  inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--accent);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.rail-todo { color: var(--ink-3); opacity: 0.5; }
+@media (prefers-reduced-motion: reduce) { .rail-live .dot { animation: none; } }
+
+/* ── The mapping table ────────────────────────────────────────────────── */
+/* The most valuable thing tailor-cv produces, and it was rendering as plain
+   text in a wall of prose. It earns its own surface. */
+.answer .md-table {
+  inline-size: 100%; border-collapse: separate; border-spacing: 0;
+  margin: 16px 0; font-size: 12.5px;
+  background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.answer .md-table th {
+  text-align: start; padding: 10px 12px;
+  background: var(--accent-soft); color: var(--accent-deep);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  border-block-end: 1px solid var(--line-2);
+}
+.answer .md-table td {
+  padding: 10px 12px; vertical-align: top; color: var(--ink-2);
+  border-block-end: 1px solid var(--line);
+}
+.answer .md-table tr:last-child td { border-block-end: 0; }
+.answer .md-table tr:nth-child(even) td { background: var(--bg-2); }
+/* The verdict column carries the meaning, so it reads at a glance. */
+.answer .md-table td:last-child { font-weight: 500; color: var(--ink); white-space: nowrap; }
