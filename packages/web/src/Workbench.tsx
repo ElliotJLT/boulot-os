@@ -367,21 +367,15 @@ export function Workbench({
     );
   };
 
-  /** Answer whatever the user pasted, after making sure it is on disk. */
-  const answerQuestions = async () => {
-    if (running || !text.questions?.trim()) return;
+  const runAll = async () => {
+    /*
+     * Save first.
+     *
+     * Questions are pasted into the tab and then the run reads them off disk,
+     * so an unsaved paste would have the agent answering the previous contents
+     * of the file, or an empty one.
+     */
     if (dirty) await save();
-    send(
-      `For the application in active/${slug}, answer the questions in ` +
-        `active/${slug}/application-answers.md using the boulot:application-answers skill. ` +
-        `Answer only the questions written there. Read cv.md, job.md and research.md first, ` +
-        `and write the answers back into that same file beneath each question.`,
-      "Answering their questions",
-      "tweak",
-    );
-  };
-
-  const runAll = () => {
     /*
      * The CV first, then the extras, then the PDF.
      *
@@ -591,26 +585,11 @@ export function Workbench({
           </div>
 
           {/*
-            Questions get their own action because they are the one document the
-            agent must not invent. Pasting what was actually asked, then
-            answering that, beats reading questions out of a job description.
-          */}
-          {tab === "questions" && Boolean(text.questions?.trim()) && (
-            <div className="pane-action">
-              <button className="primary" disabled={Boolean(running)} onClick={() => void answerQuestions()}>
-                Answer these
-              </button>
-              <span>Paste what they actually asked. Nothing is inferred from the job description.</span>
-            </div>
-          )}
-
-          {/*
-            A cover letter needs the tailored CV, not the master record.
-            
-            Written first it produces a letter argued from everything you have
-            ever done rather than the parts this employer asked for, and it
-            spends a run doing it. The agent said so itself: "Used cv-master.md
-            since no tailored cv.md exists yet."
+            "Answer these" used to sit here. It was left behind when the build
+            list gained checkboxes, so there were two ways to ask for the same
+            thing and only one of them respected the order. Pressing it with no
+            CV written answered the questions from the master record, which is
+            the failure it was supposed to prevent.
           */}
           {tab === "pdf" ? (
             <iframe className="pdf" key={pdfKey} title="CV" src={`/api/${who}/job/${slug}/file/cv.pdf?v=${pdfKey}`} />
@@ -665,7 +644,7 @@ export function Workbench({
               </h3>
               <button
                 className="play"
-                onClick={runAll}
+                onClick={() => void runAll()}
                 disabled={Boolean(running) || allDone}
                 title={allDone ? "Everything is written" : "Write the whole application"}
               >
