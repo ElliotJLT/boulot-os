@@ -30,6 +30,22 @@ narrative.
 
 ## Step 2: The mapping table. Never skip this.
 
+## Read each thing once
+
+One measured run of this skill cost $5.90. It searched the vault nine times,
+read the job description four times, the master record three times, and the CV
+it had just written three times. None of those files changed while it worked.
+
+- The job description is usually **given to you in the prompt**. If it is there,
+  do not open `job.md`.
+- Read `cv-master.md` **once**. It is the evidence bank and it does not change
+  mid-run.
+- Read `research.md` **once**, and only if you need the company angle.
+- Do not go looking through `archive/` or other applications for reference CVs.
+  Past CVs are a weak structural hint and an expensive one; the master record
+  and the JD are what the CV is built from.
+- Never re-read a file you have already read in this run.
+
 **Read the `writing-voice` skill first and hold it while you write.**
 
 That rule used to arrive by itself. On the machine this system grew up on there
@@ -68,6 +84,11 @@ the JD and the draft. Their briefs are already defined; do not restate them.
 ## Step 4: Synthesise
 
 Take the Hiring Manager's ordering, apply the Reviewer's edits, add the
+Run them only when the request asks for a review. They are three subagents that
+each re-read the CV and the job description and write at length, so they roughly
+double the cost of tailoring a CV, and most applications do not need an
+adversarial panel to find their problems.
+
 Strategist's missing bullets, then edit once for voice. It should read like the
 candidate wrote it on a good day, not like a model wrote it.
 

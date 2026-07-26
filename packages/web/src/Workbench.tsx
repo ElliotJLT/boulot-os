@@ -54,7 +54,21 @@ const STEPS = [
 const EXTRAS = [
   { key: "cover", label: "Write a cover letter", verb: "Drafting the cover letter" },
   { key: "questions", label: "Answer their questions", verb: "Answering their questions" },
+  {
+    key: "review",
+    label: "Review it with three agents",
+    verb: "Three reviewers are reading it",
+  },
 ] as const;
+
+/**
+ * Extras that produce no file of their own.
+ *
+ * The review panel changes the CV rather than adding a document, so it never
+ * counts as "done" and never earns a tab. It stays a box you can tick, which is
+ * the right shape anyway: it is the single most expensive thing in the app.
+ */
+const NO_DOCUMENT = new Set(["review"]);
 
 /** Documents that are read rather than edited, so they render rather than sit in a textarea. */
 const READ_ONLY = new Set(["job", "research"]);
@@ -390,17 +404,39 @@ export function Workbench({
     ] as ReadonlyArray<{ key: string; label: string; verb: string }>;
     const missing = plan.filter((s) => !done(s.key));
     if (!missing.length) return;
+    /*
+     * Hand it the documents rather than making it find them.
+     *
+     * One measured run cost $5.90 and spent it like this: nine vault searches,
+     * the job description read four times, the career record three times, the
+     * CV it had just written three times. The files never changed during the
+     * run. Attaching them inline is the same trick the tweak box already uses,
+     * and it is cheaper than the tool calls it replaces because the prefix
+     * caches.
+     */
+    const attach = (label: string, body: string, file: string) =>
+      body.trim() ? `\n\n<${label} path="active/${slug}/${file}">\n${body.trim()}\n</${label}>` : "";
+
     const instruction = (key: string) =>
       key === "cv"
         ? `Use the boulot:tailor-cv skill to write active/${slug}/cv.md. Show the JD mapping table.`
         : key === "cover"
           ? `Use the boulot:application-answers skill to write a cover letter to active/${slug}/cover-letter.md.`
           : key === "questions"
-            ? `If active/${slug}/application-answers.md lists questions, answer them there. If it does not exist, check job.md for application questions; if there are none, write a one-line note saying so.`
-            : `Call boulot_render_pdf on active/${slug}/cv.md to active/${slug}/cv.pdf and report the fit.`;
+            ? `Answer the questions already written in active/${slug}/application-answers.md, in that file, beneath each one. Answer only what is written there.`
+            : key === "review"
+              ? `Run the three adversarial reviewers described in boulot:tailor-cv, then apply their edits to cv.md.`
+              : `Call boulot_render_pdf on active/${slug}/cv.md to active/${slug}/cv.pdf and report the fit.`;
+
     send(
       `For the application in active/${slug}, do these in order:\n\n` +
         missing.map((s, i) => `${i + 1}. ${instruction(s.key)}`).join("\n") +
+        `\n\nThe job description is included below, so you do not need to open it. ` +
+        `Read cv-master.md once for the evidence bank, and research.md once if you ` +
+        `need the company angle. Do not re-read a file you have already read in ` +
+        `this run, and do not search the vault for reference CVs: the master ` +
+        `record is the source.` +
+        attach("job_description", text.job ?? "", "job.md") +
         `\n\nKeep commentary short.`,
       "Building the application",
     );
@@ -560,7 +596,9 @@ export function Workbench({
                 ...OUTPUTS,
                 // An extra earns a tab by existing. Until then it is a button.
                 ...EXTRAS.filter(
-                  (e) => include.has(e.key) || docs.find((d) => d.key === e.key)?.exists,
+                  (e) =>
+                    !NO_DOCUMENT.has(e.key) &&
+                    (include.has(e.key) || docs.find((d) => d.key === e.key)?.exists),
                 ).map((e) => ({ key: e.key, label: e.key === "cover" ? "Cover letter" : "Questions" })),
               ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
