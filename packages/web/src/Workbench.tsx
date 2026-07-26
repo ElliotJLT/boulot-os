@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildProgress, Markdown, collapse } from "./Activity.js";
+import { useSocket } from "./socket.js";
 import { MODELS } from "./models.js";
 
 /**
@@ -175,7 +176,6 @@ export function Workbench({
   const [cost, setCost] = useState(0);
   const [pdfKey, setPdfKey] = useState(0);
 
-  const ws = useRef<WebSocket | null>(null);
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
   const tabRef = useRef(tab);
@@ -250,11 +250,34 @@ export function Workbench({
       .catch(() => {});
   }, [slug]);
 
-  useEffect(() => {
-    const socket = new WebSocket(`ws://${location.host}/ws`);
-    ws.current = socket;
-    socket.onmessage = (e) => {
-      const ev: Event = JSON.parse(e.data);
+  /*
+   * Resync on reconnect.
+   *
+   * A restarted server means the run this screen was watching is gone, and the
+   * checklist and the log are both describing a moment that has passed. The
+   * jobs endpoint is the truth, so it is asked again rather than guessed at.
+   */
+  const resync = useCallback(() => {
+    void fetch("/api/jobs")
+      .then((r) => r.json())
+      .then((d: { jobs: Array<{ slug: string | null; label: string; running: boolean }> }) => {
+        const mine = d.jobs.find((j) => j.slug === slug);
+        if (mine?.running) {
+          setRunning(mine.label);
+          setRunKind((k) => k ?? "adopted");
+        } else {
+          // Nothing is running any more, whatever this screen still believes.
+          setRunning(null);
+          setRunKind(null);
+        }
+        void refresh();
+      })
+      .catch(() => {});
+  }, [slug, refresh]);
+
+  const { status: connection, send: emit } = useSocket((raw) => {
+
+      const ev = raw as Event;
       /*
        * Only this application's work.
        *
@@ -310,9 +333,8 @@ export function Workbench({
         setPdfKey((k) => k + 1);
         void refresh();
       }
-    };
-    return () => socket.close();
-  }, [refresh]);
+  }, resync);
+
 
   const send = (
     prompt: string,
@@ -320,12 +342,18 @@ export function Workbench({
     kind: "build" | "tweak" = "build",
     model: string = MODELS.tailor,
   ) => {
-    if (running || !ws.current) return;
+    if (running) return;
     setRunKind(kind);
     setRunning(label);
     setActivity([]);
     setActivity([]);
-    ws.current.send(JSON.stringify({ prompt, person: who, job: slug, slug, label, model }));
+    if (!emit({ prompt, person: who, job: slug, slug, label, model })) {
+      // The socket is down. Saying so beats a spinner that never resolves.
+      setRunning(null);
+      setRunKind(null);
+      setTurns((t) => [...t, { who: "boulot", text: "Lost the connection to Boulot. Reconnecting; try again in a moment." }]);
+      return;
+    }
   };
 
   /**
@@ -874,7 +902,12 @@ export function Workbench({
                 </div>
               ),
             )}
-            {Boolean(running) && (
+            {connection === "lost" && (
+              <p className="offline">
+                Lost the connection to Boulot. Reconnecting…
+              </p>
+            )}
+            {Boolean(running) && connection === "open" && (
               <p className="keeps-going">
                 This keeps running if you leave. Go back to the board and start another one.
               </p>

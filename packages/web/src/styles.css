@@ -972,3 +972,10 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .detail-grid input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
 .detail-grid em { font-style: normal; font-size: 11.5px; color: var(--ink-3); }
 .detail-grid em b { color: var(--accent-deep); font-weight: 600; }
+
+/* The server went away. Said plainly, because a dead socket and a slow agent
+   look identical from here and the difference matters. */
+.offline {
+  margin: 14px 0; font-size: 12.5px; color: var(--urgent);
+  background: var(--urgent-bg); border-radius: var(--radius); padding: 10px 14px;
+}
