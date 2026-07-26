@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Markdown, Phases, collapse, phaseOf, type Phase } from "./Activity.js";
+import { Markdown, Phases, Thinking, collapse, phaseOf, type Phase } from "./Activity.js";
 import { MODELS } from "./models.js";
 
 /**
@@ -44,6 +44,7 @@ export function NewApplication({
   const [cost, setCost] = useState(0);
   const [phases, setPhases] = useState<Set<Phase>>(new Set());
   const [failed, setFailed] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
   const ws = useRef<WebSocket | null>(null);
   const log = useRef<HTMLDivElement>(null);
   // Held in a ref so the socket effect can depend on nothing. An inline
@@ -103,6 +104,7 @@ export function NewApplication({
   useEffect(() => {
     if (!watch) return;
     setRunning(true);
+    setStartedAt(Date.now());
     void fetch("/api/jobs")
       .then((r) => r.json())
       .then((d: { jobs: Array<{ id: string; running: boolean; events: Array<Record<string, unknown>> }> }) => {
@@ -156,6 +158,7 @@ export function NewApplication({
       else if (ev.t === "error") setLines((l) => [...l, { kind: "problem", text: ev.message }]);
       else if (ev.t === "result") {
         setRunning(false);
+        setStartedAt(null);
         setDone(true);
         setCost((c) => c + ev.cost);
         created.current();
@@ -184,6 +187,7 @@ export function NewApplication({
     const raw = input.trim();
     if (!raw || running || !ws.current) return;
     setRunning(true);
+    setStartedAt(Date.now());
     setLines([]);
     setPhases(new Set());
     setFailed(false);
@@ -206,6 +210,10 @@ export function NewApplication({
     );
   };
 
+  // Two panes from the moment there is work to show, so arriving at the
+  // workbench is the same screen continuing rather than a different one.
+  const split = running || lines.length > 0 || done;
+
   return (
     <div className="bench">
       <header className="bench-top">
@@ -216,31 +224,68 @@ export function NewApplication({
         {cost > 0 && <span className="fit fit-ok">£{(cost * 0.79).toFixed(2)}</span>}
       </header>
 
-      <div className="newapp">
-        <label htmlFor="jd">Paste a job link, or the whole description</label>
-        <textarea
-          id="jd"
-          value={input}
-          disabled={running}
-          placeholder={"https://jobs.example.com/senior-product-manager\n\nor paste the full job description here"}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <div className="newapp-actions">
-          <span className="hint">
-            {looksLikeUrl(input)
-              ? "Looks like a link. Many job boards block automated reading, so you may be asked to paste the text."
-              : input.trim()
-                ? `${input.trim().length} characters of description`
-                : "Boulot researches the company, sets up the folder, and tells you the fit before writing anything."}
-          </span>
-          <button onClick={start} disabled={running || !input.trim()}>
-            {running ? "Working…" : "Start"}
-          </button>
-        </div>
+      {/*
+        One pane, then two.
 
-        {(lines.length > 0 || running) && (
-          <div className="log newapp-log" ref={log}>
+        This screen used to be a full-width card with the log stacked under it,
+        and pressing Start on it led to a workbench laid out nothing like it, so
+        the handover read as being thrown to a different part of the app. The
+        geometry is the same now: the job on the left, the agent on the right,
+        widening into place when the run begins. By the time the folder exists
+        and the workbench takes over, the panes are already where they belong
+        and only their contents change.
+      */}
+      <div className={split ? "bench-body newapp-body split" : "bench-body newapp-body"}>
+        <section className="pane">
+          <div className="tabs">
+            <button className="on" type="button" disabled>
+              Job description
+            </button>
+          </div>
+          <label className="sr-only" htmlFor="jd">
+            Paste a job link, or the whole description
+          </label>
+          <textarea
+            id="jd"
+            className="editor"
+            value={input}
+            readOnly={running}
+            placeholder={"Paste a job link, or the whole description.\n\nhttps://jobs.example.com/senior-product-manager"}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          {!split && (
+            <div className="newapp-actions">
+              <span className="hint">
+                {looksLikeUrl(input)
+                  ? "Looks like a link. Many job boards block automated reading, so you may be asked to paste the text."
+                  : input.trim()
+                    ? `${input.trim().length} characters of description`
+                    : "Boulot researches the company, sets up the folder, and tells you the fit before writing anything."}
+              </span>
+              <button onClick={start} disabled={running || !input.trim()}>
+                Start
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section className="pane side">
+          <div className="checklist">
+            <div className="checklist-top">
+              <h3>{running ? "Reading the job" : done ? "Done" : "Boulot"}</h3>
+              <button
+                className={running ? "play busy" : "play"}
+                onClick={start}
+                disabled={running || !input.trim()}
+                title={running ? "Reading the job" : "Start"}
+              >
+                {running ? <span className="pip" /> : done ? "✓" : "▶"}
+              </button>
+            </div>
             <Phases active={running} seen={phases} />
+          </div>
+
+          <div className="log" ref={log}>
             {failed && (
               <div className="didnt-start">
                 <b>No application was created.</b>
@@ -249,7 +294,7 @@ export function NewApplication({
                     "Boulot stopped before it made the folder."}
                 </p>
                 <p className="fix">
-                  Your text is still in the box above. Adding the company name near the top is
+                  Your text is still in the box on the left. Adding the company name near the top is
                   usually enough.
                 </p>
               </div>
@@ -260,7 +305,7 @@ export function NewApplication({
               const said = lines.filter((l) => l.kind !== "activity");
               return (
                 <>
-                  <details className="steps" open={running}>
+                  <details className="steps">
                     <summary>{activity.length} step{activity.length === 1 ? "" : "s"}</summary>
                     {activity.map((a, i) => (
                       <p className="activity" key={i}>
@@ -283,14 +328,19 @@ export function NewApplication({
               );
             })()}
 
-            {running && <p className="activity pulse">Working</p>}
-            {done && (
+            {running && (
+              <Thinking
+                label={lines.filter((l) => l.kind === "activity").at(-1)?.text ?? "Reading the job"}
+                since={startedAt}
+              />
+            )}
+            {done && !failed && (
               <p className="done">
                 <button className="linkish" onClick={onClose}>Back to the board</button> to open it.
               </p>
             )}
           </div>
-        )}
+        </section>
       </div>
     </div>
   );

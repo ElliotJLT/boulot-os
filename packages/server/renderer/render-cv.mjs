@@ -615,6 +615,8 @@ function buildHTML(cv) {
     line-height: 1.4;
   }
   .skill-item strong { font-weight: 600; }
+  /* A lone prose line spans the grid rather than wrapping inside one column. */
+  .skill-item-wide { grid-column: 1 / -1; }
 
   /* ── Languages ──────────────────────────── */
 
@@ -818,9 +820,19 @@ function buildEducationSection(sectionTitle, section) {
 }
 
 function buildSkillsSection(sectionTitle, section) {
+  /*
+   * One line of skills is a paragraph, not a column.
+   *
+   * The grid is two columns and every content line is one cell, which is right
+   * for "Languages: Python, Ruby" over "Databases: Postgres" and wrong for the
+   * single dot-separated line the tailoring skill actually writes. That line
+   * went into cell one and wrapped inside half the page width, leaving the
+   * right half of the section empty and the CV looking broken.
+   */
   let itemsHTML = "";
+  const full = section.content.length === 1 ? " skill-item-wide" : "";
   for (const line of section.content) {
-    itemsHTML += `<div class="skill-item">${renderInline(line)}</div>`;
+    itemsHTML += `<div class="skill-item${full}">${renderInline(line)}</div>`;
   }
 
   return `<div class="section">
@@ -829,11 +841,42 @@ function buildSkillsSection(sectionTitle, section) {
   </div>`;
 }
 
+/** Top-level separators only: commas and pipes outside any bracket. */
+function splitLanguages(line) {
+  const out = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of line) {
+    if (ch === "(" || ch === "[") depth++;
+    else if (ch === ")" || ch === "]") depth = Math.max(0, depth - 1);
+    if (depth === 0 && (ch === "," || ch === "|")) {
+      out.push(cur);
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  out.push(cur);
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+
 function buildLanguagesSection(sectionTitle, section) {
   let langHTML = '<div class="languages-grid">';
 
   for (const line of section.content) {
-    const parts = line.split("|").map((s) => s.trim());
+    /*
+     * Split on commas as well as pipes, outside brackets.
+     *
+     * "French (native), English (native), Spanish (fluent), Chinese (HSK 5)"
+     * is one line, and it was treated as one language. The paren matcher is
+     * lazy on the left and anchored on the right, so it read the name as
+     * "French" and the level as everything from "native)" to "HSK 5", losing
+     * the closing bracket on the way. The PDF said the user spoke one language
+     * called French, at a level that was most of a sentence.
+     *
+     * Depth-aware because a level can carry its own commas.
+     */
+    const parts = splitLanguages(line);
     for (const part of parts) {
       const colonIdx = part.indexOf(":");
       if (colonIdx > -1) {

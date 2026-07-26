@@ -244,23 +244,41 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
    this stopped being an ink-coloured pill left over from before the palette. */
 .people .primary { margin-inline-start: 8px; }
 
-.newapp {
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 20px; display: flex; flex-direction: column; gap: 12px; min-block-size: 0; flex: 1;
+/* Intake, which is the workbench before it has anything in it.
+   One column until you press Start, two after, so the handover to the
+   workbench changes what is in the panes rather than where they are. */
+.newapp-body {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
+  gap: 0;
+  transition: grid-template-columns 620ms cubic-bezier(0.2, 0.72, 0.2, 1), gap 620ms ease;
 }
-.newapp label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); }
-.newapp textarea {
-  min-block-size: 160px; resize: vertical; font: inherit; font-size: 13.5px; line-height: 1.6;
-  padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+.newapp-body.split { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; }
+.newapp-body > .side {
+  opacity: 0; transition: opacity 320ms ease 260ms; border-width: 0;
 }
-.newapp textarea:focus { outline: none; border-color: var(--ink-3); }
-.newapp-actions { display: flex; align-items: center; gap: 16px; }
+.newapp-body.split > .side { opacity: 1; border-width: 1px; }
+.newapp-body .tabs button:disabled { color: var(--ink); background: var(--muted-bg); cursor: default; }
+.newapp-body .editor { font-family: inherit; font-size: 13.5px; }
+.newapp-body .checklist-top { margin-block-end: 0; }
+.newapp-body .checklist { border-block-end: 1px solid var(--line); }
+.sr-only {
+  position: absolute; inline-size: 1px; block-size: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.newapp-actions {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 16px; border-block-start: 1px solid var(--line);
+}
 .newapp-actions .hint { flex: 1; font-size: 12px; color: var(--ink-3); margin: 0; }
 .newapp-actions button {
   font: inherit; font-size: 13px; padding: 8px 20px; border-radius: 8px;
   border: 1px solid var(--ink); background: var(--ink); color: #fff; cursor: pointer;
+  box-shadow: var(--shadow-lift);
 }
-.newapp-actions button:disabled { opacity: 0.4; cursor: default; }
+.newapp-actions button:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .newapp-body, .newapp-body > .side { transition: none; }
+}
 .newapp-log { border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-y: auto; min-block-size: 0; }
 .problem { margin: 0; font-size: 13px; color: var(--urgent); }
 .done { margin: 6px 0 0; font-size: 13px; color: var(--ink-2); }
