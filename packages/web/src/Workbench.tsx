@@ -143,6 +143,7 @@ export function Workbench({
   const [dirty, setDirty] = useState(false);
   const [flash, setFlash] = useState(false);
   const [rendering, setRendering] = useState(false);
+  const [pdfName, setPdfName] = useState("CV.pdf");
   const [justApplied, setJustApplied] = useState(false);
 
   const [running, setRunning] = useState<string | null>(null);
@@ -191,6 +192,7 @@ export function Workbench({
     }
     setFit(d.fit ?? null);
     setStage(String(d.stage ?? ""));
+    if (d.downloadName) setPdfName(String(d.downloadName));
     // Always keep cv and job in memory: the tweak box attaches them regardless
     // of which tab is showing, and the PDF tab has no markdown of its own.
     const active = tabRef.current;
@@ -622,7 +624,7 @@ export function Workbench({
             <span className="saving">Re-rendering the page…</span>
           ) : null}
           {pdfExists && (
-            <a className="ghost" href={`/api/${who}/job/${slug}/file/cv.pdf`} download={`${company} CV.pdf`}>
+            <a className="ghost" href={`/api/${who}/job/${slug}/file/cv.pdf`} download={pdfName}>
               Download
             </a>
           )}

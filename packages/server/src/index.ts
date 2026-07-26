@@ -14,6 +14,9 @@ import {
   runConsolidation,
   readProfile,
   createVault,
+  readDetails,
+  writeDetails,
+  downloadName,
   vaultIsPopulated,
   peopleIn,
   resolveVault,
@@ -196,6 +199,35 @@ app.get<{ Params: { who: string } }>("/api/:who/master", async (req, reply) => {
   if (!m) return reply.code(404).send({ error: "no cv-master.md" });
   return { ...m, profile: readProfile(dir) };
 });
+
+/**
+ * The block at the top of every CV, and the name on the file you send.
+ *
+ * Kept in profile.md rather than in a settings store, so the file still reads
+ * as a document and the app is not the only thing that can understand it.
+ */
+app.get<{ Params: { who: string } }>("/api/:who/details", async (req, reply) => {
+  const dir = join(VAULT, req.params.who);
+  if (!existsSync(dir)) return reply.code(404).send({ error: "no such person" });
+  return readDetails(dir);
+});
+
+app.put<{ Params: { who: string }; Body: Record<string, string> }>(
+  "/api/:who/details",
+  async (req, reply) => {
+    const dir = join(VAULT, req.params.who);
+    if (!existsSync(dir)) return reply.code(404).send({ error: "no such person" });
+    const allowed = ["name", "headline", "email", "phone", "linkedin", "github", "location", "filename"];
+    const patch: Record<string, string> = {};
+    for (const k of allowed) {
+      const v = req.body?.[k];
+      // Length-capped: these become a filename and a line on a CV, and neither
+      // has a sensible reason to be enormous.
+      if (typeof v === "string" && v.length <= 200) patch[k] = v.trim();
+    }
+    return writeDetails(dir, patch);
+  },
+);
 
 /** The consolidated memory, as the agent sees it. */
 app.get<{ Params: { who: string } }>("/api/:who/profile", async (req, reply) => {
@@ -498,6 +530,14 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
       return { key, label: d.label, file: d.file, exists, chars: exists ? readFileSync(p, "utf8").length : 0 };
     }),
     pdf: existsSync(join(dir, "cv.pdf")),
+    downloadName: (() => {
+      const status = join(dir, "status.md");
+      const a = existsSync(status) ? readApplication(status, req.params.slug) : null;
+      return downloadName(readDetails(join(VAULT, req.params.who)), {
+        role: a?.role,
+        company: a?.company,
+      });
+    })(),
     // The workbench needs it to know whether to offer "Mark as applied".
     stage: existsSync(join(dir, "status.md")) ? readApplication(join(dir, "status.md")).stage : null,
     fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,

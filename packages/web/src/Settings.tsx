@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Career } from "./Career.js";
 import { Insights } from "./Insights.js";
 import { Archive } from "./Archive.js";
+import { Details } from "./Details.js";
 
 /**
  * Everything that is not an application.
@@ -17,9 +18,10 @@ import { Archive } from "./Archive.js";
  * which is the point.
  */
 
-type Section = "profile" | "insights" | "archive" | "account";
+type Section = "details" | "profile" | "insights" | "archive" | "account";
 
 const SECTIONS: Array<{ key: Section; label: string; hint: string }> = [
+  { key: "details", label: "Your details", hint: "Name, links, file names" },
   { key: "profile", label: "Profile", hint: "Everything you have done" },
   { key: "insights", label: "Insights", hint: "What the search is doing" },
   { key: "archive", label: "Archive", hint: "Applications that ended" },
@@ -41,7 +43,7 @@ export function Settings({
   onClose: () => void;
   onChanged: () => void;
 }) {
-  const [section, setSection] = useState<Section>("profile");
+  const [section, setSection] = useState<Section>("details");
 
   return (
     <div className="settings">
@@ -72,6 +74,7 @@ export function Settings({
             were built as full pages and work as panes without alteration, which
             is the whole argument for not reinventing the layout.
           */}
+          {section === "details" && <Details who={who} />}
           {section === "profile" && <Career who={who} embedded />}
           {section === "insights" && <Insights who={who} embedded />}
           {section === "archive" && <Archive who={who} embedded onChanged={onChanged} />}

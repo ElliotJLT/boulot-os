@@ -9,6 +9,7 @@ export * from "./learning/funnel.js";
 export * from "./learning/similarity.js";
 export * from "./vault/cv-lines.js";
 export * from "./vault/setup.js";
+export * from "./vault/details.js";
 export * from "./memory/consolidate.js";
 export * from "./memory/run.js";
 export * from "./vault/master.js";
