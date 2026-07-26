@@ -348,6 +348,13 @@ function memoryContext(vaultRoot: string, person: string): string {
   if (!text.trim()) return "";
   return [
     "",
+    "# The vault is the only thing you can read",
+    "",
+    "Everything you need is inside this folder. Files outside it cannot be opened,",
+    "including anything Claude Code's own memory mentions: those paths belong to a",
+    "different tool and are not available here. Do not try them, and do not search",
+    "for them inside the vault either. If something is not here, say so and carry on.",
+    "",
     "# What Boulot knows about this person",
     "",
     "Built from the CVs they have actually sent, not from anything invented.",
@@ -381,6 +388,8 @@ export async function run({
   const cwd = resolve(vaultRoot, person);
   let newSessionId: string | undefined;
   const memory = memoryContext(vaultRoot, person);
+  /** Refused reads so far, so the message can get firmer rather than repeat. */
+  let refusals = 0;
 
   const response = query({
     prompt,
@@ -453,6 +462,7 @@ export async function run({
                   name: i.tool_name ?? "?",
                   label: `Refused: ${path.split("/").pop()} is outside your vault`,
                 });
+                refusals += 1;
 
                 // Deny THIS TOOL, and only this tool.
                 //
@@ -468,10 +478,23 @@ export async function run({
                   hookSpecificOutput: {
                     hookEventName: "PreToolUse" as const,
                     permissionDecision: "deny" as const,
+                    /*
+                     * Firmer each time.
+                     *
+                     * One run spent eight of its eighteen steps opening files
+                     * from Claude Code's own memory directory, being refused,
+                     * and then searching the vault for them. The first message
+                     * explained the boundary; it did not say stop, so the model
+                     * kept trying different spellings of the same mistake.
+                     */
                     permissionDecisionReason:
-                      `${path} is outside the vault. The vault root is ${vaultRoot} and you are in ` +
-                      `${cwd}. Use a path inside it. Ignore any absolute path you have seen in ` +
-                      `documentation, it may be stale.`,
+                      refusals >= 2
+                        ? `${path} is outside the vault and so were your last ${refusals} attempts. ` +
+                          `These files do not exist here and searching for them will not find them. ` +
+                          `Stop looking and continue with what is in ${cwd}.`
+                        : `${path} is outside the vault. The vault root is ${vaultRoot} and you are ` +
+                          `in ${cwd}. Use a path inside it. Ignore any absolute path you have seen ` +
+                          `in documentation or in another tool's memory, it does not apply here.`,
                   },
                 };
               },

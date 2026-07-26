@@ -406,6 +406,31 @@ export function Workbench({
     );
   };
 
+  /*
+   * Save on its own, shortly after you stop typing.
+   *
+   * Pasting questions into a box and then having to find a Save button is the
+   * kind of step that exists only because the code found it convenient. The
+   * documents are files on disk with no other reader, so there is nothing to
+   * conflict with and nothing to lose by writing them.
+   *
+   * Debounced rather than per-keystroke: a write per character would be a lot
+   * of pointless disk traffic and would make every keypress a network call.
+   */
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => {
+      void fetch(`/api/${who}/job/${slug}/doc/${tabRef.current}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ markdown: text[tabRef.current] ?? "" }),
+      })
+        .then(() => setDirty(false))
+        .catch(() => {});
+    }, 700);
+    return () => clearTimeout(t);
+  }, [text, dirty, who, slug]);
+
   const save = async () => {
     await fetch(`/api/${who}/job/${slug}/doc/${tab}`, {
       method: "PUT",
@@ -474,11 +499,7 @@ export function Workbench({
               {fit.fits ? `${fit.pages}pp` : `${fit.pages}pp · ${fit.overflowMm}mm over`}
             </span>
           )}
-          {dirty && (
-            <button className="ghost" onClick={save}>
-              Save
-            </button>
-          )}
+          {dirty && <span className="saving">Saving…</span>}
           {pdfExists && (
             <a className="ghost" href={`/api/${who}/job/${slug}/file/cv.pdf`} download={`${company} CV.pdf`}>
               Download

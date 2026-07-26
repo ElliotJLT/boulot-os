@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { Workbench } from "./Workbench.js";
 import { NewApplication } from "./NewApplication.js";
-import { Career } from "./Career.js";
-import { Insights } from "./Insights.js";
-import { Archive } from "./Archive.js";
+import { Settings } from "./Settings.js";
 import { Setup } from "./Setup.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
@@ -121,9 +119,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<{ slug: string; company: string } | null>(null);
   const [adding, setAdding] = useState(false);
-  const [career, setCareer] = useState(false);
-  const [insights, setInsights] = useState(false);
-  const [archive, setArchive] = useState(false);
+  const [settings, setSettings] = useState(false);
   const [filing, setFiling] = useState(false);
   const [dragOver, setDragOver] = useState<string | null>(null);
   /** Applications an agent is working on right now, from the server. */
@@ -213,24 +209,17 @@ export function App() {
       </main>
     );
 
-  if (archive && who)
+  if (settings && who && health)
     return (
       <main>
-        <Archive who={who} onClose={() => setArchive(false)} onChanged={() => setReload((r) => r + 1)} />
-      </main>
-    );
-
-  if (insights && who)
-    return (
-      <main>
-        <Insights who={who} onClose={() => setInsights(false)} />
-      </main>
-    );
-
-  if (career && who)
-    return (
-      <main>
-        <Career who={who} onClose={() => setCareer(false)} />
+        <Settings
+          who={who}
+          authMode={authMode}
+          vault={health.vault}
+          archived={board?.archived ?? 0}
+          onClose={() => setSettings(false)}
+          onChanged={() => setReload((r) => r + 1)}
+        />
       </main>
     );
 
@@ -334,20 +323,14 @@ export function App() {
             <span className="agent-dot" />
             {busy.length}/{maxAgents} agents
           </span>
-          {authMode && (
-            <span className="authmode" title={authMode === "api-key"
-              ? "Billed per token to your Anthropic API key, capped per run."
-              : "Draws on your Claude subscription's usage limits, not API credit."}>
-              {authMode === "api-key" ? "API credit" : "Claude plan"}
-            </span>
-          )}
-          <button onClick={() => setInsights(true)}>Insights</button>
-          {board.archived > 0 && (
-            <button onClick={() => setArchive(true)}>
-              Archive <em>{board.archived}</em>
-            </button>
-          )}
-          <button onClick={() => setCareer(true)}>Career record</button>
+          {/*
+            Three things, because only one of them is something you do.
+            
+            Plan, insights, archive and career record used to sit across the top
+            of the page you use to apply for jobs, and none of them is part of
+            applying for a job. They are in Settings now.
+          */}
+          <button onClick={() => setSettings(true)}>Settings</button>
           <button className="primary" onClick={() => setAdding(true)}>
             + New application
           </button>

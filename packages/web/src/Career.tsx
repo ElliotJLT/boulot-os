@@ -53,7 +53,9 @@ function summarise(markdown: string): string {
   return `${parts.join(", ")} · from ${apps} applications`;
 }
 
-export function Career({ who, onClose }: { who: string; onClose: () => void }) {
+export function Career(
+  { who, onClose, embedded }: { who: string; onClose?: () => void; /** Rendered inside Settings, which supplies its own header. */ embedded?: boolean },
+) {
   const [m, setM] = useState<Master | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [showMemory, setShowMemory] = useState(false);
@@ -80,13 +82,13 @@ export function Career({ who, onClose }: { who: string; onClose: () => void }) {
 
   return (
     <div className="career">
-      <header className="bench-top">
+      {!embedded && <header className="bench-top">
         <button className="back" onClick={onClose}>
           ← Board
         </button>
         <h2>Career record</h2>
         <span className="updated">updated {m.updated}</span>
-      </header>
+      </header>}
 
       {/*
         The whole visible surface of consolidation.
