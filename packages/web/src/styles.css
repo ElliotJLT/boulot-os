@@ -884,3 +884,21 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   font-size: 13px; line-height: 1.55; white-space: pre-wrap;
   max-inline-size: 78%; inline-size: fit-content;
 }
+
+/* Applied. The tick lands once, then stays as a quiet state marker. */
+.applied-tick {
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 20px; block-size: 20px; margin-inline-start: 10px;
+  border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 11px; font-family: Inter, sans-serif; vertical-align: middle;
+}
+.applied-tick.pop { animation: tick-in 420ms cubic-bezier(0.2, 1.4, 0.4, 1); }
+@keyframes tick-in {
+  from { transform: scale(0) rotate(-30deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .applied-tick.pop { animation: none; } }
+
+/* An arrow already says "back". */
+.back { font-size: 16px; padding: 6px 10px; color: var(--ink-3); }
+.back:hover { color: var(--ink); transform: translateX(-2px); }

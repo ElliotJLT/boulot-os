@@ -143,6 +143,7 @@ export function Workbench({
   const [dirty, setDirty] = useState(false);
   const [flash, setFlash] = useState(false);
   const [rendering, setRendering] = useState(false);
+  const [justApplied, setJustApplied] = useState(false);
 
   const [running, setRunning] = useState<string | null>(null);
   /*
@@ -358,6 +359,15 @@ export function Workbench({
       body: JSON.stringify({ stage: "applied" }),
     });
     setStage("applied");
+    /*
+     * Say it happened.
+     *
+     * The button vanished and nothing else changed, so the only evidence the
+     * click had worked was the absence of the thing you clicked. Pressing
+     * submit on someone's form is the point of the whole exercise; it deserves
+     * an acknowledgement rather than a disappearance.
+     */
+    setJustApplied(true);
     onArchived?.();
   };
 
@@ -585,10 +595,21 @@ export function Workbench({
   return (
     <div className="bench">
       <header className="bench-top">
-        <button className="back" onClick={onClose}>
-          ← Board
+        <button className="back" onClick={onClose} title="Back to the board" aria-label="Back to the board">
+          ←
         </button>
-        <h2>{company}</h2>
+        <h2>
+          {company}
+          {(justApplied || stage === "applied") && (
+            <span
+              className={justApplied ? "applied-tick pop" : "applied-tick"}
+              title="Marked as applied"
+              aria-label="Applied"
+            >
+              ✓
+            </span>
+          )}
+        </h2>
         <div className="bench-actions">
           {fit && (
             <span className={`fit ${fit.fits ? "fit-ok" : "fit-over"}`}>

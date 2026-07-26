@@ -37,8 +37,8 @@ export function Insights(
   return (
     <div className="insights">
       {!embedded && <header className="bench-top">
-        <button className="back" onClick={onClose}>
-          ← Board
+        <button className="back" onClick={onClose} title="Back to the board" aria-label="Back to the board">
+          ←
         </button>
         <h2>Insights</h2>
         <span className="updated">from your files, nothing to fill in</span>

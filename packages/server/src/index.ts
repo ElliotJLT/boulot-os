@@ -377,7 +377,16 @@ app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
      * history rewritten to today.
      */
     const before = readFileSync(status, "utf8");
-    const hasApplied = /^applied_date:\s*\S/m.test(before);
+    /*
+     * Horizontal whitespace only.
+     *
+     * `\s` matches newlines, so `applied_date:` with nothing after it matched
+     * the first non-space character of the *next* line and the check concluded
+     * a date was already recorded. Marking an application as applied then set
+     * the stage and silently left the date blank, which is the one field the
+     * whole funnel measures from.
+     */
+    const hasApplied = /^applied_date:[^\S\n]*\S/m.test(before);
     writeFileSync(
       status,
       updateFrontmatter(before, {

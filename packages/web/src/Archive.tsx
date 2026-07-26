@@ -112,8 +112,8 @@ export function Archive({
   return (
     <div className="archive">
       {!embedded && <header className="bench-top">
-        <button className="back" onClick={onClose}>
-          ← Board
+        <button className="back" onClick={onClose} title="Back to the board" aria-label="Back to the board">
+          ←
         </button>
         <h2>Archive</h2>
         <span className="updated">{apps.length} filed</span>

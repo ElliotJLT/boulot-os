@@ -46,8 +46,8 @@ export function Settings({
   return (
     <div className="settings">
       <header className="bench-top">
-        <button className="back" onClick={onClose}>
-          ← Board
+        <button className="back" onClick={onClose} title="Back to the board" aria-label="Back to the board">
+          ←
         </button>
         <h2>Settings</h2>
       </header>
