@@ -664,6 +664,7 @@ wss.on("connection", (socket) => {
       label?: string;
       slug?: string;
       company?: string;
+      model?: string;
     };
     try {
       msg = JSON.parse(String(raw));
@@ -721,6 +722,7 @@ wss.on("connection", (socket) => {
         rendererPath: RENDERER,
         // Continues this application's conversation, and only this one's.
         ...(job.sessionId ? { sessionId: job.sessionId } : {}),
+        ...(msg.model ? { model: msg.model } : {}),
         onEvent: (e) => {
           /*
            * A new application does not know its own folder when it starts, so

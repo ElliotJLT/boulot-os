@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { collapse } from "./Activity.js";
+import { MODELS } from "./models.js";
 
 /**
  * First run.
@@ -124,6 +125,7 @@ export function Setup({ health, onDone }: { health: Health; onDone: (who: string
     ws.current.send(
       JSON.stringify({
         person: who,
+        model: MODELS.import,
         prompt:
           `Build the master experience record from the CV below.\n\n` +
           `Write it to cv-master.md, replacing the starter template, in that file's ` +

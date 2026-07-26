@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Markdown, collapse } from "./Activity.js";
+import { MODELS } from "./models.js";
 
 /**
  * The application workbench.
@@ -296,13 +297,18 @@ export function Workbench({
     return () => socket.close();
   }, [refresh]);
 
-  const send = (prompt: string, label: string, kind: "build" | "tweak" = "build") => {
+  const send = (
+    prompt: string,
+    label: string,
+    kind: "build" | "tweak" = "build",
+    model: string = MODELS.tailor,
+  ) => {
     if (running || !ws.current) return;
     setRunKind(kind);
     setRunning(label);
     setActivity([]);
     setSaid([]);
-    ws.current.send(JSON.stringify({ prompt, person: who, job: slug, slug, label }));
+    ws.current.send(JSON.stringify({ prompt, person: who, job: slug, slug, label, model }));
   };
 
   /**
@@ -378,6 +384,7 @@ export function Workbench({
       // a cover letter made the CV and PDF steps animate as though the whole
       // application were being rebuilt.
       "tweak",
+      MODELS.writing,
     );
   };
 
@@ -518,6 +525,7 @@ export function Workbench({
         `\n\nRequest: ${q}`,
       "Working",
       "tweak",
+      MODELS.tweak,
     );
     setAsk("");
   };

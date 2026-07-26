@@ -372,6 +372,18 @@ export interface RunOptions {
   person: string;
   rendererPath: string;
   sessionId?: string | undefined;
+  /**
+   * Which model does this piece of work.
+   *
+   * The reviewers have always been on a cheaper one, because scoring someone
+   * else's draft is not the same job as writing it. The main agent had no model
+   * set at all, so extracting facts from a job advert ran on the same model as
+   * the one judgement call in the whole product.
+   *
+   * Left undefined for anything that has not been thought about, which keeps
+   * the default rather than quietly downgrading work nobody has assessed.
+   */
+  model?: string | undefined;
   budgetUsd?: number;
   onEvent: (e: AgentEvent) => void;
 }
@@ -382,6 +394,7 @@ export async function run({
   person,
   rendererPath,
   sessionId,
+  model,
   budgetUsd = DEFAULT_BUDGET_USD,
   onEvent,
 }: RunOptions): Promise<string | undefined> {
@@ -396,6 +409,7 @@ export async function run({
     options: {
       cwd,
       settingSources: [],
+      ...(model ? { model } : {}),
       ...(memory ? { systemPrompt: { type: "preset" as const, preset: "claude_code" as const, append: memory } } : {}),
       // Overridable for the same reason as the renderer: inside the desktop
       // bundle the skill pack sits beside the server, not two levels up.

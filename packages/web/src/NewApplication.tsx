@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Markdown, Phases, collapse, phaseOf, type Phase } from "./Activity.js";
+import { MODELS } from "./models.js";
 
 /**
  * Starting an application.
@@ -199,6 +200,7 @@ export function NewApplication({
         person: who,
         job: jobId.current,
         label: "Reading the job",
+        model: MODELS.intake,
         company: guessCompany(input),
       }),
     );
