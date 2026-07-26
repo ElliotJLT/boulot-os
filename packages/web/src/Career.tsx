@@ -4,11 +4,49 @@ import { useEffect, useState } from "react";
  * The master CV, shown as a record rather than a document.
  *
  * It is not a CV you read top to bottom. It is the log every tailored CV is a
- * query against, so the useful view is the one that shows what is stale, what
- * is untagged, and above all what never gets used. An entry that has survived
- * eighteen applications without ever being selected is either badly written or
- * genuinely irrelevant, and either way that is the thing worth seeing.
+ * query against, so the useful view is the one that shows what never gets used.
+ * An entry that has survived eighteen applications without once being selected
+ * is either badly written or genuinely irrelevant, and either way that is the
+ * thing worth seeing.
+ *
+ * The first version showed all of that and said none of it. Four unlabelled
+ * counters, a row of tags, then every entry you have ever written in one
+ * column, with three competing pieces of metadata under each. Everything was
+ * on screen and nothing was legible, so the page answered "what is in here"
+ * when the only question worth asking it is "what should I fix".
+ *
+ * So it opens with the verdict in a sentence, puts the entries that have
+ * actually earned interviews at the top, and gives every other entry one state
+ * rather than three. The counters became the filters, because a number you
+ * cannot act on is decoration.
  */
+
+/** One entry, one state. Ranked by how much it should change what you do. */
+type State = "proven" | "used" | "never";
+
+function stateOf(b: Bullet): State {
+  if (b.reachedInterview > 0) return "proven";
+  return b.usedIn.length > 0 ? "used" : "never";
+}
+
+/**
+ * A mark, not a sentence.
+ *
+ * "Earned an interview 2/3" was a phrase in a box on the right of every row,
+ * which at twenty-four rows is twenty-four boxes and no list. The count is the
+ * information; the words belong in the row you have opened.
+ */
+const STATE_MARK: Record<State, (b: Bullet) => string> = {
+  proven: (b) => `${b.reachedInterview}/${b.usedIn.length}`,
+  used: (b) => `${b.usedIn.length}×`,
+  never: () => "—",
+};
+
+const STATE_WORDS: Record<State, (b: Bullet) => string> = {
+  proven: (b) => `Reached an interview in ${b.reachedInterview} of the ${b.usedIn.length} CVs it went out on`,
+  used: (b) => `Used ${b.usedIn.length}×, none progressed`,
+  never: () => "Never selected by tailoring",
+};
 
 type Bullet = {
   id: string;
@@ -58,7 +96,10 @@ export function Career(
 ) {
   const [m, setM] = useState<Master | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [q, setQ] = useState("");
   const [showMemory, setShowMemory] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/${who}/master`)
@@ -69,16 +110,30 @@ export function Career(
 
   if (!m) return <main className="empty">No master CV found.</main>;
 
-  const keep = (b: Bullet) =>
-    filter === "all"
-      ? true
-      : filter === "unused"
-        ? b.usedIn.length === 0
-        : filter === "no-number"
-          ? !b.hasNumber
-          : b.tags.includes(filter);
+  const needle = q.trim().toLowerCase();
+  const keep = (b: Bullet) => {
+    if (needle && !b.text.toLowerCase().includes(needle) && !b.tags.some((t) => t.includes(needle)))
+      return false;
+    if (filter === "all") return true;
+    if (filter === "proven") return stateOf(b) === "proven";
+    if (filter === "unused") return b.usedIn.length === 0;
+    if (filter === "no-number") return !b.hasNumber;
+    return b.tags.includes(filter);
+  };
 
+  const proven = m.roles.flatMap((r) => r.bullets).filter((b) => stateOf(b) === "proven").length;
   const unused = m.totals.bullets - m.totals.used;
+  const noNumber = m.totals.bullets - m.totals.withNumbers;
+  const showing = m.roles.reduce((n, r) => n + r.bullets.filter(keep).length, 0);
+
+  const FILTERS: Array<{ key: Filter; label: string; count: number; tone?: string }> = [
+    { key: "all", label: "All", count: m.totals.bullets },
+    { key: "proven", label: "Earned an interview", count: proven, tone: "good" },
+    { key: "unused", label: "Never used", count: unused, tone: "warn" },
+    { key: "no-number", label: "No number", count: noNumber },
+  ];
+
+  const tags = showTags ? m.allTags : m.allTags.slice(0, 6);
 
   return (
     <div className="career">
@@ -86,19 +141,10 @@ export function Career(
         <button className="back" onClick={onClose} title="Back to the board" aria-label="Back to the board">
           ←
         </button>
-        <h2>Career record</h2>
+        <h2>Profile</h2>
         <span className="updated">updated {m.updated}</span>
       </header>}
 
-      {/*
-        The whole visible surface of consolidation.
-
-        It rebuilds itself whenever an application is archived and the agent
-        reads it before writing anything, so there is nothing here to approve,
-        tune or keep on top of. What earns a line on screen is that the user
-        should be able to see it happened and read exactly what it decided. The
-        file is plain markdown; opening it is the only interaction.
-      */}
       {m.profile && (
         <section className="memory">
           <button className="memory-line" onClick={() => setShowMemory((v) => !v)}>
@@ -111,106 +157,138 @@ export function Career(
         </section>
       )}
 
-      {/*
-        "Worth doing" used to live here, and it said the same things the memory
-        now says: the Zero Gravity date appeared twice on one screen, once from
-        each mechanism. Consolidation supersedes it — the questions it raises are
-        derived from more evidence and are already in the file above — so the
-        older panel is gone rather than deduplicated. Two systems producing
-        overlapping advice is how a page stops being readable.
-      */}
-      {m.proven.length > 0 && (
-        <section className="proven">
-          <h3>Earned an interview</h3>
-          <p className="lede">
-            These appeared in CVs that got past the screen. Small sample, so treat it as a hint rather
-            than a rule, but they are the closest thing you have to evidence about what lands.
-          </p>
-          <ul>
-            {m.proven.slice(0, 5).map((b) => (
-              <li key={b.id}>
-                <span className="score">
-                  {b.reachedInterview}/{b.usedIn.length}
-                </span>
-                <p>{b.text}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <p className="verdict">
+        <b>{m.totals.bullets} entries</b> across {m.roles.length} roles.{" "}
+        {proven > 0 ? (
+          <>
+            <b className="good">{proven}</b> {proven === 1 ? "has" : "have"} earned an interview.{" "}
+          </>
+        ) : (
+          <>None has earned an interview yet. </>
+        )}
+        {unused > 0 && (
+          <>
+            <b className="warn">{unused}</b> {unused === 1 ? "has" : "have"} never been picked by
+            tailoring, which usually means badly written rather than irrelevant.
+          </>
+        )}
+      </p>
 
-      <h3 className="section-title">Every entry</h3>
-      <div className="career-stats">
-        <button className={filter === "all" ? "stat on" : "stat"} onClick={() => setFilter("all")}>
-          <b>{m.totals.bullets}</b>
-          <span>entries</span>
-        </button>
-        <button className={filter === "unused" ? "stat on" : "stat"} onClick={() => setFilter("unused")}>
-          <b>{unused}</b>
-          <span>never used</span>
-        </button>
-        <button className={filter === "no-number" ? "stat on" : "stat"} onClick={() => setFilter("no-number")}>
-          <b>{m.totals.bullets - m.totals.withNumbers}</b>
-          <span>no number</span>
-        </button>
-        <div className="stat flat">
-          <b>{m.summaryVariants.length}</b>
-          <span>summary variants</span>
+      {/*
+        Controls, and then a list you can actually read.
+        
+        There used to be an "Earned an interview" panel here showing the same
+        three entries that appear again forty pixels below, so the first thing
+        the page did was repeat itself. The filter does that job now: the count
+        is on the chip and pressing it shows exactly those three, in place.
+      */}
+      <div className="career-controls">
+        <input
+          className="career-search"
+          value={q}
+          placeholder="Search your entries…"
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <div className="career-filters">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              className={`chip${filter === f.key ? " on" : ""}${f.tone ? ` ${f.tone}` : ""}`}
+              onClick={() => setFilter(f.key)}
+              disabled={f.count === 0 && f.key !== "all"}
+            >
+              {f.label} <em>{f.count}</em>
+            </button>
+          ))}
+          {/*
+            Fourteen tags across the full width was a second filter row with the
+            same visual weight as the first, and tags are the rarer thing to
+            reach for. Six, then the rest on request.
+          */}
+          {tags.map((t) => (
+            <button
+              key={t.tag}
+              className={filter === t.tag ? "tag on" : "tag"}
+              onClick={() => setFilter(filter === t.tag ? "all" : t.tag)}
+            >
+              #{t.tag}
+              <em>{t.count}</em>
+            </button>
+          ))}
+          {m.allTags.length > 6 && (
+            <button className="tag more" onClick={() => setShowTags((v) => !v)}>
+              {showTags ? "fewer" : `+${m.allTags.length - 6} tags`}
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="tagrow">
-        {m.allTags.slice(0, 14).map((t) => (
-          <button
-            key={t.tag}
-            className={filter === t.tag ? "tag on" : "tag"}
-            onClick={() => setFilter(filter === t.tag ? "all" : t.tag)}
-          >
-            #{t.tag}
-            <em>{t.count}</em>
-          </button>
-        ))}
-      </div>
+      {showing === 0 && (
+        <p className="empty-note">Nothing matches. Clear the search, or pick a different filter.</p>
+      )}
 
+      {/*
+        One line each, opened on demand.
+        
+        Twenty-four entries at full length is not a list, it is twenty-four
+        paragraphs, and the page was unreadable for exactly that reason: nothing
+        could be compared to anything because nothing fit on screen at once. A
+        row is now a row. Click it and it becomes the paragraph it always was,
+        with where it went and what happened there.
+      */}
       {m.roles.map((r) => {
         const shown = r.bullets.filter(keep);
         if (!shown.length) return null;
+        const ordered = [...shown].sort(
+          (a, b) => b.reachedInterview - a.reachedInterview || b.usedIn.length - a.usedIn.length,
+        );
         return (
           <section className="role" key={r.org}>
             <header>
               <h3>{r.org}</h3>
               <span className="dates">{r.dates}</span>
-              <span className="ctx">{r.context}</span>
-              {r.deeperDetail > 0 && (
-                <span className="interview-only" title="Kept for interview prep, never printed on a CV">
-                  +{r.deeperDetail} interview notes
-                </span>
-              )}
+              <span className="role-count">
+                {shown.length}
+                {shown.length === r.bullets.length ? "" : ` of ${r.bullets.length}`}
+                {r.deeperDetail > 0 && (
+                  <span className="interview-only" title="Kept for interview prep, never printed on a CV">
+                    +{r.deeperDetail} notes
+                  </span>
+                )}
+              </span>
             </header>
             <ul>
-              {shown.map((b) => (
-                <li key={b.id} className={b.usedIn.length ? "" : "never"}>
-                  <p>{b.text}</p>
-                  <div className="entry-meta">
-                    {b.tags.map((t) => (
-                      <span className="minitag" key={t}>
-                        #{t}
+              {ordered.map((b) => {
+                const state = stateOf(b);
+                const isOpen = open === b.id;
+                return (
+                  <li key={b.id} className={`entry ${state}${isOpen ? " open" : ""}`}>
+                    <button className="entry-row" onClick={() => setOpen(isOpen ? null : b.id)}>
+                      <span className="entry-text">{b.text}</span>
+                      <span className={`entry-mark ${state}`} title={STATE_WORDS[state](b)}>
+                        {STATE_MARK[state](b)}
                       </span>
-                    ))}
-                    {!b.hasNumber && <span className="flagless">no number</span>}
-                    <span
-                      className={b.reachedInterview > 0 ? "usage good" : "usage"}
-                      title={b.usedIn.length ? b.usedIn.join(", ") : "never selected by tailoring"}
-                    >
-                      {b.usedIn.length === 0
-                        ? "never used"
-                        : b.reachedInterview > 0
-                          ? `${b.reachedInterview} of ${b.usedIn.length} reached interview`
-                          : `used ${b.usedIn.length}×, none progressed`}
-                    </span>
-                  </div>
-                </li>
-              ))}
+                    </button>
+                    {isOpen && (
+                      <div className="entry-open">
+                        <p>{b.text}</p>
+                        <div className="entry-meta">
+                          {b.tags.map((t) => (
+                            <span className="minitag" key={t}>
+                              #{t}
+                            </span>
+                          ))}
+                          {!b.hasNumber && <span className="flagless">no number</span>}
+                        </div>
+                        <p className={`entry-outcome ${state}`}>{STATE_WORDS[state](b)}</p>
+                        {b.usedIn.length > 0 && (
+                          <p className="entry-where">{b.usedIn.join(" · ")}</p>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         );

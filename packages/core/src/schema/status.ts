@@ -38,8 +38,28 @@ export const Outcome = z.enum([
 ]);
 export type Outcome = z.infer<typeof Outcome>;
 
-/** Observed `stage:` values in the wild, mapped onto the controlled vocabulary. */
+/**
+ * Observed `stage:` values in the wild, mapped onto the controlled vocabulary.
+ *
+ * Every canonical value maps to itself, which sounds redundant and is the whole
+ * bug this table once had. The list was built from what real files said, so it
+ * learned "interview", "interview-2" and "final_round" and never learned
+ * "interviewing" — the value this schema itself defines. A status file written
+ * in the app's own vocabulary fell through to the unmatched path, came back as
+ * a lead, and an application at final-round interview stage sat in the Prep
+ * column as though it had never been sent, with the word "interviewing"
+ * salvaged into its substage.
+ */
 const STAGE_ALIASES: Record<string, { stage: Stage; outcome?: Outcome; flag?: keyof Flags }> = {
+  // The vocabulary, mapped to itself. Do not remove: see above.
+  lead: { stage: "lead" },
+  screening: { stage: "screening" },
+  interviewing: { stage: "interviewing" },
+  "closed-won": { stage: "closed-won" },
+  "closed_won": { stage: "closed-won" },
+  "closed-lost": { stage: "closed-lost" },
+  "closed_lost": { stage: "closed-lost" },
+
   applied: { stage: "applied" },
   applying: { stage: "drafting" },
   drafting: { stage: "drafting" },
@@ -47,7 +67,6 @@ const STAGE_ALIASES: Record<string, { stage: Stage; outcome?: Outcome; flag?: ke
   interested: { stage: "lead" },
   outreach: { stage: "lead" },
   "phone_screen": { stage: "screening" },
-  screening: { stage: "screening" },
   interview: { stage: "interviewing" },
   "interview-2": { stage: "interviewing" },
   "final_round": { stage: "interviewing" },

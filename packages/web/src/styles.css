@@ -60,9 +60,16 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand h1 { font-size: 19px; letter-spacing: -0.01em; }
+/* A boule. The word is the joke and the loaf is the mark, which beats a green
+   rounded square standing in for nothing. Cropped to a circle because the
+   drawing is already round and the paper behind it is the same colour as the
+   page, so a square would only show the seam. */
 .logo {
-  inline-size: 20px; block-size: 20px; border-radius: 6px;
-  background: var(--accent);
+  inline-size: 26px; block-size: 26px; border-radius: 50%;
+  object-fit: cover; flex: none;
+  /* The artwork's own off-white is a hair cooler than the app's paper, so the
+     ring hides the edge rather than drawing attention to it. */
+  box-shadow: 0 0 0 1px rgb(51 47 40 / 8%);
 }
 .people { display: flex; gap: 4px; }
 .people button {
@@ -460,77 +467,34 @@ span.play.busy { cursor: default; }
 .career { padding-block-end: 40px; }
 .updated { margin-inline-start: auto; font-size: 12px; color: var(--ink-3); }
 
-.career-stats { display: flex; gap: 8px; margin-block: 18px 14px; }
-.stat {
-  font: inherit; text-align: start; cursor: pointer;
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 10px 16px; display: grid; gap: 1px; box-shadow: var(--shadow);
-}
-.stat b { font-size: 19px; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 11.5px; color: var(--ink-3); }
-.stat.on { border-color: var(--ink); }
-.stat.flat { cursor: default; }
-
-.tagrow { display: flex; flex-wrap: wrap; gap: 5px; margin-block-end: 22px; }
 .tag {
-  font: inherit; font-size: 11.5px; padding: 3px 9px; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 11.5px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
 }
 .tag em { font-style: normal; color: var(--ink-3); margin-inline-start: 5px; }
 .tag.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .tag.on em { color: rgb(255 255 255 / 60%); }
 
-.role { margin-block-end: 26px; }
-.role > header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-block-end: 10px; }
-.role h3 { font-size: 15px; }
-.role .dates { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.role .ctx { font-size: 12px; color: var(--ink-3); }
 .interview-only {
   font-size: 11px; color: var(--ink-3); background: var(--muted-bg);
   padding: 2px 8px; border-radius: 999px;
 }
-.role ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.role li {
-  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-  padding: 10px 13px;
-}
-.role li.never { border-inline-start: 2px solid var(--warn); }
-.role li p { margin: 0; font-size: 13.5px; line-height: 1.5; }
-.entry-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-block-start: 7px; }
 .minitag { font-size: 11px; color: var(--ink-3); }
 .flagless { font-size: 11px; color: var(--warn); }
-.usage { font-size: 11px; color: var(--ink-3); margin-inline-start: auto; }
-.never .usage { color: var(--warn); }
 
-/* ── Worth doing / proven ─────────────────────────── */
-.attention, .proven {
+/* Insights still uses this pair. */
+.attention {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 16px 18px; margin-block: 18px 0; box-shadow: var(--shadow);
+  padding: 16px 18px; margin-block: 18px 0; border-inline-start: 3px solid var(--warn);
 }
-.attention { border-inline-start: 3px solid var(--warn); }
-.attention h3, .proven h3 {
+.attention h3 {
   font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--ink-3); margin-block-end: 10px;
 }
-.attention ul, .proven ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.attention ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .attention li { display: grid; gap: 2px; }
 .attention b { font-size: 13.5px; font-weight: 600; }
 .attention span { font-size: 12.5px; color: var(--ink-2); }
-
-.proven { margin-block-start: 12px; }
-.proven .lede { margin: -4px 0 12px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
-.proven li { display: flex; gap: 10px; align-items: baseline; }
-.proven .score {
-  font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink);
-  background: var(--muted-bg); border-radius: 999px; padding: 2px 8px; flex: none;
-}
-.proven p { margin: 0; font-size: 13px; line-height: 1.5; }
-
-.section-title {
-  font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
-  color: var(--ink-3); margin-block: 26px 0;
-}
-.usage.good { color: var(--accent); font-weight: 500; }
 
 
 /* ── Insights ─────────────────────────────────────── */
@@ -847,10 +811,24 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 
 /* When it went out. The one date worth carrying on a card, because everything
    the funnel says about timing is measured from it. */
+/* How long ago, carried by weight rather than by a date you have to subtract.
+   Three bands because there are three actions: nothing, nudge, chase. The
+   oldest band fades instead of alarming — a quiet application is information,
+   not an emergency, and red here would cry wolf against the real flags. */
 .card .sent {
-  display: block; margin-block-start: 6px;
-  font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-block-start: 8px; padding: 3px 9px 3px 7px;
+  font-size: 11px; border-radius: 999px; font-variant-numeric: tabular-nums;
+  background: var(--muted-bg); color: var(--ink-2);
 }
+.card .sent-dot {
+  inline-size: 5px; block-size: 5px; border-radius: 50%; flex: none;
+  background: currentColor; opacity: 0.55;
+}
+.card .sent-fresh { background: var(--accent-soft); color: var(--accent-deep); }
+.card .sent-fresh .sent-dot { opacity: 1; }
+.card .sent-aging { background: var(--warn-bg); color: var(--warn); }
+.card .sent-cold { background: var(--muted-bg); color: var(--ink-3); }
 
 /* Optional build steps. A tick is a promise that play will do it. */
 .step-opt label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13.5px; }
@@ -1079,3 +1057,108 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .result-ok b { color: var(--accent-deep); }
 .result-warn { border-color: #e8d9b8; background: var(--warn-bg); }
 .result-warn b { color: var(--warn); }
+
+/* ── Profile ──────────────────────────────────────────────────────────────
+   A list, not a stack of paragraphs. Twenty-four entries at full length could
+   not be compared to each other because two of them filled the screen, so a
+   row is one line and opens when you ask it to. */
+
+.career .verdict {
+  margin: 18px 0 0; padding: 15px 18px;
+  font-size: 13.5px; line-height: 1.6; color: var(--ink-2);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.career .verdict b { color: var(--ink); font-weight: 600; }
+.career .verdict b.good { color: var(--accent-deep); }
+.career .verdict b.warn { color: var(--warn); }
+
+/* Sticky, because a filter you scroll away from is one you forget you set. */
+.career-controls {
+  position: sticky; inset-block-start: 0; z-index: 2;
+  margin-block-start: 20px; padding: 14px 0 12px;
+  background: var(--bg); border-block-end: 1px solid var(--line);
+  display: grid; gap: 10px;
+}
+.career-search {
+  font: inherit; font-size: 13px; padding: 9px 13px;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: var(--panel); color: var(--ink); inline-size: 100%;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.career-search:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(63 107 74 / 10%);
+}
+.career-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip {
+  font: inherit; font-size: 12px; padding: 5px 11px;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--panel); color: var(--ink-2); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.chip:hover:not(:disabled) { border-color: var(--line-2); }
+.chip em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--ink-3); font-size: 11px; }
+.chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.chip.on em { color: rgb(255 255 255 / 62%); }
+.chip.good.on { background: var(--accent); border-color: var(--accent); }
+.chip.warn.on { background: var(--warn); border-color: var(--warn); }
+.chip:disabled { opacity: 0.35; cursor: default; }
+.career-filters .tag.more { color: var(--ink-3); }
+
+.career .role { margin-block-start: 24px; }
+.career .role header {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-block-end: 8px; border-block-end: 1px solid var(--line);
+}
+.career .role h3 { font-size: 13px; }
+.career .role .dates { font-size: 11.5px; color: var(--ink-3); }
+.career .role-count {
+  margin-inline-start: auto; font-size: 11px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; display: inline-flex; gap: 8px; align-items: baseline;
+}
+.career .role ul { display: block; list-style: none; margin: 2px 0 0; padding: 0; }
+
+/* One row, one line. The state is the left edge and a number on the right;
+   at twenty-four rows a chip on each would be twenty-four chips and no list. */
+.career .entry { border-block-end: 1px solid var(--line); }
+.career .entry:last-child { border-block-end: 0; }
+.career .entry-row {
+  inline-size: 100%; display: flex; align-items: center; gap: 14px; border-radius: 0;
+  padding: 11px 12px 11px 13px; border: 0; background: none; cursor: pointer;
+  font: inherit; text-align: start; border-inline-start: 2px solid transparent;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+.career .entry-row:hover { background: var(--bg-2); }
+.career .entry-text {
+  flex: 1; min-inline-size: 0; font-size: 13px; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.career .entry-mark {
+  flex: none; font-size: 11.5px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; min-inline-size: 34px; text-align: end;
+}
+.career .entry.proven .entry-row { border-inline-start-color: var(--accent); }
+.career .entry.proven .entry-mark { color: var(--accent-deep); font-weight: 600; }
+.career .entry.never .entry-text { color: var(--ink-2); }
+.career .entry.open .entry-row { background: var(--bg-2); }
+.career .entry.open .entry-text { white-space: normal; color: var(--ink-3); font-size: 12px; }
+
+.career .entry-open {
+  padding: 4px 16px 18px 15px; border-inline-start: 2px solid var(--line-2);
+  animation: settle 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.career .entry.proven .entry-open { border-inline-start-color: var(--accent); }
+.career .entry-open > p { margin: 0; font-size: 13.5px; line-height: 1.62; }
+.career .entry-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-block-start: 10px; }
+.career .entry-outcome { margin-block-start: 10px; font-size: 12px; color: var(--ink-2); }
+.career .entry-outcome.proven { color: var(--accent-deep); font-weight: 500; }
+.career .entry-where { margin-block-start: 3px; font-size: 11.5px; color: var(--ink-3); }
+
+.career .empty-note { margin: 28px 0; text-align: center; color: var(--ink-3); font-size: 13px; }
+
+@keyframes settle {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .career .entry-open { animation: none; } }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Workbench } from "./Workbench.js";
 import { NewApplication } from "./NewApplication.js";
 import { Settings } from "./Settings.js";
+import { Profile } from "./Profile.js";
 import { Setup } from "./Setup.js";
 
 type Flag = { kind: string; label: string; priority: number; days?: number };
@@ -81,6 +82,30 @@ function Chip({ flag }: { flag: Flag }) {
  * informative. The detail has not gone anywhere: it is one tap away, where you
  * are actually thinking about that application rather than scanning all of them.
  */
+/**
+ * How long ago, in words and in weight.
+ *
+ * A date on a card is a fact you have to do arithmetic on, and the arithmetic
+ * is the only reason the date is there: an application sent yesterday and one
+ * sent five weeks ago need completely different things from you, and "Applied
+ * 2026-06-18" says that only if you happen to know today's date and care to
+ * subtract.
+ *
+ * Three bands, because there are three actions. This week is live and needs
+ * nothing. Two to three weeks is where a polite nudge belongs. Past that it has
+ * almost certainly gone quiet, which is worth seeing without being shouted at,
+ * so it fades rather than turning red. Colour here means the same thing it
+ * means everywhere else in the app: how urgently this wants you.
+ */
+function sinceApplied(date: string): { label: string; band: "fresh" | "aging" | "cold" } {
+  const then = Date.parse(date);
+  if (Number.isNaN(then)) return { label: date, band: "fresh" };
+  const days = Math.floor((Date.now() - then) / 86_400_000);
+  const label =
+    days <= 0 ? "today" : days === 1 ? "yesterday" : days < 7 ? `${days}d ago` : days < 14 ? "last week" : `${Math.floor(days / 7)}w ago`;
+  return { label, band: days < 7 ? "fresh" : days < 21 ? "aging" : "cold" };
+}
+
 function Card({ app, working, onOpen }: { app: App; working?: boolean; onOpen: () => void }) {
   const flag = app.flags2[0];
   const dead = app.stage.startsWith("closed");
@@ -103,9 +128,23 @@ function Card({ app, working, onOpen }: { app: App; working?: boolean; onOpen: (
     >
       <h3>{app.company}</h3>
       {app.role && <p className="role">{app.role}</p>}
-      {app.stage === "applied" && app.appliedDate && (
-        <span className="sent">Applied {app.appliedDate}</span>
-      )}
+      {/*
+        Any stage past sending, not just "applied".
+        
+        Gated on stage === "applied" alone, an application that progressed to a
+        screen or an interview lost its date entirely: the one card on the board
+        where things are actually happening became the one card with no sense of
+        time on it.
+      */}
+      {["applied", "screening", "interviewing", "offer"].includes(app.stage) && app.appliedDate && (() => {
+        const { label, band } = sinceApplied(app.appliedDate);
+        return (
+          <span className={`sent sent-${band}`} title={`Applied ${app.appliedDate}`}>
+            <span className="sent-dot" />
+            Applied {label}
+          </span>
+        );
+      })()}
       {flag && !dead && <span className={`mark mark-${SEVERITY[flag.kind] ?? "muted"}`}>{flag.label}</span>}
       {dead && app.outcome && <span className="mark mark-muted">{app.outcome.replace(/_/g, " ")}</span>}
     </article>
@@ -120,6 +159,7 @@ export function App() {
   const [open, setOpen] = useState<{ slug: string; company: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [profile, setProfile] = useState(false);
   const [filing, setFiling] = useState(false);
   const [dragOver, setDragOver] = useState<string | null>(null);
   /** Applications an agent is working on right now, from the server. */
@@ -229,8 +269,18 @@ export function App() {
           who={who}
           authMode={authMode}
           vault={health.vault}
-          archived={board?.archived ?? 0}
           onClose={() => setSettings(false)}
+        />
+      </main>
+    );
+
+  if (profile && who)
+    return (
+      <main>
+        <Profile
+          who={who}
+          archived={board?.archived ?? 0}
+          onClose={() => setProfile(false)}
           onChanged={() => setReload((r) => r + 1)}
         />
       </main>
@@ -319,7 +369,7 @@ export function App() {
     <main>
       <header className="top">
         <div className="brand">
-          <span className="logo" />
+          <img className="logo" src="/logo.png" alt="" width={26} height={26} />
           <h1>Boulot</h1>
         </div>
         <nav className="people">
@@ -337,13 +387,15 @@ export function App() {
             {busy.length}/{maxAgents} agents
           </span>
           {/*
-            Three things, because only one of them is something you do.
+            Settings is the plumbing. Profile is you.
             
-            Plan, insights, archive and career record used to sit across the top
-            of the page you use to apply for jobs, and none of them is part of
-            applying for a job. They are in Settings now.
+            Both were one item, which put the career record, the funnel and the
+            archive behind a cog beside the vault path and the billing mode.
+            They are the thing the app exists to improve, so they get their own
+            door.
           */}
           <button onClick={() => setSettings(true)}>Settings</button>
+          <button onClick={() => setProfile(true)}>Profile</button>
           <button className="primary" onClick={() => setAdding(true)}>
             + New application
           </button>

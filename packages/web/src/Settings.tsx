@@ -1,30 +1,23 @@
 import { useState } from "react";
-import { Career } from "./Career.js";
-import { Insights } from "./Insights.js";
-import { Archive } from "./Archive.js";
 import { Details } from "./Details.js";
 
 /**
- * Everything that is not an application.
+ * The plumbing, and only the plumbing.
  *
- * The board's nav had grown to four items that had nothing to do with each
- * other: what plan you are on, a funnel, a list of finished applications, and
- * your career record. None of them is a thing you do while applying for a job,
- * and all four sat permanently across the top of the page you use to apply for
- * jobs.
+ * This screen briefly held everything that was not an application: contact
+ * details, billing, the vault path, and also the career record, the funnel and
+ * the archive. The last three are not settings. They are the thing the whole
+ * app exists to improve, and filing them behind a cog next to "where your files
+ * are" said something about their importance that nobody meant to say.
  *
- * They live here instead, in the shape every settings screen has had for twenty
- * years: a list on the left, a pane on the right. There is nothing to learn,
- * which is the point.
+ * They have their own tab now. What is left here is what you touch twice and
+ * then forget, which is what a settings screen should be.
  */
 
-type Section = "details" | "profile" | "insights" | "archive" | "account";
+type Section = "details" | "account";
 
 const SECTIONS: Array<{ key: Section; label: string; hint: string }> = [
   { key: "details", label: "Your details", hint: "Name, links, file names" },
-  { key: "profile", label: "Profile", hint: "Everything you have done" },
-  { key: "insights", label: "Insights", hint: "What the search is doing" },
-  { key: "archive", label: "Archive", hint: "Applications that ended" },
   { key: "account", label: "Account", hint: "How Boulot is paid for" },
 ];
 
@@ -32,16 +25,12 @@ export function Settings({
   who,
   authMode,
   vault,
-  archived,
   onClose,
-  onChanged,
 }: {
   who: string;
   authMode: string | null;
   vault: string;
-  archived: number;
   onClose: () => void;
-  onChanged: () => void;
 }) {
   const [section, setSection] = useState<Section>("details");
 
@@ -63,21 +52,13 @@ export function Settings({
               onClick={() => setSection(s.key)}
             >
               <b>{s.label}</b>
-              <span>{s.key === "archive" && archived ? `${archived} filed` : s.hint}</span>
+              <span>{s.hint}</span>
             </button>
           ))}
         </nav>
 
         <section className="settings-pane">
-          {/*
-            The existing screens, unchanged, minus their own back buttons. They
-            were built as full pages and work as panes without alteration, which
-            is the whole argument for not reinventing the layout.
-          */}
           {section === "details" && <Details who={who} />}
-          {section === "profile" && <Career who={who} embedded />}
-          {section === "insights" && <Insights who={who} embedded />}
-          {section === "archive" && <Archive who={who} embedded onChanged={onChanged} />}
           {section === "account" && (
             <div className="account">
               <h3>How Boulot is paid for</h3>

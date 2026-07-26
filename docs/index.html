@@ -207,6 +207,19 @@
 .faq details[open] summary::after{transform:rotate(45deg)}
 .faq details p{color:var(--muted);font-size:15.5px;line-height:1.65;margin:0 0 22px;padding-right:36px}
 @media(max-width:720px){.shows{grid-template-columns:1fr}.show{padding:20px}}
+
+/* Screenshots. Wide, spaced, and framed the way the app frames its own panes. */
+.shot { margin: 0 0 clamp(28px, 5vw, 56px); }
+.shot img {
+  display: block; inline-size: 100%; block-size: auto;
+  border: 1px solid var(--line, #e6ddcc); border-radius: 14px;
+  box-shadow: 0 1px 2px rgb(51 47 40 / 5%), 0 18px 40px -22px rgb(51 47 40 / 30%);
+  background: #fff;
+}
+.shot figcaption {
+  margin-block-start: 12px; font-size: 14px; line-height: 1.6;
+  color: var(--muted, #6c6459); max-inline-size: 62ch;
+}
 </style>
 </head>
 <body>
@@ -215,7 +228,8 @@
   <a class="brand" href="#top">Boulot</a>
   <div class="links">
     <a href="#problem">The problem</a>
-    <a href="#how">How it works</a>
+    <a href="#screens">Screens</a>
+      <a href="#how">How it works</a>
       <a href="#shows">What you get</a>
     <a href="#proof">Results</a>
       <a href="#run">Get it</a>
@@ -283,6 +297,43 @@
   </div>
 </div></section>
 
+
+<!--
+  Screenshots, from a demo vault rather than a real one.
+
+  Every application here is invented and the person is not real: the point of
+  the product is that your career lives in files on your own machine, and
+  putting a page of genuine applications on a public site would be an odd way
+  to make that argument. The interface is the shipped one, unaltered, and the
+  run in the second shot is a real run against the fake vault.
+-->
+<section id="screens"><div class="wrap">
+  <div class="intro reveal">
+    <span class="label">What it looks like</span>
+    <h2 class="head">A board, an agent, and the files underneath.</h2>
+    <p class="lead">Screenshots from the app. The applications are invented, because yours would be on your own machine and nowhere else.</p>
+  </div>
+
+  <figure class="shot reveal">
+    <img src="screens/board.png" alt="The board: applications in Prep, Applied and Closed columns, each card showing how long ago it was sent" loading="lazy" width="1600" />
+    <figcaption>Everything in flight, in three columns. Sent applications carry how long ago rather than a date, because the arithmetic is the only reason the date was there.</figcaption>
+  </figure>
+
+  <figure class="shot reveal">
+    <img src="screens/agents.png" alt="An application being written: the six build stages, three reviewers reading the draft, and the requirement mapping streaming in" loading="lazy" width="1600" />
+    <figcaption>A real run. Six stages, three reviewers reading the draft, and the mapping table appearing as it goes. You can leave the page; it keeps working.</figcaption>
+  </figure>
+
+  <figure class="shot reveal">
+    <img src="screens/mapping.png" alt="The research tab showing a table mapping each job requirement to evidence, with Hit, Reframe and Gap verdicts" loading="lazy" width="1600" />
+    <figcaption>Every requirement against something you have actually done, with the gaps named out loud. A gap you know about is an answer you can prepare.</figcaption>
+  </figure>
+
+  <figure class="shot reveal">
+    <img src="screens/profile.png" alt="The profile: every entry in the experience bank as one line, marked with how many CVs it went out on and how many reached an interview" loading="lazy" width="1600" />
+    <figcaption>Everything you have done, and what it earned. An entry that has gone out eight times and never reached an interview is telling you something.</figcaption>
+  </figure>
+</div></section>
 
 <section id="shows" class="soft"><div class="wrap">
   <div class="intro reveal">
