@@ -341,13 +341,15 @@ export function Workbench({
     label: string,
     kind: "build" | "tweak" = "build",
     model: string = MODELS.tailor,
+    /** What the user asked, in their words, for the conversation log. */
+    note?: string,
   ) => {
     if (running) return;
     setRunKind(kind);
     setRunning(label);
     setActivity([]);
     setActivity([]);
-    if (!emit({ prompt, person: who, job: slug, slug, label, model })) {
+    if (!emit({ prompt, person: who, job: slug, slug, label, model, note })) {
       // The socket is down. Saying so beats a spinner that never resolves.
       setRunning(null);
       setRunKind(null);
@@ -500,6 +502,9 @@ export function Workbench({
         attach("job_description", text.job ?? "", "job.md") +
         `\n\nKeep commentary short.`,
       "Building the application",
+      "build",
+      MODELS.tailor,
+      `Build: ${missing.map((m) => m.label.toLowerCase()).join(", ")}`,
     );
   };
 
@@ -618,6 +623,7 @@ export function Workbench({
       "Working",
       "tweak",
       MODELS.tweak,
+      q,
     );
     setAsk("");
   };

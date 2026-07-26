@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import { WebSocketServer } from "ws";
-import { existsSync, readdirSync, statSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
+import { appendFileSync, existsSync, readdirSync, statSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
 import { join, resolve, relative, isAbsolute } from "node:path";
 import {
   readVault,
@@ -714,6 +714,8 @@ wss.on("connection", (socket) => {
       slug?: string;
       company?: string;
       model?: string;
+      /** What the user actually asked, in their words, for the record. */
+      note?: string;
     };
     try {
       msg = JSON.parse(String(raw));
@@ -763,6 +765,33 @@ wss.on("connection", (socket) => {
     jobs.set(id, job);
     broadcast({ t: "job", job: id, slug: job.slug, company: job.company, label: job.label, running: true });
 
+    /*
+     * Keep the conversation with the application it is about.
+     *
+     * Until now it lived only in memory and died with the server, so there was
+     * no record of what was asked or what came back. For an application you
+     * have actually sent, that is the part worth keeping: the CV explains what
+     * you claimed, and only the conversation explains why.
+     *
+     * Written into the folder rather than a database, so it travels with the
+     * application when it is archived and reads without this app.
+     */
+    const logTurn = (who: string, text: string) => {
+      if (!job.slug || !text.trim()) return;
+      const dir = jobDir(msg.person!, job.slug);
+      if (!dir) return;
+      try {
+        const path = join(dir, "conversation.md");
+        const head = existsSync(path)
+          ? ""
+          : `# Conversation\n\nEverything asked of Boulot about this application, and what it said back.\n`;
+        appendFileSync(path, `${head}\n## ${who} · ${new Date().toISOString().slice(0, 16).replace("T", " ")}\n\n${text.trim()}\n`);
+      } catch {
+        /* the run matters more than its transcript */
+      }
+    };
+    if (msg.note) logTurn("You", msg.note);
+
     try {
       job.sessionId = await run({
         prompt: msg.prompt,
@@ -800,6 +829,7 @@ wss.on("connection", (socket) => {
               broadcast({ t: "job", job: id, slug: job.slug, company: job.company, role: job.role, label: job.label, running: true });
             }
           }
+          if (e.t === "text" && typeof e.text === "string") logTurn("Boulot", e.text);
           const tagged = { ...e, job: id, slug: job.slug };
           // Bounded, because a long research run can emit hundreds of steps and
           // this is only here so a returning screen can catch up.

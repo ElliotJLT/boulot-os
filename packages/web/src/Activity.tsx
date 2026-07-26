@@ -241,7 +241,7 @@ export const BUILD_STAGES: Array<{ key: BuildStage; label: string }> = [
   { key: "loading", label: "Loading your record" },
   { key: "mapping", label: "Mapping the job description" },
   { key: "drafting", label: "Writing the draft" },
-  { key: "reviewing", label: "Three reviewers reading it" },
+  { key: "reviewing", label: "Three agent review" },
   { key: "editing", label: "Applying their edits" },
   { key: "rendering", label: "Rendering the page" },
 ];
@@ -275,6 +275,19 @@ export function stagesReached(labels: string[]): Set<BuildStage> {
   return new Set(order.slice(0, furthest + 1));
 }
 
+/**
+ * The three agents, and whether each has spoken.
+ *
+ * Shown as children of the review stage rather than as three more stages,
+ * because they run in parallel: a flat list would imply an order that does not
+ * exist and would show two of them as "not started" while they are all working.
+ */
+const AGENTS: Array<{ key: string; label: string; match: RegExp }> = [
+  { key: "hm", label: "The Hiring Manager", match: /hiring manager/i },
+  { key: "rv", label: "The Reviewer", match: /is finding the three/i },
+  { key: "st", label: "The Strategist", match: /looking for what you left out/i },
+];
+
 export function BuildProgress({ labels, running }: { labels: string[]; running: boolean }) {
   const reached = stagesReached(labels);
   if (!reached.size) return null;
@@ -289,8 +302,23 @@ export function BuildProgress({ labels, running }: { labels: string[]; running: 
         const doneNow = reached.has(s.key) && !running;
         return (
           <li key={s.key} className={live ? "rail-live" : done || doneNow ? "rail-done" : "rail-todo"}>
-            <span className="rail-mark">{live ? <span className="dot" /> : done || doneNow ? "✓" : ""}</span>
-            {s.label}
+            <div className="rail-row">
+              <span className="rail-mark">{live ? <span className="dot" /> : done || doneNow ? "✓" : ""}</span>
+              {s.label}
+            </div>
+            {s.key === "reviewing" && reached.has("reviewing") && (
+              <ul className="rail-agents">
+                {AGENTS.map((agent) => {
+                  const spoke = labels.some((l) => agent.match.test(l));
+                  return (
+                    <li key={agent.key} className={spoke ? "agent-on" : "agent-off"}>
+                      <span className="rail-mark">{spoke ? "✓" : ""}</span>
+                      {agent.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </li>
         );
       })}

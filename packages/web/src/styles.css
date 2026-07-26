@@ -979,3 +979,15 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   margin: 14px 0; font-size: 12.5px; color: var(--urgent);
   background: var(--urgent-bg); border-radius: var(--radius); padding: 10px 14px;
 }
+
+/* The three agents, nested under the review stage. They run in parallel, so
+   they are children rather than three more stages: a flat list would imply an
+   order that does not exist. */
+.rail li { display: block; }
+.rail-row { display: flex; align-items: center; gap: 10px; }
+.rail-agents { list-style: none; margin: 4px 0 2px; padding: 0 0 0 26px; display: grid; gap: 2px; }
+.rail-agents li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.rail-agents .rail-mark { inline-size: 14px; block-size: 14px; font-size: 9px; }
+.agent-on { color: var(--ink-2); }
+.agent-on .rail-mark { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-deep); }
+.agent-off { color: var(--ink-3); opacity: 0.6; }
