@@ -142,6 +142,7 @@ export function Workbench({
   const [text, setText] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [rendering, setRendering] = useState(false);
 
   const [running, setRunning] = useState<string | null>(null);
   /*
@@ -475,15 +476,36 @@ export function Workbench({
    */
   useEffect(() => {
     if (!dirty) return;
+    const which = tabRef.current;
     const t = setTimeout(() => {
-      void fetch(`/api/${who}/job/${slug}/doc/${tabRef.current}`, {
+      void fetch(`/api/${who}/job/${slug}/doc/${which}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ markdown: text[tabRef.current] ?? "" }),
+        body: JSON.stringify({ markdown: text[which] ?? "" }),
       })
-        .then(() => setDirty(false))
-        .catch(() => {});
-    }, 700);
+        .then(() => {
+          setDirty(false);
+          /*
+           * Editing the CV re-renders the PDF.
+           *
+           * Without this the preview is whatever the agent last produced, so
+           * the moment you fix a line by hand the page beside it is a lie. The
+           * renderer needs no model and takes about four seconds, so there is
+           * nothing to weigh up: the honest page is free.
+           */
+          if (which !== "cv") return;
+          setRendering(true);
+          return fetch(`/api/${who}/job/${slug}/pdf`, { method: "POST" })
+            .then((r) => r.json())
+            .then((d) => {
+              setFit(d.fit ?? null);
+              setPdfExists(Boolean(d.pdf));
+              setPdfKey((k) => k + 1);
+            })
+            .finally(() => setRendering(false));
+        })
+        .catch(() => setRendering(false));
+    }, 900);
     return () => clearTimeout(t);
   }, [text, dirty, who, slug]);
 
@@ -557,7 +579,11 @@ export function Workbench({
               {fit.fits ? `${fit.pages}pp` : `${fit.pages}pp · ${fit.overflowMm}mm over`}
             </span>
           )}
-          {dirty && <span className="saving">Saving…</span>}
+          {dirty ? (
+            <span className="saving">Saving…</span>
+          ) : rendering ? (
+            <span className="saving">Re-rendering the page…</span>
+          ) : null}
           {pdfExists && (
             <a className="ghost" href={`/api/${who}/job/${slug}/file/cv.pdf`} download={`${company} CV.pdf`}>
               Download
