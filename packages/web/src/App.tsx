@@ -166,10 +166,23 @@ export function App() {
         }) => {
           const live = d.jobs.filter((j) => j.running);
           if (typeof d.max === "number") setMaxAgents(d.max);
-          setBusy(live);
-          // A run that just ended may have written files the board shows.
+          /*
+           * Reload the board whenever the shape of the work changes.
+           *
+           * This only reloaded when the last run finished, so an application
+           * created mid-run had nothing to make the board fetch it: the
+           * placeholder shimmered, the folder appeared on disk, and the real
+           * card did not show until the page was refreshed by hand. Three
+           * separate reports of a role "disappearing" were this.
+           *
+           * The signature is the set of running jobs and the slugs they have
+           * learned, so a job gaining a folder counts as a change just as much
+           * as a job ending does.
+           */
+          const signature = live.map((j) => `${j.id}:${j.slug ?? ""}`).sort().join("|");
           setBusy((prev) => {
-            if (prev.length && !live.length) setReload((r) => r + 1);
+            const before = prev.map((j) => `${j.id}:${j.slug ?? ""}`).sort().join("|");
+            if (before !== signature) setReload((r) => r + 1);
             return live;
           });
         })
