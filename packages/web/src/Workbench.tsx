@@ -558,7 +558,23 @@ export function Workbench({
         `Use Edit to change them.` +
         attach("cv", cv, "cv.md") +
         attach("job_description", job, "job.md") +
-        `\n\nRequest: ${q}`,
+        `\n\nRequest: ${q}\n\n` +
+        /*
+         * The instruction that makes corrections stick.
+         *
+         * Without it, telling the agent that a bare PR count is a vanity metric
+         * teaches it nothing: the run ends and the same note gets made again
+         * next week. The bar is deliberately high, because a lessons file that
+         * fills with one-off facts about single applications is noise and stops
+         * being read.
+         */
+        `If this request corrects how you should write in general, rather than ` +
+        `changing one detail of this application, append a single line to ` +
+        `profile/lessons.md saying what to do differently, in the imperative. ` +
+        `Create the file if it does not exist. Do not record anything specific ` +
+        `to this one employer, and do not record it twice: read the file first ` +
+        `and skip if it is already there. If this is a one-off change, do not ` +
+        `write anything.`,
       "Working",
       "tweak",
       MODELS.tweak,

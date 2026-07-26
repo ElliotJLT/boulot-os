@@ -337,17 +337,44 @@ const REVIEWERS: Record<string, {
  * is already reflected.
  */
 function memoryContext(vaultRoot: string, person: string): string {
-  const file = resolve(vaultRoot, person, "profile", "MEMORY.md");
-  if (!existsSync(file)) return "";
-  let text = "";
-  try {
-    text = readFileSync(file, "utf8");
-  } catch {
-    return "";
-  }
-  if (!text.trim()) return "";
+  const read = (...parts: string[]) => {
+    const file = resolve(vaultRoot, person, ...parts);
+    if (!existsSync(file)) return "";
+    try {
+      return readFileSync(file, "utf8").trim();
+    } catch {
+      return "";
+    }
+  };
+
+  const text = read("profile", "MEMORY.md");
+  /*
+   * Corrections, kept.
+   *
+   * Facts about a career are only half of what the system needs to stop being
+   * told what to do. The other half is judgement: that a bare PR count is a
+   * vanity metric, that a summary runs long, that a particular framing reads as
+   * padding. Those arrive as corrections in conversation and evaporate the
+   * moment the run ends, so the same note gets made again next week.
+   *
+   * This file is where they survive. It is loaded before every run, above the
+   * facts, because a lesson is an instruction and a fact is only evidence.
+   */
+  const lessons = read("profile", "lessons.md");
+  if (!text && !lessons) return "";
   return [
     "",
+    ...(lessons
+      ? [
+          "# What this person has already told you",
+          "",
+          "Corrections from previous sessions. They were made once and should not",
+          "have to be made again. Treat them as instructions, not suggestions.",
+          "",
+          lessons,
+          "",
+        ]
+      : []),
     "# The vault is the only thing you can read",
     "",
     "Everything you need is inside this folder. Files outside it cannot be opened,",
@@ -362,7 +389,7 @@ function memoryContext(vaultRoot: string, person: string): string {
     "never contradict the `Worth checking` section: those are open questions, so",
     "ask rather than assuming an answer.",
     "",
-    text.trim(),
+    text,
   ].join("\n");
 }
 
