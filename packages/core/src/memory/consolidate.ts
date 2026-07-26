@@ -1,6 +1,6 @@
-import { figures, similarity, SAME_CLAIM } from "../learning/salvage.js";
+import { figures, similarity, SAME_CLAIM } from "../learning/similarity.js";
 import type { Master } from "../vault/master.js";
-import type { CvLine } from "../learning/salvage.js";
+import type { CvLine } from "../learning/similarity.js";
 
 /**
  * Consolidation. Boulot's version of dreaming.

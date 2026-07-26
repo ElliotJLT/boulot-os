@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  MIN_APPEARANCES,
-  SAME_CLAIM,
-  figures,
-  salvage,
-  similarity,
-  tokenise,
-} from "../src/learning/salvage.js";
+import { SAME_CLAIM, figures, similarity } from "../src/learning/similarity.js";
 import { extractLines } from "../src/vault/cv-lines.js";
 
 /**
@@ -66,67 +59,6 @@ describe("figures", () => {
   it("does not leave punctuation stuck to a figure", () => {
     // "1," used to come back as its own figure.
     expect([...figures("reached 120k users, then 146 hospitals.")]).toEqual(["120k", "146"]);
-  });
-});
-
-describe("salvage", () => {
-  const master = [{ id: "zg:4", text: MASTER_COPILOT }];
-  const twice = (text: string) => [
-    { text, slug: "intercom", section: "Zero Gravity" },
-    { text, slug: "cognition", section: "Zero Gravity" },
-  ];
-
-  it("proposes a line with no counterpart as new", () => {
-    const [p] = salvage(master, twice(SENT_CLEARBOOK));
-    expect(p?.kind).toBe("new");
-    expect(p?.closest).toBeNull();
-    expect(p?.seenIn).toEqual(["intercom", "cognition"]);
-  });
-
-  it("says nothing about a matched line that adds no figures", () => {
-    expect(salvage(master, twice(SENT_COPILOT))).toEqual([]);
-  });
-
-  it("proposes a matched line that carries a figure the master lacks", () => {
-    const richer = `${SENT_COPILOT} Cut support handling time 40%.`;
-    const [p] = salvage(master, twice(richer));
-    expect(p?.kind).toBe("enriched");
-    expect(p?.closest?.id).toBe("zg:4");
-    expect(p?.newFigures).toEqual(["40%"]);
-  });
-
-  it("groups rewordings and keeps the fullest phrasing", () => {
-    const props = salvage([], [
-      { text: SENT_CLEARBOOK, slug: "a", section: "Open Source" },
-      { text: `${SENT_CLEARBOOK} and disciplinary history lookup`, slug: "b", section: "Open Source" },
-    ]);
-    expect(props).toHaveLength(1);
-    expect(props[0]?.text).toContain("disciplinary history");
-    expect(props[0]?.seenIn).toEqual(["a", "b"]);
-  });
-
-  it("ignores a line written only once", () => {
-    expect(MIN_APPEARANCES).toBe(2);
-    const once = [{ text: SENT_CLEARBOOK, slug: "solo", section: "Open Source" }];
-    expect(salvage(master, once)).toEqual([]);
-  });
-
-  it("counts an application once however many times it repeats a line", () => {
-    const dup = [
-      { text: SENT_CLEARBOOK, slug: "same", section: "x" },
-      { text: SENT_CLEARBOOK, slug: "same", section: "x" },
-    ];
-    expect(salvage(master, dup)).toEqual([]);
-  });
-
-  it("orders by how often you reached for it", () => {
-    const lines = [
-      ...twice("Shipped a correctness evaluation pipeline against real past papers and mark schemes"),
-      { text: "Ran a classroom trial at a partner school with real students", slug: "a", section: "x" },
-      { text: "Ran a classroom trial at a partner school with real students", slug: "b", section: "x" },
-      { text: "Ran a classroom trial at a partner school with real students", slug: "c", section: "x" },
-    ];
-    expect(salvage([], lines).map((p) => p.seenIn.length)).toEqual([3, 2]);
   });
 });
 

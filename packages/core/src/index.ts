@@ -6,7 +6,7 @@ export * from "./pipeline/archive.js";
 export * from "./vault/write.js";
 export * from "./vault/read.js";
 export * from "./learning/funnel.js";
-export * from "./learning/salvage.js";
+export * from "./learning/similarity.js";
 export * from "./vault/cv-lines.js";
 export * from "./vault/setup.js";
 export * from "./memory/consolidate.js";
