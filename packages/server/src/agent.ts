@@ -26,14 +26,50 @@ export interface AgentEvent {
  * "Looking through your applications".
  */
 function describe(name: string, input: Record<string, unknown>): string {
-  const file = (v: unknown) => (typeof v === "string" ? v.split("/").slice(-2).join("/") : "");
+  /*
+   * Say what the file is, not where it lives.
+   *
+   * "Reading callosum/status.md" while logging a job at a different company
+   * reads as the agent having lost track of which application it is on. It has
+   * not: checking whether you have applied somewhere before means opening other
+   * applications. Naming the company makes that obvious instead of alarming.
+   */
+  const describeFile = (v: unknown, verb: string): string => {
+    if (typeof v !== "string") return verb;
+    const parts = v.split("/");
+    const name = parts.at(-1) ?? "";
+    const folder = parts.at(-2) ?? "";
+    const company = folder
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    const KNOWN: Record<string, string> = {
+      "cv-master.md": "your career record",
+      "profile.md": "your profile",
+      "dashboard.md": "your dashboard",
+      "MEMORY.md": "what it knows about you",
+    };
+    if (KNOWN[name]) return `${verb} ${KNOWN[name]}`;
+
+    const inApplication: Record<string, string> = {
+      "status.md": `the ${company} application`,
+      "job.md": `the ${company} job description`,
+      "research.md": `research on ${company}`,
+      "cv.md": `the ${company} CV`,
+      "cover-letter.md": `the ${company} cover letter`,
+      "application-answers.md": `the ${company} questions`,
+    };
+    return inApplication[name] ? `${verb} ${inApplication[name]}` : `${verb} ${name}`;
+  };
+
   switch (name) {
     case "Read":
-      return `Reading ${file(input.file_path)}`;
+      return describeFile(input.file_path, "Reading");
     case "Write":
-      return `Writing ${file(input.file_path)}`;
+      return describeFile(input.file_path, "Writing");
     case "Edit":
-      return `Editing ${file(input.file_path)}`;
+      return describeFile(input.file_path, "Updating");
     case "Glob":
     case "Grep":
       return "Searching your vault";

@@ -25,10 +25,13 @@ export function NewApplication({
   who,
   onClose,
   onCreated,
+  onOpen,
 }: {
   who: string;
   onClose: () => void;
   onCreated: () => void;
+  /** Called once the folder exists, so the user can watch the rest happen in it. */
+  onOpen?: (slug: string, company: string) => void;
 }) {
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
@@ -43,6 +46,10 @@ export function NewApplication({
   // socket down mid-run on every log line.
   const created = useRef(onCreated);
   created.current = onCreated;
+  const opened = useRef(onOpen);
+  opened.current = onOpen;
+  // Only hand off once, however many files the run writes.
+  const handedOff = useRef(false);
 
   useEffect(() => {
     const socket = new WebSocket(`ws://${location.host}/ws`);
@@ -53,8 +60,26 @@ export function NewApplication({
         setLines((l) => [...l, { kind: "activity", text: ev.label }]);
         setPhases((p) => new Set(p).add(phaseOf(ev.label)));
       }
-      else if (ev.t === "file")
+      else if (ev.t === "file") {
         setLines((l) => [...l, { kind: "activity", text: `Created ${ev.path.split("/").slice(-2).join("/")}` }]);
+        /*
+         * The moment the application is real, go and stand in it.
+         *
+         * status.md is the file that makes a folder an application, so it is
+         * the earliest honest point to hand over. Everything after it, the
+         * research, the CV, the PDF, then happens on the screen where those
+         * things live, rather than scrolling past as log lines on a screen the
+         * user is about to leave.
+         */
+        const m = /\/([^/]+)\/status\.md$/.exec(ev.path);
+        if (m && !handedOff.current && opened.current) {
+          handedOff.current = true;
+          const slug = m[1]!;
+          const company = slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+          // A beat, so the "created" line is seen before the screen changes.
+          setTimeout(() => opened.current?.(slug, company), 900);
+        }
+      }
       else if (ev.t === "text") setLines((l) => [...l, { kind: "said", text: ev.text }]);
       else if (ev.t === "error") setLines((l) => [...l, { kind: "problem", text: ev.message }]);
       else if (ev.t === "result") {

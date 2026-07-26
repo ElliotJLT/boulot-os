@@ -37,13 +37,21 @@ type Board = {
   warnings: number;
 };
 
-/** Columns are the funnel, left to right. Terminal states collapse into one. */
+/**
+ * Three columns, because a job search only has three states you can act on.
+ *
+ * Six columns meant four of them were usually empty, and "Leads" in particular
+ * was a holding pen for things nobody had decided about. A role you have not
+ * started writing for is a role you are drafting; the distinction was
+ * bookkeeping, so leads fold into Drafting rather than disappearing.
+ *
+ * Screening and interviewing fold into Applied for the same reason: the card
+ * still says what stage it reached, and the board's job is to show what needs
+ * work, not to model a funnel it already draws on the Insights page.
+ */
 const COLUMNS: Array<{ key: string; label: string; stages: string[] }> = [
-  { key: "lead", label: "Leads", stages: ["lead"] },
-  { key: "drafting", label: "Drafting", stages: ["drafting"] },
-  { key: "applied", label: "Applied", stages: ["applied"] },
-  { key: "screening", label: "Screening", stages: ["screening"] },
-  { key: "interviewing", label: "Interviewing", stages: ["interviewing", "offer"] },
+  { key: "drafting", label: "Drafting", stages: ["lead", "drafting"] },
+  { key: "applied", label: "Applied", stages: ["applied", "screening", "interviewing", "offer"] },
   { key: "closed", label: "Closed", stages: ["closed-won", "closed-lost"] },
 ];
 
@@ -78,7 +86,22 @@ function Card({ app, onOpen }: { app: App; onOpen: () => void }) {
   const flag = app.flags2[0];
   const dead = app.stage.startsWith("closed");
   return (
-    <article className={`card${dead ? " card-dead" : ""}`} onClick={onOpen} role="button" tabIndex={0}>
+    <article
+      className={`card${dead ? " card-dead" : ""}`}
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      draggable
+      /*
+       * Native drag rather than a library. The whole interaction is "pick up a
+       * card, drop it in a column", which the platform already does, and a
+       * dependency for it would be more code than the four handlers below.
+       */
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", app.slug);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+    >
       <h3>{app.company}</h3>
       {app.role && <p className="role">{app.role}</p>}
       {flag && !dead && <span className={`mark mark-${SEVERITY[flag.kind] ?? "muted"}`}>{flag.label}</span>}
@@ -98,6 +121,7 @@ export function App() {
   const [insights, setInsights] = useState(false);
   const [archive, setArchive] = useState(false);
   const [filing, setFiling] = useState(false);
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [health, setHealth] = useState<{ vault: string; needsSetup: string | null; firstPerson: string | null } | null>(null);
@@ -168,7 +192,16 @@ export function App() {
   if (adding && who)
     return (
       <main>
-        <NewApplication who={who} onClose={() => setAdding(false)} onCreated={() => setReload((r) => r + 1)} />
+        <NewApplication
+          who={who}
+          onClose={() => setAdding(false)}
+          onCreated={() => setReload((r) => r + 1)}
+          onOpen={(slug, company) => {
+            setReload((r) => r + 1);
+            setAdding(false);
+            setOpen({ slug, company });
+          }}
+        />
       </main>
     );
 
@@ -195,6 +228,30 @@ export function App() {
    * disk, and a dozen concurrent moves through the same path checks buys
    * nothing worth the race. The board reloads once at the end.
    */
+  /**
+   * Drop a card into a column.
+   *
+   * Optimistic: the card moves immediately and the board reloads afterwards.
+   * Waiting for a round trip to a local file write makes dragging feel broken
+   * even when it worked, and if the write fails the reload puts it back.
+   */
+  const move = async (slug: string, column: string) => {
+    setDragOver(null);
+    const current = board.applications.find((a) => a.slug === slug);
+    const target = COLUMNS.find((c) => c.key === column);
+    if (!current || !target || target.stages.includes(current.stage)) return;
+
+    setBoard((b) =>
+      b ? { ...b, applications: b.applications.map((a) => (a.slug === slug ? { ...a, stage: column === "closed" ? "closed-lost" : column } : a)) } : b,
+    );
+    await fetch(`/api/${who}/job/${slug}/stage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stage: column }),
+    }).catch(() => {});
+    setReload((r) => r + 1);
+  };
+
   const fileAll = async (cands: Candidate[]) => {
     for (const c of cands) {
       await fetch(`/api/${who}/job/${c.slug}/archive`, {
@@ -254,25 +311,6 @@ export function App() {
             Add your first job
           </button>
         </section>
-      ) : /*
-            Only when there is something to do. An empty "Do these three" panel
-            used the top of the page to announce that it had nothing to
-            announce, which is the most valuable space on screen spent on a
-            negative.
-          */
-      board.nextActions.length > 0 ? (
-        <section className="next">
-        <h2>Do these three</h2>
-        <ol>
-          {board.nextActions.map((n) => (
-            <li key={n.slug}>
-              <Chip flag={n.flag} />
-              <strong>{n.company}</strong>
-              <span className="role">{n.role}</span>
-            </li>
-          ))}
-        </ol>
-        </section>
       ) : null}
 
       {board.archivable.length > 0 && (
@@ -311,9 +349,29 @@ export function App() {
               .filter((a) => a.bucket === "active")
               .filter((a) => col.stages.includes(a.stage))
               .sort((a, b) => (a.flags2[0]?.priority ?? 99) - (b.flags2[0]?.priority ?? 99));
-            if (!items.length) return null;
+            // Empty columns stay on screen now: a column you cannot drop into
+            // is not a column, and hiding them made the board rearrange itself
+            // mid-drag.
             return (
-              <section className="column" key={col.key}>
+              <section
+                className={`column${dragOver === col.key ? " column-over" : ""}`}
+                key={col.key}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (dragOver !== col.key) setDragOver(col.key);
+                }}
+                onDragLeave={(e) => {
+                  // Only when the pointer actually left the column, not when it
+                  // crossed onto a card inside it.
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const slug = e.dataTransfer.getData("text/plain");
+                  if (slug) void move(slug, col.key);
+                }}
+              >
                 <header>
                   <h2>{col.label}</h2>
                   <span className="count">{items.length}</span>
@@ -321,6 +379,7 @@ export function App() {
                 {items.map((a) => (
                   <Card key={a.slug + a.stage} app={a} onOpen={() => setOpen({ slug: a.slug, company: a.company })} />
                 ))}
+                {!items.length && <p className="col-empty">Drop here</p>}
               </section>
             );
           })}

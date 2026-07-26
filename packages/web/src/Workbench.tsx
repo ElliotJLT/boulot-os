@@ -97,6 +97,19 @@ export function Workbench({
   const [flash, setFlash] = useState(false);
 
   const [running, setRunning] = useState<string | null>(null);
+  /*
+   * What is running, not just that something is.
+   *
+   * The checklist used to animate on any activity, so asking for a small tweak
+   * to a finished CV lit up "Tailoring the CV, Drafting the cover letter,
+   * Rendering the PDF" and looked exactly like someone had pressed play. A
+   * tweak is a conversation about one document; a build is the four steps.
+   *
+   * "adopted" is a run that started on another screen. Logging a job hands over
+   * to this one mid-flight, and the workbench has to be able to narrate work it
+   * did not begin.
+   */
+  const [runKind, setRunKind] = useState<"build" | "tweak" | "adopted" | null>(null);
   const [activity, setActivity] = useState<string[]>([]);
   const [said, setSaid] = useState<string[]>([]);
   const [ask, setAsk] = useState("");
@@ -154,14 +167,40 @@ export function Workbench({
     ws.current = socket;
     socket.onmessage = (e) => {
       const ev: Event = JSON.parse(e.data);
-      if (ev.t === "tool") setActivity((a) => [...a, ev.label]);
+      if (ev.t === "tool") {
+        setActivity((a) => [...a, ev.label]);
+        // Work arriving with nothing running locally means another screen
+        // started it and handed this one the job of showing it.
+        setRunning((r) => r ?? "Working");
+        setRunKind((k) => k ?? "adopted");
+      }
       else if (ev.t === "file") {
         setActivity((a) => [...a, `Saved ${ev.path.split("/").pop()}`]);
+        /*
+         * Show the document being written, unless the user has picked a tab.
+         *
+         * Watching research appear is the whole reason to be on this screen
+         * while a run is going. Never overrides a deliberate choice.
+         */
+        const name = ev.path.split("/").pop() ?? "";
+        const tabFor: Record<string, string> = {
+          "research.md": "research",
+          "job.md": "job",
+          "cv.md": "cv",
+          "cover-letter.md": "cover",
+          "application-answers.md": "questions",
+        };
+        const next = tabFor[name];
+        if (next && !chosen.current) {
+          tabRef.current = next;
+          setTab(next);
+        }
         void refresh();
       } else if (ev.t === "text") setSaid((s) => [...s, ev.text]);
       else if (ev.t === "error") setSaid((s) => [...s, ev.message]);
       else if (ev.t === "result") {
         setRunning(null);
+        setRunKind(null);
         setCost((c) => c + ev.cost);
         setPdfKey((k) => k + 1);
         void refresh();
@@ -170,8 +209,9 @@ export function Workbench({
     return () => socket.close();
   }, [refresh]);
 
-  const send = (prompt: string, label: string) => {
+  const send = (prompt: string, label: string, kind: "build" | "tweak" = "build") => {
     if (running || !ws.current) return;
+    setRunKind(kind);
     setRunning(label);
     setActivity([]);
     setSaid([]);
@@ -273,6 +313,7 @@ export function Workbench({
         attach("job_description", job, "job.md") +
         `\n\nRequest: ${q}`,
       "Working",
+      "tweak",
     );
     setAsk("");
   };
@@ -402,7 +443,13 @@ export function Workbench({
         <section className="pane side">
           <div className="checklist">
             <div className="checklist-top">
-              <h3>{allDone ? "Ready to send" : "Build this application"}</h3>
+              <h3>
+                {runKind === "tweak"
+                  ? "Making that change"
+                  : allDone
+                    ? "Ready to send"
+                    : "Build this application"}
+              </h3>
               <button
                 className="play"
                 onClick={runAll}
@@ -415,7 +462,7 @@ export function Workbench({
             <ol>
               {STEPS.map((s) => {
                 const isDone = done(s.key);
-                const isLive = Boolean(running) && !isDone;
+                const isLive = runKind === "build" && Boolean(running) && !isDone;
                 return (
                   <li key={s.key} className={isDone ? "step-done" : isLive ? "step-live" : ""}>
                     <span className="box">{isDone ? "✓" : isLive ? <span className="dot" /> : ""}</span>

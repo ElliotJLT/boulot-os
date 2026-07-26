@@ -342,6 +342,40 @@ app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string } }>(
   },
 );
 
+/**
+ * Move an application to another stage.
+ *
+ * What dragging a card writes. Only the three stages the board actually shows
+ * are accepted, so a drag can never put a record into a state the UI cannot
+ * then display.
+ */
+app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
+  "/api/:who/job/:slug/stage",
+  async (req, reply) => {
+    const stage = req.body?.stage;
+    const ALLOWED: Record<string, string> = {
+      drafting: "drafting",
+      applied: "applied",
+      // Never "rejected": the board knows it ended, not how, and guessing an
+      // outcome here would put fiction into the funnel.
+      closed: "closed",
+    };
+    const value = stage ? ALLOWED[stage] : undefined;
+    if (!value) return reply.code(400).send({ error: "unknown stage" });
+
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+    const status = join(dir, "status.md");
+    if (!existsSync(status)) return reply.code(404).send({ error: "no status.md" });
+
+    writeFileSync(
+      status,
+      updateFrontmatter(readFileSync(status, "utf8"), { stage: value, last_updated: todayStr() }),
+    );
+    return { slug: req.params.slug, stage: value };
+  },
+);
+
 /** Put one back. Archiving is reversible or it is a trapdoor. */
 app.post<{ Params: { who: string; slug: string } }>(
   "/api/:who/job/:slug/restore",
@@ -502,7 +536,23 @@ const address = await app.listen({ port: PORT, host: "127.0.0.1" });
 
 /** Agent bridge. One socket per run; the client sends a prompt, we stream back. */
 const wss = new WebSocketServer({ server: app.server, path: "/ws" });
+/*
+ * Every open screen hears every run.
+ *
+ * Events used to go only to the socket that started the run, which made handing
+ * off between screens impossible: logging a job and then opening its workbench
+ * left the workbench looking idle while the agent was still working in it. The
+ * run itself always survived, because the vault is what it writes to, but the
+ * narration did not follow the user.
+ *
+ * Broadcasting is safe here in a way it would not be on a server: this one
+ * serves one person on their own machine, and the sockets are their own tabs.
+ */
+const sockets = new Set<import("ws").WebSocket>();
+
 wss.on("connection", (socket) => {
+  sockets.add(socket);
+  socket.on("close", () => sockets.delete(socket));
   let sessionId: string | undefined;
   socket.on("message", async (raw) => {
     let msg: { prompt?: string; person?: string };
@@ -523,10 +573,13 @@ wss.on("connection", (socket) => {
         // A closed socket must never kill the run. Writing to one throws, and
         // that exception used to propagate into the agent loop and end it
         // early, which surfaced as a reply describing work that never happened.
-        try {
-          if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(e));
-        } catch {
-          /* client went away; the run continues and the vault is still written */
+        const payload = JSON.stringify(e);
+        for (const s of sockets) {
+          try {
+            if (s.readyState === s.OPEN) s.send(payload);
+          } catch {
+            /* that tab went away; the run continues and the vault is written */
+          }
         }
       },
     });

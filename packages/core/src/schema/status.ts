@@ -56,6 +56,10 @@ const STAGE_ALIASES: Record<string, { stage: Stage; outcome?: Outcome; flag?: ke
   rejected: { stage: "closed-lost", outcome: "rejected" },
   withdrawn: { stage: "closed-lost", outcome: "withdrawn" },
   expired: { stage: "closed-lost", outcome: "ghosted" },
+  // Closed, but nobody has said how. Written when a card is dragged into the
+  // Closed column: the board knows it ended, and only the user knows whether it
+  // was a rejection, a withdrawal or silence. Archiving asks.
+  closed: { stage: "closed-lost" },
   ghosted: { stage: "closed-lost", outcome: "ghosted" },
   // Orthogonal state wearing a stage's clothing. Stage is unknown from the
   // value alone, so it stays null and the caller infers from context.
