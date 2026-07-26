@@ -51,7 +51,7 @@ type Board = {
  * work, not to model a funnel it already draws on the Insights page.
  */
 const COLUMNS: Array<{ key: string; label: string; stages: string[] }> = [
-  { key: "drafting", label: "Drafting", stages: ["lead", "drafting"] },
+  { key: "drafting", label: "Prep", stages: ["lead", "drafting"] },
   { key: "applied", label: "Applied", stages: ["applied", "screening", "interviewing", "offer"] },
   { key: "closed", label: "Closed", stages: ["closed-won", "closed-lost"] },
 ];
@@ -83,12 +83,12 @@ function Chip({ flag }: { flag: Flag }) {
  * informative. The detail has not gone anywhere: it is one tap away, where you
  * are actually thinking about that application rather than scanning all of them.
  */
-function Card({ app, onOpen }: { app: App; onOpen: () => void }) {
+function Card({ app, working, onOpen }: { app: App; working?: boolean; onOpen: () => void }) {
   const flag = app.flags2[0];
   const dead = app.stage.startsWith("closed");
   return (
     <article
-      className={`card${dead ? " card-dead" : ""}`}
+      className={`card${dead ? " card-dead" : ""}${working ? " card-working" : ""}`}
       onClick={onOpen}
       role="button"
       tabIndex={0}
@@ -126,6 +126,8 @@ export function App() {
   const [archive, setArchive] = useState(false);
   const [filing, setFiling] = useState(false);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  /** Applications an agent is working on right now, from the server. */
+  const [busy, setBusy] = useState<Array<{ slug: string | null; label: string }>>([]);
   const [reload, setReload] = useState(0);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [health, setHealth] = useState<{ vault: string; needsSetup: string | null; firstPerson: string | null } | null>(null);
@@ -140,6 +142,33 @@ export function App() {
         setWho((w) => w ?? h.people[0] ?? null);
       })
       .catch(() => setError("Server not reachable"));
+  }, []);
+
+  /*
+   * What is working, while you are looking at something else.
+   *
+   * Runs outlive the tab that started them, so the board has to be able to say
+   * so. Polled rather than pushed: this is a two-second-resolution fact about
+   * at most three things, and a socket here would be a second stream saying
+   * what the first one already says.
+   */
+  useEffect(() => {
+    const poll = () =>
+      fetch("/api/jobs")
+        .then((r) => r.json())
+        .then((d: { jobs: Array<{ slug: string | null; label: string; running: boolean }> }) => {
+          const live = d.jobs.filter((j) => j.running);
+          setBusy(live);
+          // A run that just ended may have written files the board shows.
+          setBusy((prev) => {
+            if (prev.length && !live.length) setReload((r) => r + 1);
+            return live;
+          });
+        })
+        .catch(() => {});
+    void poll();
+    const t = setInterval(poll, 2000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -317,34 +346,13 @@ export function App() {
         </section>
       ) : null}
 
-      {board.archivable.length > 0 && (
-        <section className={`tidy${filing ? " tidy-open" : ""}`}>
-          <p>
-            {board.archivable.length === 1
-              ? "1 application has finished."
-              : `${board.archivable.length} applications have finished.`}{" "}
-            <button className="link" onClick={() => setFiling((f) => !f)}>
-              {filing ? "Hide" : "Show"}
-            </button>
-          </p>
-          {filing && (
-            <>
-              <ul>
-                {board.archivable.map((c) => (
-                  <li key={c.slug}>
-                    <strong>{c.company}</strong>
-                    <span className="reason">{c.reason}</span>
-                  </li>
-                ))}
-              </ul>
-              <button className="primary" onClick={() => void fileAll(board.archivable)}>
-                Move {board.archivable.length === 1 ? "it" : "them"} to the archive
-              </button>
-            </>
-          )}
-        </section>
-      )}
-
+      {/*
+        The "3 applications have finished" prompt used to sit here. It was a
+        banner asking permission to tidy up, on a page whose job is the four
+        things you have not done yet. Archiving happens from the workbench and
+        by dragging into Closed, both of which are where you already are when
+        you find out an application ended.
+      */}
       <div className="board">
           {COLUMNS.map((col) => {
             const items = board.applications
@@ -381,8 +389,27 @@ export function App() {
                   <span className="count">{items.length}</span>
                 </header>
                 {items.map((a) => (
-                  <Card key={a.slug + a.stage} app={a} onOpen={() => setOpen({ slug: a.slug, company: a.company })} />
+                  <Card
+                    key={a.slug + a.stage}
+                    app={a}
+                    working={busy.some((b) => b.slug === a.slug)}
+                    onOpen={() => setOpen({ slug: a.slug, company: a.company })}
+                  />
                 ))}
+                {/*
+                  A job being logged has no card yet, because it has no folder
+                  yet. It gets a placeholder in Prep so that pressing Start and
+                  walking away does not look like nothing happened.
+                */}
+                {col.key === "drafting" &&
+                  busy
+                    .filter((b) => !b.slug)
+                    .map((b, i) => (
+                      <article className="card card-working" key={`pending${i}`}>
+                        <h3>Reading the job</h3>
+                        <p className="role">{b.label}</p>
+                      </article>
+                    ))}
                 {!items.length && <p className="col-empty">Drop here</p>}
               </section>
             );

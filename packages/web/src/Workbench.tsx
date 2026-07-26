@@ -298,6 +298,24 @@ export function Workbench({
    * the career record both still read. Closing back to the board afterwards is
    * the point of the whole feature, so it happens without asking again.
    */
+  /**
+   * Throw away the drafts and start the writing again.
+   *
+   * Keeps the job description and the research, which cost web searches and
+   * minutes to gather and are not what went wrong. Confirmed once, because it
+   * deletes work, and unlike archiving it is not reversible.
+   */
+  const reset = async () => {
+    if (running) return;
+    if (!confirm("Delete the CV, cover letter, answers and PDF for this application?\n\nThe job description and research are kept.")) return;
+    await fetch(`/api/${who}/job/${slug}/reset`, { method: "POST" });
+    setText((t) => ({ ...t, cv: "", cover: "", questions: "" }));
+    setInclude(new Set());
+    chosen.current = false;
+    setTab("cv");
+    await refresh();
+  };
+
   /** Record that it went out, and let the board work out the date. */
   const markApplied = async () => {
     await fetch(`/api/${who}/job/${slug}/stage`, {
@@ -482,6 +500,11 @@ export function Workbench({
           {stage !== "applied" && !stage.startsWith("closed") && (
             <button className="ghost" onClick={() => void markApplied()}>
               Mark as applied
+            </button>
+          )}
+          {(done("cv") || pdfExists) && (
+            <button className="ghost" disabled={Boolean(running)} onClick={() => void reset()}>
+              Start over
             </button>
           )}
           <button className="ghost" onClick={() => setFiling((f) => !f)}>
@@ -702,6 +725,11 @@ export function Workbench({
                 <Markdown text={t} />
               </div>
             ))}
+            {Boolean(running) && (
+              <p className="keeps-going">
+                This keeps running if you leave. Go back to the board and start another one.
+              </p>
+            )}
             {!running && !activity.length && !said.length && (
               <p className="hint">
                 Press play and Boulot writes the whole application, updating the documents on the left as it

@@ -390,6 +390,34 @@ app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
   },
 );
 
+/**
+ * Start the writing again, keeping what was expensive to get.
+ *
+ * The job description and the research cost web searches and minutes; the CV,
+ * the letter and the answers are the parts you actually want re-done when a
+ * draft has gone wrong. Deleting only the outputs means a reset is cheap and
+ * repeatable, which is the difference between trying again and starting over.
+ */
+app.post<{ Params: { who: string; slug: string } }>(
+  "/api/:who/job/:slug/reset",
+  async (req, reply) => {
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+
+    // Everything here is regenerable. job.md, research.md and status.md are not
+    // touched: they are the inputs, not the output.
+    const OUTPUTS = ["cv.md", "cover-letter.md", "application-answers.md", "cv.pdf", "cv.fit.json", "cv.html"];
+    const removed: string[] = [];
+    for (const f of OUTPUTS) {
+      const path = join(dir, f);
+      if (!existsSync(path)) continue;
+      rmSync(path, { force: true });
+      removed.push(f);
+    }
+    return { reset: req.params.slug, removed };
+  },
+);
+
 /** Put one back. Archiving is reversible or it is a trapdoor. */
 app.post<{ Params: { who: string; slug: string } }>(
   "/api/:who/job/:slug/restore",

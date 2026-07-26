@@ -783,3 +783,35 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .step-opt input { accent-color: var(--accent); inline-size: 15px; block-size: 15px; cursor: pointer; }
 .step-opt span { color: var(--ink-3); }
 .step-opt.on span { color: var(--ink); }
+
+/* ── Something is happening here ──────────────────────────────────────── */
+/* A card an agent is working on. The sweep is slow and low-contrast on
+   purpose: it says "in progress", not "look at me". */
+.card-working {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--accent);
+}
+.card-working::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgb(63 107 74 / 9%) 50%, transparent 80%);
+  background-size: 220% 100%;
+  animation: sweep 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sweep {
+  from { background-position: 180% 0; }
+  to { background-position: -80% 0; }
+}
+/* Someone who prefers less motion still gets the border. */
+@media (prefers-reduced-motion: reduce) {
+  .card-working::after { animation: none; background: none; }
+}
+
+/* Said while work is in flight, because the useful thing to know then is that
+   you are not required to sit and watch it. */
+.keeps-going {
+  margin: 0 0 14px; font-size: 12.5px; color: var(--accent-deep);
+  background: var(--accent-soft); border-radius: var(--radius); padding: 10px 14px;
+}
