@@ -413,6 +413,22 @@ export async function run({
                 const rel = relative(vaultRoot, abs);
                 if (!rel.startsWith("..") && !isAbsolute(rel)) return { continue: true };
 
+                /*
+                 * Say that it was refused.
+                 *
+                 * The activity log reports tool calls as they are requested, so
+                 * a refused read appeared as "Reading left-zero-gravity.md" and
+                 * looked exactly like a successful one. That is how a working
+                 * path jail came to look like a breach: the agent had tried to
+                 * open four files outside the vault, been stopped every time,
+                 * and the log showed only the attempts.
+                 */
+                onEvent({
+                  t: "tool",
+                  name: i.tool_name ?? "?",
+                  label: `Refused: ${path.split("/").pop()} is outside your vault`,
+                });
+
                 // Deny THIS TOOL, and only this tool.
                 //
                 // `continue: false` aborts the entire agent, which is what was

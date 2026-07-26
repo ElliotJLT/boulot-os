@@ -275,14 +275,16 @@ export function Workbench({
    * confident answers to questions nobody asked.
    */
   const askFor = (key: string) => {
-    if (running) return;
-    if (key === "cover") {
-      send(
-        `For the application in active/${slug}, use the boulot:application-answers skill to write a ` +
-          `cover letter to active/${slug}/cover-letter.md. Read cv.md, job.md and research.md first.`,
-        "Writing the cover letter",
-      );
-    }
+    if (running || key !== "cover") return;
+    send(
+      `For the application in active/${slug}, use the boulot:application-answers skill to write a ` +
+        `cover letter to active/${slug}/cover-letter.md. Read cv.md, job.md and research.md first.`,
+      "Writing the cover letter",
+      // Not a build. Passing no kind defaulted to one, which is why asking for
+      // a cover letter made the CV and PDF steps animate as though the whole
+      // application were being rebuilt.
+      "tweak",
+    );
   };
 
   /** Answer whatever the user pasted, after making sure it is on disk. */
@@ -295,6 +297,7 @@ export function Workbench({
         `Answer only the questions written there. Read cv.md, job.md and research.md first, ` +
         `and write the answers back into that same file beneath each question.`,
       "Answering their questions",
+      "tweak",
     );
   };
 
@@ -460,10 +463,16 @@ export function Workbench({
                 disabled={Boolean(running)}
                 title={e.add}
                 onClick={() => {
+                  // Opens the tab. Nothing else.
+                  //
+                  // This used to start writing a cover letter on click, so
+                  // looking at a tab began work nobody had asked for, and
+                  // because the run carried no kind it defaulted to "build" and
+                  // animated "Tailoring the CV / Rendering the PDF" as well.
+                  // Navigation is not an action.
                   chosen.current = true;
                   setTab(e.key);
                   setDirty(false);
-                  if (e.key === "cover") askFor(e.key);
                 }}
               >
                 + {e.label}
@@ -504,6 +513,31 @@ export function Workbench({
                 Answer these
               </button>
               <span>Paste what they actually asked. Nothing is inferred from the job description.</span>
+            </div>
+          )}
+
+          {/*
+            A cover letter needs the tailored CV, not the master record.
+            
+            Written first it produces a letter argued from everything you have
+            ever done rather than the parts this employer asked for, and it
+            spends a run doing it. The agent said so itself: "Used cv-master.md
+            since no tailored cv.md exists yet."
+          */}
+          {tab === "cover" && !text.cover?.trim() && (
+            <div className="pane-action">
+              <button
+                className="primary"
+                disabled={Boolean(running) || !done("cv")}
+                onClick={() => askFor("cover")}
+              >
+                Write a cover letter
+              </button>
+              <span>
+                {done("cv")
+                  ? "Uses the tailored CV, the job description and the research. Or write your own here."
+                  : "Tailor the CV first, so the letter argues from the same evidence. Or write your own here."}
+              </span>
             </div>
           )}
 
@@ -553,7 +587,7 @@ export function Workbench({
             <div className="checklist-top">
               <h3>
                 {runKind === "tweak"
-                  ? "Making that change"
+                  ? (running ?? "Working")
                   : allDone
                     ? "Ready to send"
                     : "Build this application"}
