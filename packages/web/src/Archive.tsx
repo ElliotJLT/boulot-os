@@ -60,10 +60,13 @@ const describe = (a: App): string =>
 export function Archive({
   who,
   onClose,
+  embedded,
   onChanged,
 }: {
   who: string;
-  onClose: () => void;
+  onClose?: () => void;
+  /** Rendered inside Settings, which supplies its own header. */
+  embedded?: boolean;
   onChanged: () => void;
 }) {
   const [apps, setApps] = useState<App[] | null>(null);
@@ -108,13 +111,13 @@ export function Archive({
 
   return (
     <div className="archive">
-      <header className="bench-top">
-        <button className="back" onClick={onClose}>
-          ← Board
+      {!embedded && <header className="bench-top">
+        <button className="back" onClick={onClose} title="Back to the board" aria-label="Back to the board">
+          ←
         </button>
         <h2>Archive</h2>
         <span className="updated">{apps.length} filed</span>
-      </header>
+      </header>}
 
       {apps.length === 0 ? (
         <p className="empty-note">

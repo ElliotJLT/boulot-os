@@ -30,6 +30,35 @@ narrative.
 
 ## Step 2: The mapping table. Never skip this.
 
+## Read each thing once
+
+One measured run of this skill cost $5.90. It searched the vault nine times,
+read the job description four times, the master record three times, and the CV
+it had just written three times. None of those files changed while it worked.
+
+- The job description is usually **given to you in the prompt**. If it is there,
+  do not open `job.md`.
+- Read `cv-master.md` **once**. It is the evidence bank and it does not change
+  mid-run.
+- Read `research.md` **once**, and only if you need the company angle.
+- Read `references/exemplar-cv.md` **once**, if it exists. One named file at a
+  fixed path, for structure only: how bullets are grouped, how much space an
+  old role gets, what a bullet looks like when it carries a decision rather
+  than a metric. Never take a fact from it.
+- Do not go looking anywhere else for reference CVs. Trawling `archive/` or
+  other applications is expensive and it is how figures from one application's
+  working notes ended up in another application's CV. Facts come from
+  `cv-master.md` and nowhere else.
+- Never re-read a file you have already read in this run.
+
+**Read the `writing-voice` skill first and hold it while you write.**
+
+That rule used to arrive by itself. On the machine this system grew up on there
+is an always-on anti-AI-writing rule that applies to every piece of prose, so a
+CV got it whether or not anything asked. The app deliberately loads no personal
+settings, so nothing arrives by itself here and the CV, the single most-read
+thing this produces, was the one document written without it.
+
 Before writing a word, map every requirement in the JD against the master CV:
 
 | JD requirement | Master CV evidence | Direct / Reframeable / Gap |
@@ -60,6 +89,11 @@ the JD and the draft. Their briefs are already defined; do not restate them.
 ## Step 4: Synthesise
 
 Take the Hiring Manager's ordering, apply the Reviewer's edits, add the
+Run them only when the request asks for a review. They are three subagents that
+each re-read the CV and the job description and write at length, so they roughly
+double the cost of tailoring a CV, and most applications do not need an
+adversarial panel to find their problems.
+
 Strategist's missing bullets, then edit once for voice. It should read like the
 candidate wrote it on a good day, not like a model wrote it.
 
@@ -79,6 +113,15 @@ Write to `active/{company}/cv.md`. The format the renderer expects:
 ---
 
 ## Summary
+
+**Three sentences. Forty to sixty words.** A summary is the thing a reader
+decides on in four seconds, and past about sixty words they stop reading and
+skim to the bullets, which means the summary spent its one job describing
+itself. If it runs past three sentences, it is a biography and needs cutting,
+not rewording.
+
+One claim per sentence: what you own, the hardest thing you have shipped, and
+why this employer specifically. Nothing that repeats a bullet verbatim.
 ...
 
 ## Experience
@@ -110,4 +153,10 @@ Then call `boulot_render_pdf`. It returns a fit report.
 - Invent experience, a metric, a date, or a title.
 - Claim a CV is ready without showing the mapping table.
 - Keyword-stuff. Match the JD's language where it is natural and leave it alone
+- Use em-dashes. Not one, anywhere in the prose. They are the strongest single
+  tell that a machine wrote this, and a CV covered in them reads as unedited
+  output no matter how true its contents are. Full stops, commas and colons do
+  the same work
+- Reach for "leverage", "robust", "seamless", "spearheaded", "delve",
+  "testament to" or their neighbours. The `writing-voice` skill has the list
   where it is not.

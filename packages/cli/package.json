@@ -1,0 +1,11 @@
+{
+  "name": "boulot",
+  "version": "0.1.0",
+  "description": "Your career, run like a product. A local app for finding a job.",
+  "type": "module",
+  "bin": { "boulot": "bin/boulot.mjs" },
+  "files": ["bin"],
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/ElliotJLT/boulot-os.git" }
+}

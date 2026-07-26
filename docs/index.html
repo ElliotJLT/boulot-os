@@ -183,6 +183,21 @@
 
 /* ── FAQ ───────────────────────────────────────────────── */
 .faq{display:grid;gap:0;max-width:780px}
+/* Getting it. One primary action; the other builds are evidence the thing is
+   real, not a menu of compromises. An earlier version framed this as three
+   routes labelled "build it yourself" and "also works", which described a
+   finished product as a pile of half-done ones. */
+.getit{display:grid;grid-template-columns:1.15fr 0.85fr;gap:34px;align-items:start;margin-block:34px 26px}
+.getit-main{background:var(--card);border:1px solid #c4d6c6;border-radius:16px;padding:28px 30px;min-width:0;
+  box-shadow:0 1px 3px rgb(63 107 74 / 10%),0 10px 30px rgb(63 107 74 / 8%)}
+.getit-main p{font-size:14px;line-height:1.62;color:var(--muted);margin:0 0 20px}
+.getit-more{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:18px}
+.getit-more li{font-size:13.5px;line-height:1.6;color:var(--muted);padding-inline-start:16px;border-inline-start:2px solid var(--line)}
+.getit-more b{color:var(--ink);font-weight:600}
+.cmd{background:#2b2822;color:#e9e2d4;border-radius:10px;padding:16px 18px;margin:0 0 18px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.roadnote{font-size:13.5px;color:var(--muted);max-width:74ch;line-height:1.7}
+@media(max-width:820px){.getit{grid-template-columns:1fr}}
+
 .faq details{border-bottom:1px solid var(--line)}
 .faq summary{font-family:var(--serif);font-size:19px;line-height:1.35;padding:20px 36px 20px 0;
   cursor:pointer;list-style:none;position:relative;color:var(--ink)}
@@ -203,6 +218,7 @@
     <a href="#how">How it works</a>
       <a href="#shows">What you get</a>
     <a href="#proof">Results</a>
+      <a href="#run">Get it</a>
       <a href="#faq">FAQ</a>
     <a class="btn primary sm" href="#contact">Get in touch</a>
   </div>
@@ -381,6 +397,30 @@
   </div>
 </div></section>
 
+
+<section id="run"><div class="wrap">
+  <p class="eyebrow">Getting it</p>
+  <h2 class="big">It's built. It runs on your<br>machine in about a minute.</h2>
+  <p class="sub">Not a waitlist and not a demo. The whole thing is finished and free: the board, the agents, the CV that measures itself against a real page, the record that rewrites itself as you apply. Nothing is hosted, so your career never leaves your laptop.</p>
+
+  <div class="getit">
+    <div class="getit-main">
+      <pre class="cmd">git clone https://github.com/ElliotJLT/boulot-os
+cd boulot-os
+pnpm install &amp;&amp; pnpm start</pre>
+      <p>Opens at <code>localhost:4319</code>. It asks your name, you paste your CV once, and it builds your record: every role, every achievement, tagged so it can pick the right ones for each job. Then paste a job link and it writes the CV, the cover letter and the PDF.</p>
+      <a class="btn btn-solid" href="https://github.com/ElliotJLT/boulot-os#two-ways-to-run-it">Start here →</a>
+    </div>
+
+    <ul class="getit-more">
+      <li><b>A native Mac app.</b> <code>pnpm desktop</code> compiles a real 46&nbsp;MB <code>.dmg</code> that installs like anything else. A signed download is next.</li>
+      <li><b>A Claude Code plugin.</b> The same skills the app runs, if you already work in a terminal.</li>
+      <li><b>Windows</b> after the Mac download.</li>
+    </ul>
+  </div>
+
+  <p class="roadnote">What is coming, and what has been ruled out and why, is <a href="https://github.com/ElliotJLT/boulot-os/blob/main/docs/roadmap.md">on the roadmap</a>. If you want the one-click version the moment it exists, <a href="mailto:elliotjlittle@gmail.com?subject=Boulot%20-%20one%20click">say so</a> and I will send it to you.</p>
+</div></section>
 
 <section id="faq"><div class="wrap">
   <div class="intro reveal">

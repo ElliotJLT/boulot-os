@@ -17,7 +17,9 @@ type Funnel = {
   bySource: Array<{ source: string; applied: number; interviewed: number; rate: number }>;
 };
 
-export function Insights({ who, onClose }: { who: string; onClose: () => void }) {
+export function Insights(
+  { who, onClose, embedded }: { who: string; onClose?: () => void; /** Rendered inside Settings, which supplies its own header. */ embedded?: boolean },
+) {
   const [f, setF] = useState<Funnel | null>(null);
 
   useEffect(() => {
@@ -34,13 +36,13 @@ export function Insights({ who, onClose }: { who: string; onClose: () => void })
 
   return (
     <div className="insights">
-      <header className="bench-top">
-        <button className="back" onClick={onClose}>
-          ← Board
+      {!embedded && <header className="bench-top">
+        <button className="back" onClick={onClose} title="Back to the board" aria-label="Back to the board">
+          ←
         </button>
         <h2>Insights</h2>
         <span className="updated">from your files, nothing to fill in</span>
-      </header>
+      </header>}
 
       <div className="ins-grid">
         <section className="card-panel">

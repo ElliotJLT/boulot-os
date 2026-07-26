@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Boulot",
+  "version": "0.1.0",
+  "identifier": "com.elliotjlt.boulot",
+  "build": {
+    "frontendDist": "../../web/dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "dmg",
+      "app"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/256x256.png",
+      "icons/512x512.png"
+    ],
+    "category": "Productivity",
+    "shortDescription": "Your career, run like a product",
+    "longDescription": "Boulot turns a job advert into a tailored CV, a cover letter and a PDF, using a record of what you have actually done. Everything runs on this machine and your files stay on this disk.",
+    "externalBin": [
+      "binaries/boulot-server"
+    ],
+    "resources": {
+      "../server-bundle": "server/"
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}

@@ -13,6 +13,10 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import puppeteer from "puppeteer";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { findBrowser, describeBrowser } from "./find-browser.mjs";
 
 // ─── Parse Markdown ───────────────────────────────────────────────────
 
@@ -935,6 +939,67 @@ function buildGenericSection(sectionTitle, section) {
 // See docs/fit-loop.md for the full write-up.
 
 /** CSS reference pixels per millimetre at 96dpi. */
+/** Words that read as machine-written, from the writing-voice skill. */
+const TELLS = [
+  "leverage", "leveraging", "robust", "seamless", "seamlessly", "utilise", "utilize",
+  "delve", "spearheaded", "testament to", "foster", "fostering", "cutting-edge",
+  "pivotal", "crucial", "furthermore", "moreover", "underscore", "underscores",
+  "landscape", "realm", "tapestry", "navigate", "navigating", "myriad",
+];
+
+/**
+ * Count the tells in a CV's prose.
+ *
+ * Deliberately only prose: an em-dash inside a date range ("Feb 2022 – Jul
+ * 2026") is typography, not a tell, and flagging it would train the writer to
+ * ignore the check. Frontmatter and headings are skipped for the same reason.
+ */
+function checkVoice(md) {
+  const prose = md
+    .replace(/^---[\s\S]*?\n---\n/, "")
+    .split("\n")
+    .filter((l) => !/^\s*(#|\*\*[A-Z][a-z]{2} \d{4}|\|)/.test(l))
+    // Date ranges and the contact line are not sentences.
+    .filter((l) => !/\b(19|20)\d{2}\s*[–—-]\s*((19|20)\d{2}|Present)/i.test(l))
+    .join("\n");
+
+  const dashes = (prose.match(/—/g) ?? []).length;
+  const words = TELLS.filter((w) => new RegExp(`\\b${w}\\b`, "i").test(prose));
+
+  /*
+   * Summary length, because it is the part nobody rereads.
+   *
+   * A reader decides on the summary in about four seconds. Past sixty words
+   * they skim to the bullets, which means the summary spent its one job
+   * describing itself. Counted here rather than left to judgement: "too long"
+   * is an opinion, ninety-four words is a fact.
+   */
+  /*
+   * Sliced by headings rather than by regex.
+   *
+   * The first attempt ended its match at `\Z`, which JavaScript does not
+   * support: it is not an anchor here, just the letter Z, so the summary
+   * stopped at the first capital Z in the text and reported nine words for a
+   * hundred-word paragraph. Splitting on the headings cannot go wrong that way.
+   */
+  const lines = md.split("\n");
+  const start = lines.findIndex((l) => /^##\s*summary\s*$/i.test(l.trim()));
+  let summaryWords = 0;
+  if (start !== -1) {
+    const rest = lines.slice(start + 1);
+    const end = rest.findIndex((l) => /^##\s/.test(l));
+    summaryWords = rest
+      .slice(0, end === -1 ? rest.length : end)
+      .join(" ")
+      .replace(/[*_`]/g, "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length;
+  }
+
+  return { dashes, words, summaryWords };
+}
+
 const PX_PER_MM = 96 / 25.4;
 
 /** A4 height minus the top and bottom print margins set in page.pdf() below. */
@@ -1071,7 +1136,17 @@ async function measureLayout(page, budgetPx) {
 }
 
 /** Print the fit report and write the machine-readable sidecar. */
-function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, sidecarPath }) {
+function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, sidecarPath, markdown }) {
+  /*
+   * Voice, measured rather than trusted.
+   *
+   * The skill tells the model not to use em-dashes or the usual vocabulary, and
+   * a skill is advice. This counts, the same way the page count is counted
+   * rather than estimated: a CV can fit perfectly and still read like a machine
+   * wrote it, and that is the failure nobody notices until a hiring manager
+   * does.
+   */
+  const voice = checkVoice(markdown ?? "");
   const pages = actualPages ?? estimatedPages;
   const overflowMm = Math.max(0, (layout.contentPx - budgetPx) / PX_PER_MM);
   const spillChars = layout.spill.reduce((n, s) => n + s.chars, 0);
@@ -1110,6 +1185,7 @@ function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, si
 
   const report = {
     fits,
+    voice,
     pages,
     maxPages,
     pageCountSource: actualPages != null ? "pdf" : "estimated",
@@ -1131,6 +1207,19 @@ function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, si
 
   console.log("\n─── FIT REPORT ───────────────────────────────────────────");
   console.log(`  Pages: ${pages} (target ${maxPages})${actualPages == null ? "  [estimated — could not read page count from PDF]" : ""}`);
+
+  if (voice.dashes || voice.words.length || voice.summaryWords > 60) {
+    console.log("");
+    if (voice.summaryWords > 60) {
+      console.log(`  ✗ Summary is ${voice.summaryWords} words. Three sentences, 40 to 60, or a reader skims past it.`);
+    }
+    if (voice.dashes) {
+      console.log(`  ✗ ${voice.dashes} em-dash${voice.dashes === 1 ? "" : "es"} in the prose. Replace each with a full stop, a comma or a colon.`);
+    }
+    if (voice.words.length) {
+      console.log(`  ✗ Vocabulary to replace: ${voice.words.join(", ")}`);
+    }
+  }
 
   if (fits) {
     console.log("  ✓ Fits.");
@@ -1234,7 +1323,35 @@ writeFileSync(htmlPath, html);
 console.log(`  HTML: ${htmlPath}`);
 
 console.log("Launching browser...");
-const browser = await puppeteer.launch({ headless: true });
+/*
+ * Print with a browser that is already here if there is one.
+ *
+ * puppeteer.launch() with no path uses only the copy it downloaded itself,
+ * which is 190MB the user probably did not need: Chrome, Edge and Brave are the
+ * same engine and one of them is usually installed. Falling back to puppeteer's
+ * own copy keeps the machines that have none working.
+ */
+const found = findBrowser();
+if (found) console.log(`Using ${describeBrowser(found)} to print.`);
+/*
+ * A throwaway profile, always.
+ *
+ * Launching someone's installed Chrome picks up their real profile: every
+ * extension, sync, and startup task. Measured on this machine that took the
+ * same trivial page from 1.6s to 7.4s, and with a real CV it blew the 30s
+ * navigation timeout outright. An ad blocker deciding to update itself is not
+ * something a CV render should ever wait for.
+ *
+ * The directory is temporary and per-run, so nothing of the user's is read and
+ * nothing of theirs is written.
+ */
+const profileDir = mkdtempSync(join(tmpdir(), "boulot-print-"));
+const browser = await puppeteer.launch({
+  headless: true,
+  userDataDir: profileDir,
+  args: ["--no-first-run", "--no-default-browser-check"],
+  ...(found ? { executablePath: found } : {}),
+});
 const page = await browser.newPage();
 
 await page.setContent(html, { waitUntil: "networkidle0" });
@@ -1262,6 +1379,7 @@ await page.pdf({
 });
 
 await browser.close();
+rmSync(profileDir, { recursive: true, force: true });
 
 const stats = readFileSync(outputPath);
 console.log(`Written: ${outputPath} (${(stats.length / 1024).toFixed(1)}KB)`);
@@ -1273,6 +1391,7 @@ const fits = reportFit({
   maxPages,
   budgetPx,
   sidecarPath: outputPath.replace(/\.pdf$/, ".fit.json"),
+  markdown,
 });
 
 // Exit 3 = rendered fine, but longer than the target. The PDF is still written

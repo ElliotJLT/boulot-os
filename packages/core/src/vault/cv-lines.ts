@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { CvLine } from "../learning/salvage.js";
+import type { CvLine } from "../learning/similarity.js";
 
 /**
  * Every bullet you have ever actually sent.

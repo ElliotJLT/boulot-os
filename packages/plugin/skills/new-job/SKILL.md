@@ -28,6 +28,24 @@ If given **pasted text**, use it directly.
 
 ## Step 2: Set up the folder
 
+### Never stop without creating the folder
+
+Some postings do not name the company. An internal referral, a pasted extract, a
+careers page that assumes you know whose it is: all normal, and none of them a
+reason to abandon the run.
+
+If you cannot find a company name, do not ask and wait. Ask and keep going: make
+the folder from the clearest thing you do have, in this order, and say plainly at
+the end which one you used and that it can be renamed.
+
+1. A company name in the text or the URL.
+2. The product or team, if the posting names one.
+3. The role plus the source, like `founding-engineer-referral`.
+
+A folder with an imperfect name is a job the user can see, open, and correct. A
+run that ends with a question and no folder is work they have to notice was
+never done, which is worse than a wrong name by a wide margin.
+
 Slug is kebab-case from the company name. Create `active/{slug}/`:
 
 - `job.md` — the description, the role title, the source, the link.

@@ -1,7 +1,7 @@
 import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
-import { resolve, relative, isAbsolute } from "node:path";
+import { resolve, relative, isAbsolute, dirname } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { fetchJob } from "./boards.js";
 
@@ -26,14 +26,50 @@ export interface AgentEvent {
  * "Looking through your applications".
  */
 function describe(name: string, input: Record<string, unknown>): string {
-  const file = (v: unknown) => (typeof v === "string" ? v.split("/").slice(-2).join("/") : "");
+  /*
+   * Say what the file is, not where it lives.
+   *
+   * "Reading callosum/status.md" while logging a job at a different company
+   * reads as the agent having lost track of which application it is on. It has
+   * not: checking whether you have applied somewhere before means opening other
+   * applications. Naming the company makes that obvious instead of alarming.
+   */
+  const describeFile = (v: unknown, verb: string): string => {
+    if (typeof v !== "string") return verb;
+    const parts = v.split("/");
+    const name = parts.at(-1) ?? "";
+    const folder = parts.at(-2) ?? "";
+    const company = folder
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    const KNOWN: Record<string, string> = {
+      "cv-master.md": "your career record",
+      "profile.md": "your profile",
+      "dashboard.md": "your dashboard",
+      "MEMORY.md": "what it knows about you",
+    };
+    if (KNOWN[name]) return `${verb} ${KNOWN[name]}`;
+
+    const inApplication: Record<string, string> = {
+      "status.md": `the ${company} application`,
+      "job.md": `the ${company} job description`,
+      "research.md": `research on ${company}`,
+      "cv.md": `the ${company} CV`,
+      "cover-letter.md": `the ${company} cover letter`,
+      "application-answers.md": `the ${company} questions`,
+    };
+    return inApplication[name] ? `${verb} ${inApplication[name]}` : `${verb} ${name}`;
+  };
+
   switch (name) {
     case "Read":
-      return `Reading ${file(input.file_path)}`;
+      return describeFile(input.file_path, "Reading");
     case "Write":
-      return `Writing ${file(input.file_path)}`;
+      return describeFile(input.file_path, "Writing");
     case "Edit":
-      return `Editing ${file(input.file_path)}`;
+      return describeFile(input.file_path, "Updating");
     case "Glob":
     case "Grep":
       return "Searching your vault";
@@ -100,7 +136,11 @@ const DENIED = [
 ];
 
 /** Boulot's own tools, replacing what Bash used to do. */
-function boulotTools(vaultRoot: string, rendererPath: string) {
+/**
+ * @param cwd Where the agent stands, which is the person's folder rather than
+ *            the vault root. Relative paths it hands us are relative to this.
+ */
+function boulotTools(vaultRoot: string, rendererPath: string, cwd: string) {
   return createSdkMcpServer({
     name: "boulot",
     version: "0.1.0",
@@ -153,9 +193,30 @@ function boulotTools(vaultRoot: string, rendererPath: string) {
           // The model saw "refused" repeatedly for a path that was in fact
           // fine, and went hunting through config files for a vault root that
           // was never the problem.
-          const resolveInVault = (p: string) => (isAbsolute(p) ? p : resolve(vaultRoot, p));
+          /*
+           * Relative to where the agent actually stands.
+           *
+           * This resolved against vaultRoot, but the agent's working directory
+           * is vaultRoot/PERSON, so the perfectly correct "active/lawhive/cv.md"
+           * became ".../Boulot/active/lawhive/cv.md" and did not exist. The
+           * model then searched the vault six times and eventually reported
+           * "Found it, cwd is .../ELLIOT", which was the answer all along.
+           *
+           * Both bases are tried, because a model that has read the vault root
+           * from somewhere may legitimately pass either.
+           */
+          const resolveInVault = (p: string) => {
+            if (isAbsolute(p)) return p;
+            const fromCwd = resolve(cwd, p);
+            if (existsSync(fromCwd)) return fromCwd;
+            const fromRoot = resolve(vaultRoot, p);
+            return existsSync(fromRoot) ? fromRoot : fromCwd;
+          };
           const cv = resolveInVault(cvPath);
-          const pdfOut = resolveInVault(outputPath);
+          // The output does not exist yet, so it follows the input's folder.
+          const pdfOut = isAbsolute(outputPath)
+            ? outputPath
+            : resolve(dirname(cv), outputPath.split("/").pop() ?? "cv.pdf");
 
           for (const [label, abs] of [["cvPath", cv], ["outputPath", pdfOut]] as const) {
             const rel = relative(vaultRoot, abs);
@@ -276,16 +337,50 @@ const REVIEWERS: Record<string, {
  * is already reflected.
  */
 function memoryContext(vaultRoot: string, person: string): string {
-  const file = resolve(vaultRoot, person, "profile", "MEMORY.md");
-  if (!existsSync(file)) return "";
-  let text = "";
-  try {
-    text = readFileSync(file, "utf8");
-  } catch {
-    return "";
-  }
-  if (!text.trim()) return "";
+  const read = (...parts: string[]) => {
+    const file = resolve(vaultRoot, person, ...parts);
+    if (!existsSync(file)) return "";
+    try {
+      return readFileSync(file, "utf8").trim();
+    } catch {
+      return "";
+    }
+  };
+
+  const text = read("profile", "MEMORY.md");
+  /*
+   * Corrections, kept.
+   *
+   * Facts about a career are only half of what the system needs to stop being
+   * told what to do. The other half is judgement: that a bare PR count is a
+   * vanity metric, that a summary runs long, that a particular framing reads as
+   * padding. Those arrive as corrections in conversation and evaporate the
+   * moment the run ends, so the same note gets made again next week.
+   *
+   * This file is where they survive. It is loaded before every run, above the
+   * facts, because a lesson is an instruction and a fact is only evidence.
+   */
+  const lessons = read("profile", "lessons.md");
+  if (!text && !lessons) return "";
   return [
+    "",
+    ...(lessons
+      ? [
+          "# What this person has already told you",
+          "",
+          "Corrections from previous sessions. They were made once and should not",
+          "have to be made again. Treat them as instructions, not suggestions.",
+          "",
+          lessons,
+          "",
+        ]
+      : []),
+    "# The vault is the only thing you can read",
+    "",
+    "Everything you need is inside this folder. Files outside it cannot be opened,",
+    "including anything Claude Code's own memory mentions: those paths belong to a",
+    "different tool and are not available here. Do not try them, and do not search",
+    "for them inside the vault either. If something is not here, say so and carry on.",
     "",
     "# What Boulot knows about this person",
     "",
@@ -294,7 +389,7 @@ function memoryContext(vaultRoot: string, person: string): string {
     "never contradict the `Worth checking` section: those are open questions, so",
     "ask rather than assuming an answer.",
     "",
-    text.trim(),
+    text,
   ].join("\n");
 }
 
@@ -304,6 +399,18 @@ export interface RunOptions {
   person: string;
   rendererPath: string;
   sessionId?: string | undefined;
+  /**
+   * Which model does this piece of work.
+   *
+   * The reviewers have always been on a cheaper one, because scoring someone
+   * else's draft is not the same job as writing it. The main agent had no model
+   * set at all, so extracting facts from a job advert ran on the same model as
+   * the one judgement call in the whole product.
+   *
+   * Left undefined for anything that has not been thought about, which keeps
+   * the default rather than quietly downgrading work nobody has assessed.
+   */
+  model?: string | undefined;
   budgetUsd?: number;
   onEvent: (e: AgentEvent) => void;
 }
@@ -314,22 +421,28 @@ export async function run({
   person,
   rendererPath,
   sessionId,
+  model,
   budgetUsd = DEFAULT_BUDGET_USD,
   onEvent,
 }: RunOptions): Promise<string | undefined> {
   const cwd = resolve(vaultRoot, person);
   let newSessionId: string | undefined;
   const memory = memoryContext(vaultRoot, person);
+  /** Refused reads so far, so the message can get firmer rather than repeat. */
+  let refusals = 0;
 
   const response = query({
     prompt,
     options: {
       cwd,
       settingSources: [],
+      ...(model ? { model } : {}),
       ...(memory ? { systemPrompt: { type: "preset" as const, preset: "claude_code" as const, append: memory } } : {}),
-      plugins: [{ type: "local", path: resolve(import.meta.dirname, "../../plugin") }],
+      // Overridable for the same reason as the renderer: inside the desktop
+      // bundle the skill pack sits beside the server, not two levels up.
+      plugins: [{ type: "local", path: process.env.BOULOT_PLUGIN ?? resolve(import.meta.dirname, "../../plugin") }],
       disallowedTools: DENIED,
-      mcpServers: { boulot: boulotTools(vaultRoot, rendererPath) },
+      mcpServers: { boulot: boulotTools(vaultRoot, rendererPath, cwd) },
       agents: REVIEWERS,
       // Boulot's own tools are pre-approved. They are ours, they are
       // path-jailed internally, and prompting for them would be noise: nobody
@@ -375,6 +488,23 @@ export async function run({
                 const rel = relative(vaultRoot, abs);
                 if (!rel.startsWith("..") && !isAbsolute(rel)) return { continue: true };
 
+                /*
+                 * Say that it was refused.
+                 *
+                 * The activity log reports tool calls as they are requested, so
+                 * a refused read appeared as "Reading left-zero-gravity.md" and
+                 * looked exactly like a successful one. That is how a working
+                 * path jail came to look like a breach: the agent had tried to
+                 * open four files outside the vault, been stopped every time,
+                 * and the log showed only the attempts.
+                 */
+                onEvent({
+                  t: "tool",
+                  name: i.tool_name ?? "?",
+                  label: `Refused: ${path.split("/").pop()} is outside your vault`,
+                });
+                refusals += 1;
+
                 // Deny THIS TOOL, and only this tool.
                 //
                 // `continue: false` aborts the entire agent, which is what was
@@ -389,10 +519,23 @@ export async function run({
                   hookSpecificOutput: {
                     hookEventName: "PreToolUse" as const,
                     permissionDecision: "deny" as const,
+                    /*
+                     * Firmer each time.
+                     *
+                     * One run spent eight of its eighteen steps opening files
+                     * from Claude Code's own memory directory, being refused,
+                     * and then searching the vault for them. The first message
+                     * explained the boundary; it did not say stop, so the model
+                     * kept trying different spellings of the same mistake.
+                     */
                     permissionDecisionReason:
-                      `${path} is outside the vault. The vault root is ${vaultRoot} and you are in ` +
-                      `${cwd}. Use a path inside it. Ignore any absolute path you have seen in ` +
-                      `documentation, it may be stale.`,
+                      refusals >= 2
+                        ? `${path} is outside the vault and so were your last ${refusals} attempts. ` +
+                          `These files do not exist here and searching for them will not find them. ` +
+                          `Stop looking and continue with what is in ${cwd}.`
+                        : `${path} is outside the vault. The vault root is ${vaultRoot} and you are ` +
+                          `in ${cwd}. Use a path inside it. Ignore any absolute path you have seen ` +
+                          `in documentation or in another tool's memory, it does not apply here.`,
                   },
                 };
               },
