@@ -5,6 +5,20 @@ description: Write cover letters and "why this company" application answers. Use
 
 # Application answers
 
+## Two files, and they are not interchangeable
+
+This skill covers two artifacts. They read alike and they live apart.
+
+- **`cover-letter.md`** — a cover letter, a "why this company" note, an
+  introduction, anything you are writing because it would help rather than
+  because it was asked for. If in doubt, it is this one.
+- **`application-answers.md`** — answers to questions the employer actually
+  asked, written beneath each question, in the file that already holds them.
+
+That file only exists because the user pasted the employer's questions into it.
+If it is not there, no questions were asked, and writing a cover letter into it
+puts the letter somewhere nobody will look for it. Never create it.
+
 ## Research before writing a word
 
 Find what this company actually screens for. Recruiter interviews, hiring

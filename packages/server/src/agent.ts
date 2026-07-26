@@ -1,7 +1,7 @@
 import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
-import { resolve, relative, isAbsolute, dirname } from "node:path";
+import { resolve, relative, isAbsolute, dirname, basename } from "node:path";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { fetchJob } from "./boards.js";
 
@@ -539,6 +539,51 @@ export async function run({
                 const path = i.tool_input?.file_path;
                 if (typeof path !== "string") return { continue: true };
                 const abs = isAbsolute(path) ? path : resolve(cwd, path);
+
+                /*
+                 * You cannot answer a question nobody asked.
+                 *
+                 * The employer's questions arrive one way: the user pastes them
+                 * into the Questions tab, which is what creates
+                 * application-answers.md. So the file existing is the only
+                 * evidence that questions were ever asked, and creating it is
+                 * never the agent's job.
+                 *
+                 * On the Clera application the agent offered to draft a cover
+                 * note, was told yes, and wrote a cover letter into
+                 * application-answers.md. Both artifacts are prose about why
+                 * this company, so the model treated the two files as
+                 * interchangeable. They are not: the Questions tab then showed
+                 * a cover letter, the cover-letter step stayed unticked, and
+                 * the real cover letter did not exist.
+                 *
+                 * A skill saying which file is which is advice. This is the
+                 * same rule as a fact about the file system, so the model gets
+                 * told where the text actually goes.
+                 */
+                if (
+                  basename(abs) === "application-answers.md" &&
+                  !existsSync(abs) &&
+                  (i.tool_name === "Write" || i.tool_name === "Edit")
+                ) {
+                  onEvent({
+                    t: "tool",
+                    name: i.tool_name ?? "?",
+                    label: "Refused: no questions have been pasted for this application",
+                  });
+                  return {
+                    hookSpecificOutput: {
+                      hookEventName: "PreToolUse" as const,
+                      permissionDecision: "deny" as const,
+                      permissionDecisionReason:
+                        `${basename(abs)} does not exist, which means the employer has asked no ` +
+                        `questions: that file is only ever created by the user pasting their ` +
+                        `questions in. Do not create it. If you are writing a cover letter or a ` +
+                        `"why this company" note, it belongs in cover-letter.md in the same folder.`,
+                    },
+                  };
+                }
+
                 if (insideVault(vaultRoot, abs)) return { continue: true };
 
                 /*
