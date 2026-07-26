@@ -857,3 +857,13 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .account code { font-size: 12.5px; background: var(--muted-bg); padding: 3px 8px; border-radius: 5px; }
 .account .note { font-size: 12.5px; color: var(--ink-3); margin-block-start: 8px; }
 @media (max-width: 860px) { .settings-body { grid-template-columns: 1fr; } .settings-nav { position: static; } }
+
+/* A run that finished having made nothing. Says so, in the agent's own words,
+   with the paste kept so the fix is one edit rather than a re-paste. */
+.didnt-start {
+  margin-block-start: 16px; padding: 16px 18px; border-radius: var(--radius);
+  background: var(--urgent-bg); border: 1px solid #e8cdbf;
+}
+.didnt-start b { display: block; font-size: 13.5px; margin-block-end: 6px; color: var(--urgent); }
+.didnt-start p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink-2); }
+.didnt-start .fix { margin-block-start: 10px; color: var(--ink-3); font-size: 12.5px; }

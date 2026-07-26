@@ -42,6 +42,7 @@ export function NewApplication({
   const [lines, setLines] = useState<Line[]>([]);
   const [cost, setCost] = useState(0);
   const [phases, setPhases] = useState<Set<Phase>>(new Set());
+  const [failed, setFailed] = useState(false);
   const ws = useRef<WebSocket | null>(null);
   const log = useRef<HTMLDivElement>(null);
   // Held in a ref so the socket effect can depend on nothing. An inline
@@ -79,7 +80,16 @@ export function NewApplication({
       }
       return host ? host.charAt(0).toUpperCase() + host.slice(1) : undefined;
     }
-    const line = t.split("\n").map((l) => l.trim()).find((l) => l.length > 1 && l.length < 60);
+    /*
+     * The first line is usually the company, and sometimes it is the job title.
+     * "Founding Engineer" on a card is worse than no guess at all, because it
+     * reads as a company you have never heard of rather than as a placeholder.
+     */
+    const TITLE = /\b(engineer|manager|designer|developer|lead|director|analyst|scientist|architect|consultant|officer|head of|vp |chief)\b/i;
+    const line = t
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.length > 1 && l.length < 60 && !TITLE.test(l));
     return line;
   };
 
@@ -148,6 +158,18 @@ export function NewApplication({
         setDone(true);
         setCost((c) => c + ev.cost);
         created.current();
+        /*
+         * A run that produced nothing has to say so.
+         *
+         * One posting did not name the company, so the agent said "I don't have
+         * a company name for this posting" and stopped. No folder, nothing on
+         * the board, and the message landed on a screen that had already been
+         * left. From the outside the application had simply vanished.
+         *
+         * handedOff is the honest test: it is set when a folder appears, so if
+         * it is still false the run finished having created nothing.
+         */
+        if (!handedOff.current) setFailed(true);
       }
     };
     return () => socket.close();
@@ -163,6 +185,7 @@ export function NewApplication({
     setRunning(true);
     setLines([]);
     setPhases(new Set());
+    setFailed(false);
     setDone(false);
 
     const prompt = looksLikeUrl(raw)
@@ -216,6 +239,19 @@ export function NewApplication({
         {(lines.length > 0 || running) && (
           <div className="log newapp-log" ref={log}>
             <Phases active={running} seen={phases} />
+            {failed && (
+              <div className="didnt-start">
+                <b>No application was created.</b>
+                <p>
+                  {lines.filter((l) => l.kind === "said").at(-1)?.text ??
+                    "Boulot stopped before it made the folder."}
+                </p>
+                <p className="fix">
+                  Your text is still in the box above. Adding the company name near the top is
+                  usually enough.
+                </p>
+              </div>
+            )}
 
             {(() => {
               const activity = collapse(lines.filter((l) => l.kind === "activity").map((l) => l.text));
