@@ -223,11 +223,10 @@ function boulotTools(vaultRoot: string, rendererPath: string, cwd: string) {
           "Returns a fit report: if the CV is too long it says how many characters to cut and from which section. " +
           "Always call this after writing a cv.md.",
         {
-          cvPath: z.string().describe("Absolute path to the cv.md to render"),
-          outputPath: z.string().describe("Absolute path for the .pdf to write"),
+          cvPath: z.string().describe("Path to the cv.md to render"),
           maxPages: z.number().optional().describe("Page budget, default 2"),
         },
-        async ({ cvPath, outputPath, maxPages }) => {
+        async ({ cvPath, maxPages }) => {
           // Resolve ONCE, then use the resolved paths everywhere. An earlier
           // version validated the resolved path but passed the raw one on to
           // existsSync and the renderer, so a relative path passed the jail and
@@ -255,10 +254,24 @@ function boulotTools(vaultRoot: string, rendererPath: string, cwd: string) {
             return existsSync(fromRoot) ? fromRoot : fromCwd;
           };
           const cv = resolveInVault(cvPath);
-          // The output does not exist yet, so it follows the input's folder.
-          const pdfOut = isAbsolute(outputPath)
-            ? outputPath
-            : resolve(dirname(cv), outputPath.split("/").pop() ?? "cv.pdf");
+          /*
+           * The PDF is always cv.pdf, beside its cv.md. Not negotiable.
+           *
+           * This was an outputPath the model chose, and on the Clera
+           * application it chose "Elliot Little - Clera - Founding Product
+           * Engineer.pdf", which is the download filename pattern. That is a
+           * real file and a correct render, and it is invisible: the workbench
+           * looks for cv.pdf, so the PDF tab never appeared, the checklist said
+           * the PDF step was still outstanding, and the agent reported "rendered
+           * at 2 pages" over a screen showing it had not been.
+           *
+           * How a file is named when you download it is a presentation concern
+           * and is already handled at download time. Taking the parameter away
+           * makes the whole failure impossible rather than instructing against
+           * it, which is the only kind of fix that holds with a model in the
+           * loop.
+           */
+          const pdfOut = resolve(dirname(cv), "cv.pdf");
 
           for (const [label, abs] of [["cvPath", cv], ["outputPath", pdfOut]] as const) {
             if (!insideVault(vaultRoot, abs)) {

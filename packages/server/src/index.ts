@@ -519,6 +519,33 @@ function jobDir(who: string, slug: string): string | null {
 }
 
 /** Which deliverables exist, plus the fit report if there is one. */
+/**
+ * The rendered CV, whatever it is called.
+ *
+ * The app writes cv.pdf. The vault this app grew out of wrote "Elliot Little -
+ * Clera - Founding Product Engineer.pdf", and twenty-one folders still carry
+ * that convention, so every one of them looked to the app like an application
+ * whose PDF had never been rendered: no PDF tab, an unticked step, and a Start
+ * over as the only apparent way forward.
+ *
+ * Renaming twenty-one files someone has already sent to employers is not a fix.
+ * Looking for the file is. cv.pdf wins when it exists, because that is what a
+ * fresh render produces; otherwise the newest PDF in the folder is the CV,
+ * since nothing else in an application folder is a PDF.
+ */
+function findPdf(dir: string): string | null {
+  if (existsSync(join(dir, "cv.pdf"))) return "cv.pdf";
+  try {
+    const pdfs = readdirSync(dir)
+      .filter((f) => f.toLowerCase().endsWith(".pdf"))
+      .map((f) => ({ f, at: statSync(join(dir, f)).mtimeMs }))
+      .sort((a, b) => b.at - a.at);
+    return pdfs[0]?.f ?? null;
+  } catch {
+    return null;
+  }
+}
+
 app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", async (req, reply) => {
   const dir = jobDir(req.params.who, req.params.slug);
   if (!dir) return reply.code(404).send({ error: "no such application" });
@@ -529,7 +556,7 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
       const exists = existsSync(p);
       return { key, label: d.label, file: d.file, exists, chars: exists ? readFileSync(p, "utf8").length : 0 };
     }),
-    pdf: existsSync(join(dir, "cv.pdf")),
+    pdf: findPdf(dir),
     downloadName: (() => {
       const status = join(dir, "status.md");
       const a = existsSync(status) ? readApplication(status, req.params.slug) : null;
@@ -586,7 +613,7 @@ app.post<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/pdf", a
       badHeader: r.status === 2,
       output: `${r.stdout ?? ""}${r.stderr ?? ""}`.slice(-4000),
       fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,
-      pdf: existsSync(out) ? "cv.pdf" : null,
+      pdf: findPdf(dir),
     };
   }
   return reply.code(404).send({ error: "no cv.md" });

@@ -135,7 +135,10 @@ export function Workbench({
   const [include, setInclude] = useState<Set<string>>(new Set());
   const [stage, setStage] = useState("");
   const [docs, setDocs] = useState<Doc[]>([]);
-  const [pdfExists, setPdfExists] = useState(false);
+  // The file name, not a boolean: older applications carry the CV under the
+  // download filename rather than cv.pdf, and the viewer has to fetch by name.
+  const [pdfFile, setPdfFile] = useState<string | null>(null);
+  const pdfExists = Boolean(pdfFile);
   const [fit, setFit] = useState<Fit | null>(null);
   // Opens on the PDF when one exists, because that is the thing you are
   // actually judging. The markdown is how you change it, not how you read it.
@@ -190,7 +193,7 @@ export function Workbench({
   const refresh = useCallback(async () => {
     const d = await fetch(`/api/${who}/job/${slug}/docs`).then((r) => r.json());
     setDocs(d.docs ?? []);
-    setPdfExists(Boolean(d.pdf));
+    setPdfFile(d.pdf ?? null);
     if (d.pdf && !chosen.current) {
       chosen.current = true;
       tabRef.current = "pdf";
@@ -533,7 +536,7 @@ export function Workbench({
             ? `active/${slug}/application-answers.md already contains the employer's questions and no answers. Write an answer beneath each question, in that same file, keeping the questions in place. Answer only the questions written there and do not invent others.`
             : key === "review"
               ? `Run the three adversarial reviewers described in boulot:tailor-cv, then apply their edits to cv.md.`
-              : `Call boulot_render_pdf on active/${slug}/cv.md to active/${slug}/cv.pdf and report the fit.`;
+              : `Call boulot_render_pdf on active/${slug}/cv.md and report the fit.`;
 
     send(
       `For the application in active/${slug}, do these in order:\n\n` +
@@ -588,7 +591,7 @@ export function Workbench({
             .then((r) => r.json())
             .then((d) => {
               setFit(d.fit ?? null);
-              setPdfExists(Boolean(d.pdf));
+              setPdfFile(d.pdf ?? null);
               setPdfKey((k) => k + 1);
             })
             .finally(() => setRendering(false));
@@ -702,7 +705,7 @@ export function Workbench({
             <span className="saving">Re-rendering the page…</span>
           ) : null}
           {pdfExists && (
-            <a className="ghost" href={`/api/${who}/job/${slug}/file/cv.pdf`} download={pdfName}>
+            <a className="ghost" href={`/api/${who}/job/${slug}/file/${encodeURIComponent(pdfFile ?? "cv.pdf")}`} download={pdfName}>
               Download
             </a>
           )}
@@ -816,7 +819,7 @@ export function Workbench({
             the failure it was supposed to prevent.
           */}
           {tab === "pdf" ? (
-            <iframe className="pdf" key={pdfKey} title="CV" src={`/api/${who}/job/${slug}/file/cv.pdf?v=${pdfKey}`} />
+            <iframe className="pdf" key={pdfKey} title="CV" src={`/api/${who}/job/${slug}/file/${encodeURIComponent(pdfFile ?? "cv.pdf")}?v=${pdfKey}`} />
           ) : text[tab] === undefined ? (
             <p className="hint">Loading…</p>
           ) : READ_ONLY.has(tab) ? (
