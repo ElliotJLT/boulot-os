@@ -15,6 +15,7 @@ type App = {
   substage: string | null;
   outcome: string | null;
   lastUpdated: string | null;
+  appliedDate: string | null;
   salary: string | null;
   source: string | null;
   warnings: string[];
@@ -104,6 +105,9 @@ function Card({ app, onOpen }: { app: App; onOpen: () => void }) {
     >
       <h3>{app.company}</h3>
       {app.role && <p className="role">{app.role}</p>}
+      {app.stage === "applied" && app.appliedDate && (
+        <span className="sent">Applied {app.appliedDate}</span>
+      )}
       {flag && !dead && <span className={`mark mark-${SEVERITY[flag.kind] ?? "muted"}`}>{flag.label}</span>}
       {dead && app.outcome && <span className="mark mark-muted">{app.outcome.replace(/_/g, " ")}</span>}
     </article>

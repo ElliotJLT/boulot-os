@@ -1,7 +1,7 @@
 import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
-import { resolve, relative, isAbsolute } from "node:path";
+import { resolve, relative, isAbsolute, dirname } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { fetchJob } from "./boards.js";
 
@@ -136,7 +136,11 @@ const DENIED = [
 ];
 
 /** Boulot's own tools, replacing what Bash used to do. */
-function boulotTools(vaultRoot: string, rendererPath: string) {
+/**
+ * @param cwd Where the agent stands, which is the person's folder rather than
+ *            the vault root. Relative paths it hands us are relative to this.
+ */
+function boulotTools(vaultRoot: string, rendererPath: string, cwd: string) {
   return createSdkMcpServer({
     name: "boulot",
     version: "0.1.0",
@@ -189,9 +193,30 @@ function boulotTools(vaultRoot: string, rendererPath: string) {
           // The model saw "refused" repeatedly for a path that was in fact
           // fine, and went hunting through config files for a vault root that
           // was never the problem.
-          const resolveInVault = (p: string) => (isAbsolute(p) ? p : resolve(vaultRoot, p));
+          /*
+           * Relative to where the agent actually stands.
+           *
+           * This resolved against vaultRoot, but the agent's working directory
+           * is vaultRoot/PERSON, so the perfectly correct "active/lawhive/cv.md"
+           * became ".../Boulot/active/lawhive/cv.md" and did not exist. The
+           * model then searched the vault six times and eventually reported
+           * "Found it, cwd is .../ELLIOT", which was the answer all along.
+           *
+           * Both bases are tried, because a model that has read the vault root
+           * from somewhere may legitimately pass either.
+           */
+          const resolveInVault = (p: string) => {
+            if (isAbsolute(p)) return p;
+            const fromCwd = resolve(cwd, p);
+            if (existsSync(fromCwd)) return fromCwd;
+            const fromRoot = resolve(vaultRoot, p);
+            return existsSync(fromRoot) ? fromRoot : fromCwd;
+          };
           const cv = resolveInVault(cvPath);
-          const pdfOut = resolveInVault(outputPath);
+          // The output does not exist yet, so it follows the input's folder.
+          const pdfOut = isAbsolute(outputPath)
+            ? outputPath
+            : resolve(dirname(cv), outputPath.split("/").pop() ?? "cv.pdf");
 
           for (const [label, abs] of [["cvPath", cv], ["outputPath", pdfOut]] as const) {
             const rel = relative(vaultRoot, abs);
@@ -367,7 +392,7 @@ export async function run({
       // bundle the skill pack sits beside the server, not two levels up.
       plugins: [{ type: "local", path: process.env.BOULOT_PLUGIN ?? resolve(import.meta.dirname, "../../plugin") }],
       disallowedTools: DENIED,
-      mcpServers: { boulot: boulotTools(vaultRoot, rendererPath) },
+      mcpServers: { boulot: boulotTools(vaultRoot, rendererPath, cwd) },
       agents: REVIEWERS,
       // Boulot's own tools are pre-approved. They are ours, they are
       // path-jailed internally, and prompting for them would be noise: nobody

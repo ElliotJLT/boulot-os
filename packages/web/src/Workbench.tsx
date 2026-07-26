@@ -43,10 +43,17 @@ const STEPS = [
   { key: "pdf", label: "Render the PDF", verb: "Rendering the PDF" },
 ] as const;
 
-/** Asked for per application, because most applications ask for neither. */
+/**
+ * Asked for per application, because most applications ask for neither.
+ *
+ * These sit in the build list as unticked boxes rather than as buttons
+ * elsewhere. One place says what play will do, and ticking a box is how you
+ * change it. The previous arrangement had the CV tab promising "press play and
+ * Boulot will write it" on a document play was never going to write.
+ */
 const EXTRAS = [
-  { key: "cover", label: "Cover letter", add: "Write a cover letter" },
-  { key: "questions", label: "Questions", add: "Answer their questions" },
+  { key: "cover", label: "Write a cover letter", verb: "Drafting the cover letter" },
+  { key: "questions", label: "Answer their questions", verb: "Answering their questions" },
 ] as const;
 
 /** Documents that are read rather than edited, so they render rather than sit in a textarea. */
@@ -106,6 +113,9 @@ export function Workbench({
   onArchived?: () => void;
 }) {
   const [filing, setFiling] = useState(false);
+  /** Extras the user has ticked. Play produces exactly the ticked list. */
+  const [include, setInclude] = useState<Set<string>>(new Set());
+  const [stage, setStage] = useState("");
   const [docs, setDocs] = useState<Doc[]>([]);
   const [pdfExists, setPdfExists] = useState(false);
   const [fit, setFit] = useState<Fit | null>(null);
@@ -154,6 +164,7 @@ export function Workbench({
       setTab("pdf");
     }
     setFit(d.fit ?? null);
+    setStage(String(d.stage ?? ""));
     // Always keep cv and job in memory: the tweak box attaches them regardless
     // of which tab is showing, and the PDF tab has no markdown of its own.
     const active = tabRef.current;
@@ -184,11 +195,51 @@ export function Workbench({
     void refresh();
   }, [refresh, tab]);
 
+  /*
+   * Catch up on a run that started before this screen opened.
+   *
+   * Logging a job hands over to the workbench mid-flight, and leaving the page
+   * and coming back should not look like nothing happened. The server keeps the
+   * events, so arriving late is a replay rather than a blank panel.
+   */
+  useEffect(() => {
+    void fetch("/api/jobs")
+      .then((r) => r.json())
+      .then((d: { jobs: Array<{ slug: string | null; label: string; running: boolean; events: Event[] }> }) => {
+        const mine = d.jobs.find((j) => j.slug === slug);
+        if (!mine) return;
+        setActivity(mine.events.filter((e) => e.t === "tool").map((e) => (e as { label: string }).label));
+        setSaid(mine.events.filter((e) => e.t === "text").map((e) => (e as { text: string }).text));
+        if (mine.running) {
+          setRunning(mine.label);
+          setRunKind("adopted");
+        }
+      })
+      .catch(() => {});
+  }, [slug]);
+
   useEffect(() => {
     const socket = new WebSocket(`ws://${location.host}/ws`);
     ws.current = socket;
     socket.onmessage = (e) => {
       const ev: Event = JSON.parse(e.data);
+      /*
+       * Only this application's work.
+       *
+       * With three runs able to go at once, an unfiltered stream would splice
+       * another company's research into this one's log. Events carry the job
+       * they belong to; anything else is somebody else's business.
+       */
+      const forUs = (ev as { job?: string; slug?: string }).slug === slug ||
+        (ev as { job?: string }).job === slug;
+      if (!forUs) return;
+      if ((ev as { t: string }).t === "job") {
+        const j = ev as unknown as { running: boolean; label?: string };
+        setRunning(j.running ? (j.label ?? "Working") : null);
+        setRunKind((k) => (j.running ? (k ?? "adopted") : null));
+        if (!j.running) void refresh();
+        return;
+      }
       if (ev.t === "tool") {
         setActivity((a) => [...a, ev.label]);
         // Work arriving with nothing running locally means another screen
@@ -237,7 +288,7 @@ export function Workbench({
     setRunning(label);
     setActivity([]);
     setSaid([]);
-    ws.current.send(JSON.stringify({ prompt, person: who }));
+    ws.current.send(JSON.stringify({ prompt, person: who, job: slug, slug, label }));
   };
 
   /**
@@ -247,6 +298,17 @@ export function Workbench({
    * the career record both still read. Closing back to the board afterwards is
    * the point of the whole feature, so it happens without asking again.
    */
+  /** Record that it went out, and let the board work out the date. */
+  const markApplied = async () => {
+    await fetch(`/api/${who}/job/${slug}/stage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stage: "applied" }),
+    });
+    setStage("applied");
+    onArchived?.();
+  };
+
   const archive = async (outcome: string) => {
     const r = await fetch(`/api/${who}/job/${slug}/archive`, {
       method: "POST",
@@ -302,7 +364,19 @@ export function Workbench({
   };
 
   const runAll = () => {
-    const missing = STEPS.filter((s) => !done(s.key));
+    /*
+     * The CV first, then the extras, then the PDF.
+     *
+     * A cover letter written before the CV argues from the master record rather
+     * than from the tailored one, and the PDF has to come last or it renders a
+     * CV that is about to change.
+     */
+    const plan = [
+      STEPS[0],
+      ...EXTRAS.filter((e) => include.has(e.key)),
+      STEPS[1],
+    ] as ReadonlyArray<{ key: string; label: string; verb: string }>;
+    const missing = plan.filter((s) => !done(s.key));
     if (!missing.length) return;
     const instruction = (key: string) =>
       key === "cv"
@@ -398,6 +472,18 @@ export function Workbench({
               Download
             </a>
           )}
+          {/*
+            The other thing you do on this screen: say you sent it.
+            
+            Dragging the card works too, but you are here when you actually
+            press submit on their form, and going back to the board to record
+            that is the kind of errand nobody runs.
+          */}
+          {stage !== "applied" && !stage.startsWith("closed") && (
+            <button className="ghost" onClick={() => void markApplied()}>
+              Mark as applied
+            </button>
+          )}
           <button className="ghost" onClick={() => setFiling((f) => !f)}>
             {filing ? "Cancel" : "Archive"}
           </button>
@@ -428,7 +514,9 @@ export function Workbench({
               {[
                 ...OUTPUTS,
                 // An extra earns a tab by existing. Until then it is a button.
-                ...EXTRAS.filter((e) => docs.find((d) => d.key === e.key)?.exists),
+                ...EXTRAS.filter(
+                  (e) => include.has(e.key) || docs.find((d) => d.key === e.key)?.exists,
+                ).map((e) => ({ key: e.key, label: e.key === "cover" ? "Cover letter" : "Questions" })),
               ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
                 const d = docs.find((x) => x.key === t.key);
@@ -448,36 +536,6 @@ export function Workbench({
                 );
               })}
             </div>
-
-            {/*
-              Ask for the extras rather than always producing them.
-              
-              Questions opens the tab first so the user can paste what was
-              actually asked: answering questions the agent inferred from a job
-              description is how you end up answering the wrong ones.
-            */}
-            {EXTRAS.filter((e) => !docs.find((d) => d.key === e.key)?.exists).map((e) => (
-              <button
-                key={e.key}
-                className="add-tab"
-                disabled={Boolean(running)}
-                title={e.add}
-                onClick={() => {
-                  // Opens the tab. Nothing else.
-                  //
-                  // This used to start writing a cover letter on click, so
-                  // looking at a tab began work nobody had asked for, and
-                  // because the run carried no kind it defaulted to "build" and
-                  // animated "Tailoring the CV / Rendering the PDF" as well.
-                  // Navigation is not an action.
-                  chosen.current = true;
-                  setTab(e.key);
-                  setDirty(false);
-                }}
-              >
-                + {e.label}
-              </button>
-            ))}
 
             <span className="tab-split" />
 
@@ -524,23 +582,6 @@ export function Workbench({
             spends a run doing it. The agent said so itself: "Used cv-master.md
             since no tailored cv.md exists yet."
           */}
-          {tab === "cover" && !text.cover?.trim() && (
-            <div className="pane-action">
-              <button
-                className="primary"
-                disabled={Boolean(running) || !done("cv")}
-                onClick={() => askFor("cover")}
-              >
-                Write a cover letter
-              </button>
-              <span>
-                {done("cv")
-                  ? "Uses the tailored CV, the job description and the research. Or write your own here."
-                  : "Tailor the CV first, so the letter argues from the same evidence. Or write your own here."}
-              </span>
-            </div>
-          )}
-
           {tab === "pdf" ? (
             <iframe className="pdf" key={pdfKey} title="CV" src={`/api/${who}/job/${slug}/file/cv.pdf?v=${pdfKey}`} />
           ) : text[tab] === undefined ? (
@@ -602,9 +643,37 @@ export function Workbench({
               </button>
             </div>
             <ol>
-              {STEPS.map((s) => {
+              {[
+                STEPS[0],
+                ...EXTRAS,
+                STEPS[1],
+              ].map((s) => {
+                const optional = EXTRAS.some((e) => e.key === s.key);
+                const ticked = include.has(s.key);
                 const isDone = done(s.key);
-                const isLive = runKind === "build" && Boolean(running) && !isDone;
+                const isLive = runKind === "build" && Boolean(running) && !isDone && (!optional || ticked);
+                if (optional && !isDone) {
+                  return (
+                    <li key={s.key} className={ticked ? "step-opt on" : "step-opt"}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={ticked}
+                          disabled={Boolean(running)}
+                          onChange={(e) =>
+                            setInclude((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(s.key);
+                              else next.delete(s.key);
+                              return next;
+                            })
+                          }
+                        />
+                        <span>{isLive ? s.verb : s.label}</span>
+                      </label>
+                    </li>
+                  );
+                }
                 return (
                   <li key={s.key} className={isDone ? "step-done" : isLive ? "step-live" : ""}>
                     <span className="box">{isDone ? "✓" : isLive ? <span className="dot" /> : ""}</span>

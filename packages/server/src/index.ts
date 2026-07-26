@@ -368,9 +368,23 @@ app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
     const status = join(dir, "status.md");
     if (!existsSync(status)) return reply.code(404).send({ error: "no status.md" });
 
+    /*
+     * Moving into Applied is the moment you applied.
+     *
+     * Without a date the funnel cannot say how long anything took, and asking
+     * someone to type it is the bookkeeping this app exists to avoid. Only set
+     * when it is missing: a card dragged out and back should not have its
+     * history rewritten to today.
+     */
+    const before = readFileSync(status, "utf8");
+    const hasApplied = /^applied_date:\s*\S/m.test(before);
     writeFileSync(
       status,
-      updateFrontmatter(readFileSync(status, "utf8"), { stage: value, last_updated: todayStr() }),
+      updateFrontmatter(before, {
+        stage: value,
+        last_updated: todayStr(),
+        ...(value === "applied" && !hasApplied ? { applied_date: todayStr() } : {}),
+      }),
     );
     return { slug: req.params.slug, stage: value };
   },
@@ -447,6 +461,8 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
       return { key, label: d.label, file: d.file, exists, chars: exists ? readFileSync(p, "utf8").length : 0 };
     }),
     pdf: existsSync(join(dir, "cv.pdf")),
+    // The workbench needs it to know whether to offer "Mark as applied".
+    stage: existsSync(join(dir, "status.md")) ? readApplication(join(dir, "status.md")).stage : null,
     fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,
   };
 });
@@ -532,30 +548,72 @@ if (existsSync(webDist)) {
   );
 }
 
+/** What is running, so a screen that just opened can catch up rather than guess. */
+app.get("/api/jobs", async () => ({
+  max: MAX_CONCURRENT,
+  jobs: [...jobs.values()].map((j) => ({
+    id: j.id,
+    slug: j.slug,
+    label: j.label,
+    running: j.running,
+    startedAt: j.startedAt,
+    events: j.events,
+  })),
+}));
+
+
 const address = await app.listen({ port: PORT, host: "127.0.0.1" });
 
 /** Agent bridge. One socket per run; the client sends a prompt, we stream back. */
 const wss = new WebSocketServer({ server: app.server, path: "/ws" });
-/*
- * Every open screen hears every run.
+/**
+ * Runs are owned by the server, not by the tab that started them.
  *
- * Events used to go only to the socket that started the run, which made handing
- * off between screens impossible: logging a job and then opening its workbench
- * left the workbench looking idle while the agent was still working in it. The
- * run itself always survived, because the vault is what it writes to, but the
- * narration did not follow the user.
+ * Two things follow from that, and both were asked for.
  *
- * Broadcasting is safe here in a way it would not be on a server: this one
- * serves one person on their own machine, and the sockets are their own tabs.
+ * Leaving the page does not cancel the work. It never did, because the agent
+ * writes to the vault rather than to the socket, but the narration was lost the
+ * moment you navigated away, so a run you walked back to looked like it had
+ * stopped. Every event is now kept, so a screen that arrives late can catch up.
+ *
+ * And more than one application can be built at once. The cap is three: the
+ * limit is not the machine, it is that each run costs tokens and reads the same
+ * vault, and a person who has started five is no longer supervising any of them.
  */
+const MAX_CONCURRENT = 3;
+
+interface Job {
+  id: string;
+  /** Application folder, once it is known. New applications learn it mid-run. */
+  slug: string | null;
+  label: string;
+  events: unknown[];
+  running: boolean;
+  startedAt: number;
+}
+
+const jobs = new Map<string, Job>();
 const sockets = new Set<import("ws").WebSocket>();
+
+function broadcast(payload: unknown) {
+  const text = JSON.stringify(payload);
+  for (const s of sockets) {
+    try {
+      if (s.readyState === s.OPEN) s.send(text);
+    } catch {
+      /* that tab went away; the run continues and the vault is still written */
+    }
+  }
+}
+
+const activeJobs = () => [...jobs.values()].filter((j) => j.running);
 
 wss.on("connection", (socket) => {
   sockets.add(socket);
   socket.on("close", () => sockets.delete(socket));
-  let sessionId: string | undefined;
+
   socket.on("message", async (raw) => {
-    let msg: { prompt?: string; person?: string };
+    let msg: { prompt?: string; person?: string; job?: string; label?: string; slug?: string };
     try {
       msg = JSON.parse(String(raw));
     } catch {
@@ -563,26 +621,65 @@ wss.on("connection", (socket) => {
     }
     if (!msg.prompt || !msg.person) return;
 
-    sessionId = await run({
-      prompt: msg.prompt,
-      vaultRoot: VAULT,
-      person: msg.person,
-      rendererPath: RENDERER,
-      sessionId,
-      onEvent: (e) => {
-        // A closed socket must never kill the run. Writing to one throws, and
-        // that exception used to propagate into the agent loop and end it
-        // early, which surfaced as a reply describing work that never happened.
-        const payload = JSON.stringify(e);
-        for (const s of sockets) {
-          try {
-            if (s.readyState === s.OPEN) s.send(payload);
-          } catch {
-            /* that tab went away; the run continues and the vault is written */
+    const id = msg.job ?? `job-${Date.now()}`;
+    const existing = jobs.get(id);
+    if (existing?.running) {
+      socket.send(JSON.stringify({ t: "error", job: id, message: "That application is already running." }));
+      return;
+    }
+    if (activeJobs().length >= MAX_CONCURRENT) {
+      socket.send(
+        JSON.stringify({
+          t: "error",
+          job: id,
+          message: `Three applications are already running. Wait for one to finish.`,
+        }),
+      );
+      return;
+    }
+
+    const job: Job = {
+      id,
+      slug: msg.slug ?? null,
+      label: msg.label ?? "Working",
+      events: [],
+      running: true,
+      startedAt: Date.now(),
+    };
+    jobs.set(id, job);
+    broadcast({ t: "job", job: id, slug: job.slug, label: job.label, running: true });
+
+    try {
+      await run({
+        prompt: msg.prompt,
+        vaultRoot: VAULT,
+        person: msg.person,
+        rendererPath: RENDERER,
+        onEvent: (e) => {
+          /*
+           * A new application does not know its own folder when it starts, so
+           * the job learns it from the first file written into one. That is what
+           * lets the workbench pick up a run that began on the intake screen.
+           */
+          if (!job.slug && e.t === "file" && typeof e.path === "string") {
+            const m = /(?:^|\/)(?:active|archive)\/([^/]+)\//.exec(e.path);
+            if (m) {
+              job.slug = m[1] ?? null;
+              broadcast({ t: "job", job: id, slug: job.slug, label: job.label, running: true });
+            }
           }
-        }
-      },
-    });
+          const tagged = { ...e, job: id, slug: job.slug };
+          // Bounded, because a long research run can emit hundreds of steps and
+          // this is only here so a returning screen can catch up.
+          job.events.push(tagged);
+          if (job.events.length > 400) job.events.splice(0, job.events.length - 400);
+          broadcast(tagged);
+        },
+      });
+    } finally {
+      job.running = false;
+      broadcast({ t: "job", job: id, slug: job.slug, label: job.label, running: false });
+    }
   });
 });
 

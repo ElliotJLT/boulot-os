@@ -50,12 +50,18 @@ export function NewApplication({
   opened.current = onOpen;
   // Only hand off once, however many files the run writes.
   const handedOff = useRef(false);
+  // Its own id, because a new application has no folder to be named after yet.
+  const jobId = useRef(`new-${Date.now()}`);
 
   useEffect(() => {
     const socket = new WebSocket(`ws://${location.host}/ws`);
     ws.current = socket;
     socket.onmessage = (e) => {
       const ev: Event = JSON.parse(e.data);
+      // Only our own run: three can be going at once.
+      const j = (ev as { job?: string }).job;
+      if (j && j !== jobId.current) return;
+      if ((ev as { t: string }).t === "job") return;
       if (ev.t === "tool") {
         setLines((l) => [...l, { kind: "activity", text: ev.label }]);
         setPhases((p) => new Set(p).add(phaseOf(ev.label)));
@@ -109,7 +115,7 @@ export function NewApplication({
         `If you cannot read the page, say so plainly and ask me to paste the description. Do not guess at its contents.`
       : `Use the boulot:new-job skill to start a new application. Here is the job description:\n\n${raw}`;
 
-    ws.current.send(JSON.stringify({ prompt, person: who }));
+    ws.current.send(JSON.stringify({ prompt, person: who, job: jobId.current, label: "Logging the role" }));
   };
 
   return (
