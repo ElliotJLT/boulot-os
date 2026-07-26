@@ -41,9 +41,14 @@ it had just written three times. None of those files changed while it worked.
 - Read `cv-master.md` **once**. It is the evidence bank and it does not change
   mid-run.
 - Read `research.md` **once**, and only if you need the company angle.
-- Do not go looking through `archive/` or other applications for reference CVs.
-  Past CVs are a weak structural hint and an expensive one; the master record
-  and the JD are what the CV is built from.
+- Read `references/exemplar-cv.md` **once**, if it exists. One named file at a
+  fixed path, for structure only: how bullets are grouped, how much space an
+  old role gets, what a bullet looks like when it carries a decision rather
+  than a metric. Never take a fact from it.
+- Do not go looking anywhere else for reference CVs. Trawling `archive/` or
+  other applications is expensive and it is how figures from one application's
+  working notes ended up in another application's CV. Facts come from
+  `cv-master.md` and nowhere else.
 - Never re-read a file you have already read in this run.
 
 **Read the `writing-voice` skill first and hold it while you write.**
