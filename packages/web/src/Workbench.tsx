@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BuildProgress, Markdown, collapse } from "./Activity.js";
+import { BuildProgress, Markdown, Thinking, collapse } from "./Activity.js";
 import { useSocket } from "./socket.js";
 import { MODELS } from "./models.js";
 
@@ -164,6 +164,10 @@ export function Workbench({
    */
   const [runKind, setRunKind] = useState<"build" | "tweak" | "adopted" | null>(null);
   const [activity, setActivity] = useState<string[]>([]);
+  // Taken from the job, not from this tab, so opening a run already in
+  // flight shows how long it has really been going rather than restarting
+  // the clock at zero and hiding the very case the clock is there for.
+  const [since, setSince] = useState<number | null>(null);
   /*
    * Both sides of the conversation, in order.
    *
@@ -235,7 +239,16 @@ export function Workbench({
   useEffect(() => {
     void fetch("/api/jobs")
       .then((r) => r.json())
-      .then((d: { jobs: Array<{ slug: string | null; label: string; running: boolean; events: Event[] }> }) => {
+      .then(
+        (d: {
+          jobs: Array<{
+            slug: string | null;
+            label: string;
+            running: boolean;
+            startedAt?: number;
+            events: Event[];
+          }>;
+        }) => {
         const mine = d.jobs.find((j) => j.slug === slug);
         if (!mine) return;
         setActivity(mine.events.filter((e) => e.t === "tool").map((e) => (e as { label: string }).label));
@@ -247,6 +260,7 @@ export function Workbench({
         if (mine.running) {
           setRunning(mine.label);
           setRunKind("adopted");
+          setSince(mine.startedAt ?? Date.now());
         }
       })
       .catch(() => {});
@@ -262,15 +276,20 @@ export function Workbench({
   const resync = useCallback(() => {
     void fetch("/api/jobs")
       .then((r) => r.json())
-      .then((d: { jobs: Array<{ slug: string | null; label: string; running: boolean }> }) => {
+      .then(
+        (d: {
+          jobs: Array<{ slug: string | null; label: string; running: boolean; startedAt?: number }>;
+        }) => {
         const mine = d.jobs.find((j) => j.slug === slug);
         if (mine?.running) {
           setRunning(mine.label);
           setRunKind((k) => k ?? "adopted");
+          setSince((s) => s ?? mine.startedAt ?? Date.now());
         } else {
           // Nothing is running any more, whatever this screen still believes.
           setRunning(null);
           setRunKind(null);
+          setSince(null);
         }
         void refresh();
       })
@@ -294,6 +313,7 @@ export function Workbench({
         const j = ev as unknown as { running: boolean; label?: string };
         setRunning(j.running ? (j.label ?? "Working") : null);
         setRunKind((k) => (j.running ? (k ?? "adopted") : null));
+        setSince((s) => (j.running ? (s ?? Date.now()) : null));
         if (!j.running) void refresh();
         return;
       }
@@ -331,6 +351,7 @@ export function Workbench({
       else if (ev.t === "result") {
         setRunning(null);
         setRunKind(null);
+        setSince(null);
         setCost((c) => c + ev.cost);
         setPdfKey((k) => k + 1);
         void refresh();
@@ -349,12 +370,13 @@ export function Workbench({
     if (running) return;
     setRunKind(kind);
     setRunning(label);
-    setActivity([]);
+    setSince(Date.now());
     setActivity([]);
     if (!emit({ prompt, person: who, job: slug, slug, label, model, note })) {
       // The socket is down. Saying so beats a spinner that never resolves.
       setRunning(null);
       setRunKind(null);
+      setSince(null);
       setTurns((t) => [...t, { who: "boulot", text: "Lost the connection to Boulot. Reconnecting; try again in a moment." }]);
       return;
     }
@@ -845,12 +867,12 @@ export function Workbench({
                     : "Build this application"}
               </h3>
               <button
-                className="play"
+                className={running ? "play busy" : "play"}
                 onClick={() => void runAll()}
                 disabled={Boolean(running) || allDone}
-                title={allDone ? "Everything is written" : "Write the whole application"}
+                title={running ? running : allDone ? "Everything is written" : "Write the whole application"}
               >
-                {running ? <span className="spinner" /> : allDone ? "✓" : "▶"}
+                {running ? <span className="pip" /> : allDone ? "✓" : "▶"}
               </button>
             </div>
             <ol>
@@ -955,10 +977,14 @@ export function Workbench({
                 Lost the connection to Boulot. Reconnecting…
               </p>
             )}
+            {/*
+              The live line sits last, under the conversation, because that is
+              where you are already looking when you are waiting. The label is
+              the most recent thing it actually did rather than the name of the
+              run, so it changes while you watch it.
+            */}
             {Boolean(running) && connection === "open" && (
-              <p className="keeps-going">
-                This keeps running if you leave. Go back to the board and start another one.
-              </p>
+              <Thinking label={activity[activity.length - 1] ?? running ?? "Working"} since={since} />
             )}
             {!running && !activity.length && !turns.length && (
               <p className="hint">

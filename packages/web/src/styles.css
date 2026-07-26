@@ -322,12 +322,63 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
   display: grid; place-items: center; padding: 0; padding-inline-start: 2px;
 }
 .play:disabled { opacity: 0.35; cursor: default; padding-inline-start: 0; }
-.spinner {
-  inline-size: 13px; block-size: 13px; border-radius: 50%;
-  border: 2px solid rgb(255 255 255 / 30%); border-block-start-color: #fff;
-  animation: spin 0.7s linear infinite;
+/* Working, in the corner.
+   A white hairline spinning inside a disc greyed to 35% opacity was the entire
+   signal that anything was happening, and it read as a disabled button with a
+   rendering glitch. Working is not a disabled state: the button fills with the
+   accent, an arc of it sweeps the rim, and a dot breathes in the middle. Three
+   things moving at different speeds, which is what "alive" looks like. */
+.play.busy, .play.busy:disabled {
+  opacity: 1; cursor: default; padding-inline-start: 0;
+  background: var(--accent-soft); border-color: transparent;
+  box-shadow: 0 0 0 4px rgb(63 107 74 / 8%);
+}
+.play.busy::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 50%;
+  background: conic-gradient(from 0turn, transparent 0 62%, var(--accent) 96%, transparent);
+  /* Masked to a rim so the gradient is an arc, not a filled pie. */
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  animation: spin 1.15s linear infinite;
+}
+.play { position: relative; }
+.play .pip {
+  inline-size: 7px; block-size: 7px; border-radius: 50%;
+  background: var(--accent-deep); animation: breathe 1.5s ease-in-out infinite;
 }
 @keyframes spin { to { transform: rotate(360deg) } }
+
+/* Thinking, at the foot of the conversation. */
+.thinking {
+  margin: 16px 0 4px; padding: 11px 13px;
+  background: var(--bg-2); border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+.thinking-row { display: flex; align-items: center; gap: 10px; }
+.thinking-label {
+  font-size: 13px; color: var(--ink); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.thinking-clock {
+  font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none;
+}
+.thinking-note { margin: 6px 0 0 26px; font-size: 11.5px; color: var(--ink-3); }
+.thinking-dots { display: inline-flex; gap: 3px; flex: none; }
+.thinking-dots i {
+  inline-size: 5px; block-size: 5px; border-radius: 50%; background: var(--accent);
+  animation: wave 1.25s ease-in-out infinite;
+}
+.thinking-dots i:nth-child(2) { animation-delay: 0.16s; }
+.thinking-dots i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes wave {
+  0%, 60%, 100% { opacity: 0.28; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+/* The clock keeps counting, so the row still says "alive" with motion off. */
+@media (prefers-reduced-motion: reduce) {
+  .thinking-dots i, .play.busy::after, .play .pip { animation: none; }
+  .thinking-dots i { opacity: 0.7; }
+}
 
 .checklist ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .checklist li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-3); }

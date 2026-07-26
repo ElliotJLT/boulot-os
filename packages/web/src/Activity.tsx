@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 /**
@@ -323,5 +324,44 @@ export function BuildProgress({ labels, running }: { labels: string[]; running: 
         );
       })}
     </ol>
+  );
+}
+
+/**
+ * What it is doing, right now, at the bottom of the conversation.
+ *
+ * A ring in the corner and a footnote saying the run survives leaving the page
+ * were the only two signals that anything was happening, and neither says what
+ * or for how long. Ten seconds of that reads as thinking; ninety reads as
+ * hung, and the two were indistinguishable.
+ *
+ * So: the current step in words, a clock that moves, and dots that move. The
+ * clock is the load-bearing part. A number going up is proof of life in a way
+ * that no animation is, because an animation keeps playing after the thing
+ * behind it has died.
+ */
+export function Thinking({ label, since }: { label: string; since: number | null }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const secs = since ? Math.max(0, Math.floor((now - since) / 1000)) : 0;
+  const clock = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+
+  return (
+    <div className="thinking">
+      <div className="thinking-row">
+        <span className="thinking-dots" aria-hidden>
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="thinking-label">{label}</span>
+        {since && <span className="thinking-clock">{clock}</span>}
+      </div>
+      <p className="thinking-note">Keeps running if you leave this page.</p>
+    </div>
   );
 }
