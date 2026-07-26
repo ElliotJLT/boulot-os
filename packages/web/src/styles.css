@@ -991,3 +991,17 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .agent-on { color: var(--ink-2); }
 .agent-on .rail-mark { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-deep); }
 .agent-off { color: var(--ink-3); opacity: 0.6; }
+
+/* What came out, measured rather than described. The agent's summary says the
+   same things in a paragraph; this is the version you can read at a glance. */
+.result {
+  margin: 0 0 16px; padding: 12px 16px; border-radius: var(--radius);
+  border: 1px solid var(--line-2); background: var(--panel);
+}
+.result b { display: block; font-size: 13.5px; margin-block-end: 6px; }
+.result ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.result li { font-size: 12.5px; color: var(--ink-2); }
+.result-ok { border-color: #c4d6c6; background: var(--accent-soft); }
+.result-ok b { color: var(--accent-deep); }
+.result-warn { border-color: #e8d9b8; background: var(--warn-bg); }
+.result-warn b { color: var(--warn); }

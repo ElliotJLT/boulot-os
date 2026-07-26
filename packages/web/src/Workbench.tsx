@@ -20,6 +20,8 @@ type Fit = {
   pages: number;
   overflowMm: number;
   trimTarget: { section: string; charactersToCut: number } | null;
+  /** The voice check, measured by the renderer rather than claimed in prose. */
+  voice?: { dashes: number; words: string[]; summaryWords: number };
 };
 type Doc = { key: string; label: string; file: string; exists: boolean; chars: number };
 type Event =
@@ -886,17 +888,12 @@ export function Workbench({
             {activity.length > 0 && runKind !== "tweak" && (
               <BuildProgress labels={activity} running={Boolean(running)} />
             )}
-            {activity.length > 0 && (
-              <details className="steps" open={false}>
-                <summary>{collapse(activity).length} steps</summary>
-                {collapse(activity).map((a, i) => (
-                  <p className="activity" key={i}>
-                    {a.text}
-                    {a.count > 1 && <span className="times"> ×{a.count}</span>}
-                  </p>
-                ))}
-              </details>
-            )}
+            {/*
+              The raw call list used to sit here. It was nine lines saying what
+              the six-line rail above says better, and the only thing it added
+              was the impression of repetition: "Rendering the PDF" twice looks
+              like a stuck loop and is actually a render, a fix, and a re-render.
+            */}
             {turns.map((t, i) =>
               t.who === "you" ? (
                 <div className="asked" key={i}>
@@ -908,6 +905,31 @@ export function Workbench({
                 </div>
               ),
             )}
+            {/*
+              What came out, from the fit sidecar rather than the agent's
+              summary. The renderer measured these; the prose only reports them,
+              and a number that is measured should not be read second-hand.
+            */}
+            {!running && fit && (
+              <div className={`result ${fit.fits && !fit.voice?.dashes ? "result-ok" : "result-warn"}`}>
+                <b>
+                  {fit.fits ? `Fits, ${fit.pages} pages` : `${fit.pages} pages, ${fit.overflowMm}mm over`}
+                </b>
+                <ul>
+                  {!fit.fits && fit.trimTarget && (
+                    <li>Cut about {fit.trimTarget.charactersToCut} characters from {fit.trimTarget.section}</li>
+                  )}
+                  {Boolean(fit.voice?.dashes) && <li>{fit.voice!.dashes} em-dashes to replace</li>}
+                  {Boolean(fit.voice?.words?.length) && <li>Vocabulary: {fit.voice!.words.join(", ")}</li>}
+                  {Boolean(fit.voice && fit.voice.summaryWords > 60) && (
+                    <li>Summary is {fit.voice!.summaryWords} words, target 40 to 60</li>
+                  )}
+                  {fit.fits && !fit.voice?.dashes && !fit.voice?.words?.length &&
+                    !(fit.voice && fit.voice.summaryWords > 60) && <li>No warnings.</li>}
+                </ul>
+              </div>
+            )}
+
             {connection === "lost" && (
               <p className="offline">
                 Lost the connection to Boulot. Reconnecting…
