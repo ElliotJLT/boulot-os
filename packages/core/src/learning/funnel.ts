@@ -101,7 +101,28 @@ export function normaliseSource(raw: string | null): string {
   const host = /^https?:\/\/(?:www\.)?([^/]+)/i.exec(value)?.[1];
   if (host) return host.toLowerCase();
 
-  return value.toLowerCase().slice(0, 24);
+  /*
+   * Everything else is prose, and prose must not become a channel.
+   *
+   * The field is typed by a person mid-flow, so the real vault holds "jd pasted
+   * by elliot (original)", "michael at firstminute capital", "in-person chat →
+   * talent partner" and a dozen others. Truncating those to 24 characters gave
+   * each one its own row, and a conversion table with twenty rows of one is
+   * worse than no table: it looks like data and answers nothing.
+   *
+   * Two buckets survive that. Anything describing a person is a referral, which
+   * is the one channel worth knowing about because it converts differently from
+   * everything else. Anything describing the act of pasting a description is
+   * how this app is used, not where the job came from, and that is unknown.
+   */
+  if (/\b(chat|conversation|met|spoke|intro|contact|friend|colleague|ex-)\b/i.test(value)) {
+    return "referral";
+  }
+  if (/\b(pasted|paste|jd|description|copied|manual)\b/i.test(value)) return "unknown";
+
+  // A short, clean label typed consistently is a real channel. A sentence is not.
+  const clean = value.toLowerCase().replace(/[^a-z0-9 .+-]/g, " ").replace(/\s+/g, " ").trim();
+  return clean.length <= 20 && clean.split(" ").length <= 3 ? clean : "other";
 }
 
 function median(values: number[]): number | null {

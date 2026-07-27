@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Career } from "./Career.js";
-import { Insights } from "./Insights.js";
 import { Archive } from "./Archive.js";
 
 /**
@@ -16,11 +15,18 @@ import { Archive } from "./Archive.js";
  * right is not an idea, which is what makes it the right one here.
  */
 
-type Section = "profile" | "insights" | "archive";
+/*
+ * Two sections, not three.
+ *
+ * Insights was a page of its own holding a funnel nobody clicked through to
+ * see. It is the denominator for everything on the profile — a headline that
+ * reached one interview means something different at a 3% reply rate than at
+ * 30% — so it sits at the top of that page instead, and the door to it is gone.
+ */
+type Section = "profile" | "archive";
 
 const SECTIONS: Array<{ key: Section; label: string; hint: string }> = [
-  { key: "profile", label: "Profile", hint: "Everything you have done" },
-  { key: "insights", label: "Insights", hint: "What the search is doing" },
+  { key: "profile", label: "Profile", hint: "What you have done, and what it earned" },
   { key: "archive", label: "Archive", hint: "Applications that ended" },
 ];
 
@@ -58,7 +64,6 @@ export function Profile({
 
         <section className="settings-pane">
           {section === "profile" && <Career who={who} embedded />}
-          {section === "insights" && <Insights who={who} embedded />}
           {section === "archive" && <Archive who={who} embedded onChanged={onChanged} />}
         </section>
       </div>

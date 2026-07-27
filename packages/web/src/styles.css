@@ -567,6 +567,9 @@ span.play.busy { cursor: default; }
 /* ── Insights ─────────────────────────────────────── */
 .insights { padding-block-end: 40px; }
 .ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-block-start: 20px; }
+/* Embedded at the top of Profile rather than owning a page of its own. */
+.career .insights { padding-block-end: 0; }
+.career .insights .ins-grid { margin-block-start: 0; }
 .card-panel {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 18px 20px; box-shadow: var(--shadow);

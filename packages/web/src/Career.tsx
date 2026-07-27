@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Insights } from "./Insights.js";
 
 /**
  * The master CV, shown as a record rather than a document.
@@ -176,6 +177,18 @@ export function Career(
           {showMemory && <pre className="memory-body">{m.profile.markdown}</pre>}
         </section>
       )}
+
+      {/*
+        The funnel first, then what the writing did.
+
+        These were two pages behind two clicks, and the split was arbitrary:
+        one says what the search is doing, the other says what the writing is
+        doing, and neither means much without the other. A 3% reply rate is a
+        writing problem; a 30% reply rate with no second interviews is not.
+        Same page, in that order, because the funnel is the denominator for
+        everything below it.
+      */}
+      <Insights who={who} embedded />
 
       {/*
         The three bars that used to sit here are gone.
