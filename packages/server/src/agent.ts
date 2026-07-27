@@ -415,7 +415,17 @@ function memoryContext(vaultRoot: string, person: string): string {
    * facts, because a lesson is an instruction and a fact is only evidence.
    */
   const lessons = read("profile", "lessons.md");
-  if (!text && !lessons) return "";
+  /*
+   * What actually happened, which is the only feedback with a scoreboard.
+   *
+   * Lessons are corrections about how to write. This is the record of what the
+   * writing produced: rejected, ghosted, reached an interview, and the sentence
+   * the person wrote in the hour afterwards. One of those is an anecdote; five
+   * of them is a pattern, and the pattern should be visible to the thing doing
+   * the writing rather than only to the person doing the remembering.
+   */
+  const outcomes = read("profile", "outcomes.md");
+  if (!text && !lessons && !outcomes) return "";
   return [
     "",
     ...(lessons
@@ -436,6 +446,18 @@ function memoryContext(vaultRoot: string, person: string): string {
     "different tool and are not available here. Do not try them, and do not search",
     "for them inside the vault either. If something is not here, say so and carry on.",
     "",
+    ...(outcomes
+      ? [
+          "# What happened to previous applications",
+          "",
+          "Outcomes and what was learned from them. A single rejection says little;",
+          "a pattern across several is worth acting on. Do not repeat a framing that",
+          "has been noted here as having failed.",
+          "",
+          outcomes,
+          "",
+        ]
+      : []),
     "# What Boulot knows about this person",
     "",
     "Built from the CVs they have actually sent, not from anything invented.",

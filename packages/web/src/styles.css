@@ -1303,3 +1303,69 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   border-color: var(--accent); background: var(--accent-soft); color: var(--accent-deep);
 }
 .prep-actions button:disabled { opacity: 0.4; cursor: default; }
+
+/* Archiving, as a small form rather than a row of verdicts. */
+.filing {
+  margin: 14px 0 0; padding: 16px 18px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); display: grid; gap: 12px;
+}
+.filing-head { display: flex; align-items: baseline; }
+.filing-head b { font-size: 13.5px; }
+.filing-head button { margin-inline-start: auto; }
+.filing-q { font-size: 12.5px; color: var(--ink-2); }
+.filing-outcomes { display: flex; flex-wrap: wrap; gap: 6px; margin-block-start: -6px; }
+.filing .outcome {
+  font: inherit; font-size: 12.5px; padding: 5px 12px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--panel); color: var(--ink-2);
+}
+.filing .outcome:hover { border-color: var(--line-2); }
+.filing .outcome.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.filing-note { display: grid; gap: 6px; }
+.filing-note > span { font-size: 12.5px; color: var(--ink-2); }
+.filing-note textarea {
+  font: inherit; font-size: 13px; line-height: 1.55; padding: 9px 11px; resize: vertical;
+  border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--panel);
+}
+.filing-note textarea:focus { outline: none; border-color: var(--accent); }
+.filing-note em { font-style: normal; font-size: 11.5px; color: var(--ink-3); }
+.filing-go { display: flex; gap: 8px; justify-content: flex-end; }
+.filing-go button {
+  font: inherit; font-size: 13px; padding: 8px 18px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
+}
+.filing-go .primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+.filing-go button:disabled { opacity: 0.4; cursor: default; }
+
+/* The record, as three proportions that are also the filters. */
+.record { display: grid; gap: 6px; margin: 18px 0 0; }
+.bar {
+  display: flex; align-items: center; gap: 14px; inline-size: 100%;
+  font: inherit; text-align: start; cursor: pointer;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel);
+  transition: border-color 140ms ease;
+}
+.bar:hover { border-color: var(--line-2); }
+.bar.on { border-color: var(--ink); }
+.bar-label { font-size: 13px; color: var(--ink-2); min-inline-size: 150px; }
+.bar-track {
+  flex: 1; block-size: 6px; border-radius: 999px; background: var(--muted-bg); overflow: hidden;
+}
+.bar-fill {
+  display: block; block-size: 100%; border-radius: 999px; background: var(--line-2);
+  transition: inline-size 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.bar.good .bar-fill { background: var(--accent); }
+.bar-n {
+  font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums;
+  min-inline-size: 56px; text-align: end;
+}
+.bar-n em { font-style: normal; color: var(--ink-3); font-size: 11.5px; }
+.record-note {
+  margin: 10px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-2);
+}
+.record-note b { color: var(--warn); }
+.career .tagrow { display: flex; flex-wrap: wrap; gap: 5px; margin-block: 10px 0; }
+@media (prefers-reduced-motion: reduce) { .bar-fill { transition: none; } }

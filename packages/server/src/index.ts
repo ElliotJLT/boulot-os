@@ -1,8 +1,8 @@
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import { WebSocketServer } from "ws";
-import { appendFileSync, existsSync, readdirSync, statSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
-import { join, resolve, relative, isAbsolute } from "node:path";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
+import { dirname, join, resolve, relative, isAbsolute } from "node:path";
 import {
   readVault,
   buildFunnel,
@@ -294,7 +294,7 @@ app.get<{ Params: { who: string } }>("/api/:who/board", async (req, reply) => {
  * is filing rather than forgetting: the numbers that tell you what is working
  * come almost entirely from applications that already ended.
  */
-app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string } }>(
+app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string; notes?: string } }>(
   "/api/:who/job/:slug/archive",
   async (req, reply) => {
     const { who, slug } = req.params;
@@ -339,9 +339,45 @@ app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string } }>(
 
     // Record the outcome after the move, so a failed write leaves a filed
     // application with stale frontmatter rather than a half-moved folder.
+    /*
+     * What you learned, written where it will be read again.
+     *
+     * The outcome alone is a tally: five rejections is a number, not a lesson.
+     * The thing worth keeping is the sentence you can only write in the hour
+     * after a rejection, and if there is nowhere to put it then it is thought
+     * once and lost.
+     *
+     * Two places, deliberately. `outcome.md` beside the application is the
+     * record of this one, company-specific and permanent. `profile/outcomes.md`
+     * is the running log the agent reads before writing anything, so a pattern
+     * across five rejections is visible to the thing doing the writing rather
+     * than only to the person doing the remembering.
+     */
+    const notes = (req.body?.notes ?? "").trim();
+    if (notes) {
+      const app = existsSync(join(to, "status.md"))
+        ? readApplication(join(to, "status.md"), slug, "archive")
+        : null;
+      const who_ = app?.company ?? slug;
+      const outcome = req.body?.outcome ?? "unrecorded";
+      writeFileSync(
+        join(to, "outcome.md"),
+        `---\ntype: outcome\ncompany: ${who_}\noutcome: ${outcome}\ndate: ${todayStr()}\n---\n\n` +
+          `# ${who_} — what happened\n\n${notes}\n`,
+      );
+      const log = join(VAULT, who, "profile", "outcomes.md");
+      mkdirSync(dirname(log), { recursive: true });
+      const header = existsSync(log)
+        ? ""
+        : "# Outcomes\n\nWhat happened, and what was learned. Written when an application is " +
+          "archived.\nRead before writing anything: a pattern across several of these is worth " +
+          "more than\nany single one.\n";
+      appendFileSync(log, `${header}\n## ${who_} — ${outcome} — ${todayStr()}\n\n${notes}\n`);
+    }
+
     const status = join(to, "status.md");
-    if (existsSync(status)) {
-      const outcome = req.body?.outcome ?? "rejected";
+    if (existsSync(status) && req.body?.outcome) {
+      const outcome = req.body.outcome;
       const won = outcome === "offer_accepted";
       writeFileSync(
         status,
@@ -368,6 +404,7 @@ app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string } }>(
     return {
       archived: slug,
       merged,
+      noted: Boolean(notes),
       memory: consolidated?.summary ?? null,
       application: readApplication(status, slug, "archive"),
     };

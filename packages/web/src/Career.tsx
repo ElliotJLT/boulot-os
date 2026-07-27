@@ -132,8 +132,18 @@ export function Career(
     { key: "unused", label: "Never used", count: unused, tone: "warn" },
     { key: "no-number", label: "No number", count: noNumber },
   ];
+  void noNumber;
 
-  const tags = showTags ? m.allTags : m.allTags.slice(0, 6);
+  /*
+   * Tags are the agent's index, not the reader's.
+   *
+   * Fifty of them across the width, all the same weight, looked like a filter
+   * bar and behaved like a taxonomy dump. They are how tailoring selects
+   * bullets, which makes them load-bearing and uninteresting: nobody opens this
+   * page to browse #onboarding. Behind a control, and only the ones with enough
+   * behind them to be worth a click.
+   */
+  const tags = m.allTags.filter((t) => t.count > 1);
 
   return (
     <div className="career">
@@ -157,22 +167,53 @@ export function Career(
         </section>
       )}
 
-      <p className="verdict">
-        <b>{m.totals.bullets} entries</b> across {m.roles.length} roles.{" "}
-        {proven > 0 ? (
-          <>
-            <b className="good">{proven}</b> {proven === 1 ? "has" : "have"} earned an interview.{" "}
-          </>
-        ) : (
-          <>None has earned an interview yet. </>
-        )}
-        {unused > 0 && (
-          <>
-            <b className="warn">{unused}</b> {unused === 1 ? "has" : "have"} never been picked by
-            tailoring, which usually means badly written rather than irrelevant.
-          </>
-        )}
-      </p>
+      {/*
+        Three bars, and they are the filters.
+
+        The verdict sentence said the numbers and the chips repeated them, so
+        the same three facts appeared twice in different clothes. A bar shows a
+        proportion, which is the thing a number cannot: "8 have earned an
+        interview" means nothing without the denominator, and "8 of 16" is a
+        different feeling from "8 of 90".
+
+        Clicking a bar filters to it, so the progress and the control are the
+        same object. A number you cannot act on is decoration, and this page had
+        four of them.
+      */}
+      <div className="record">
+        {[
+          { key: "proven" as Filter, label: "Earned an interview", n: proven, tone: "good" },
+          { key: "all" as Filter, label: "Used in a CV", n: m.totals.used, tone: "" },
+          { key: "no-number" as Filter, label: "Carry a figure", n: m.totals.withNumbers, tone: "" },
+        ].map((row) => (
+          <button
+            key={row.label}
+            className={`bar ${row.tone}${filter === row.key ? " on" : ""}`}
+            onClick={() => setFilter(filter === row.key ? "all" : row.key)}
+          >
+            <span className="bar-label">{row.label}</span>
+            <span className="bar-track">
+              <span
+                className="bar-fill"
+                style={{ inlineSize: `${Math.round((row.n / Math.max(1, m.totals.bullets)) * 100)}%` }}
+              />
+            </span>
+            <span className="bar-n">
+              {row.n}<em>/{m.totals.bullets}</em>
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {unused > 0 && (
+        <p className="record-note">
+          <b>{unused}</b> {unused === 1 ? "entry has" : "entries have"} never been picked by
+          tailoring. That usually means badly written rather than irrelevant.{" "}
+          <button className="linkish" onClick={() => setFilter("unused")}>
+            Show them
+          </button>
+        </p>
+      )}
 
       {/*
         Controls, and then a list you can actually read.
@@ -205,6 +246,16 @@ export function Career(
             same visual weight as the first, and tags are the rarer thing to
             reach for. Six, then the rest on request.
           */}
+          {tags.length > 0 && (
+            <button className="tag more" onClick={() => setShowTags((v) => !v)}>
+              {showTags ? "Hide tags" : `Tags (${tags.length})`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showTags && (
+        <div className="tagrow">
           {tags.map((t) => (
             <button
               key={t.tag}
@@ -215,13 +266,8 @@ export function Career(
               <em>{t.count}</em>
             </button>
           ))}
-          {m.allTags.length > 6 && (
-            <button className="tag more" onClick={() => setShowTags((v) => !v)}>
-              {showTags ? "fewer" : `+${m.allTags.length - 6} tags`}
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
       {showing === 0 && (
         <p className="empty-note">Nothing matches. Clear the search, or pick a different filter.</p>

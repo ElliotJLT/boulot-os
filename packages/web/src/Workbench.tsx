@@ -278,6 +278,8 @@ export function Workbench({
   onArchived?: () => void;
 }) {
   const [filing, setFiling] = useState(false);
+  const [lesson, setLesson] = useState("");
+  const [outcome, setOutcome] = useState<string | null>(null);
   /** Extras the user has ticked. Play produces exactly the ticked list. */
   const [include, setInclude] = useState<Set<string>>(new Set());
   const [stage, setStage] = useState("");
@@ -624,11 +626,11 @@ export function Workbench({
     onArchived?.();
   };
 
-  const archive = async (outcome: string) => {
+  const archive = async (outcome: string | null) => {
     const r = await fetch(`/api/${who}/job/${slug}/archive`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ outcome }),
+      body: JSON.stringify({ outcome, notes: lesson.trim() }),
     });
     setFiling(false);
     if (!r.ok) {
@@ -1060,13 +1062,63 @@ export function Workbench({
         archived as "ghosted" say completely different things about the search.
       */}
       {filing && (
+        /*
+         * Closing an application, as a small form rather than a row of verdicts.
+         *
+         * It was five buttons in a strip under the header, which asked the
+         * question and gave nowhere to answer it. The outcome is a tally, and
+         * five rejections is a number rather than a lesson; the thing worth
+         * keeping is the sentence you can only write in the hour afterwards,
+         * and there was no box to write it in.
+         *
+         * Nothing here is required. An application you want off the board at
+         * eleven at night is not a moment for a form, so "just archive" files
+         * it with no verdict and no note, and the funnel counts it as filed
+         * rather than inventing an ending for it.
+         */
         <div className="filing">
-          <span>How did it end?</span>
-          {OUTCOMES.map((o) => (
-            <button key={o.key} className="outcome" onClick={() => archive(o.key)}>
-              {o.label}
+          <div className="filing-head">
+            <b>Archive {company}</b>
+            <button className="linkish" onClick={() => setFiling(false)}>
+              Cancel
             </button>
-          ))}
+          </div>
+
+          <span className="filing-q">How did it end?</span>
+          <div className="filing-outcomes">
+            {OUTCOMES.map((o) => (
+              <button
+                key={o.key}
+                className={outcome === o.key ? "outcome on" : "outcome"}
+                onClick={() => setOutcome(outcome === o.key ? null : o.key)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+
+          <label className="filing-note">
+            <span>Anything worth remembering?</span>
+            <textarea
+              rows={3}
+              value={lesson}
+              placeholder="What you learned, what you would do differently, what they said. Optional."
+              onChange={(e) => setLesson(e.target.value)}
+            />
+            <em>
+              Kept in the folder as <code>outcome.md</code> and added to{" "}
+              <code>profile/outcomes.md</code>, which Boulot reads before writing anything.
+            </em>
+          </label>
+
+          <div className="filing-go">
+            <button className="ghost" onClick={() => void archive(null)}>
+              Just archive
+            </button>
+            <button className="primary" disabled={!outcome && !lesson.trim()} onClick={() => void archive(outcome)}>
+              Archive
+            </button>
+          </div>
         </div>
       )}
 
