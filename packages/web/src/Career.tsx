@@ -225,19 +225,27 @@ export function Career(
         are fed to the agent before it writes anything, so what you see here is
         what it knows there.
       */}
-      {m.works && m.works.reached > 0 && (
-        <section className="worked">
-          <h3>What has worked</h3>
+      <section className="worked">
+        <h3>What has worked</h3>
+        {m.works && m.works.reached > 0 ? (
           <p className="lede">
             From the {m.works.withCv} applications with a CV in the vault, {m.works.reached} reached
             a screen or interview. Small sample — a hint, not a rule — but these are the versions
             that earned a reply, and Boulot starts from them when it writes.
           </p>
+        ) : m.works && m.works.withCv > 0 ? (
+          <p className="lede">
+            {m.works.withCv} sent CVs are in the vault, none of which has reached an interview yet.
+            When one does, the wording that worked will appear here and feed back into the writing.
+          </p>
+        ) : null}
 
-          {m.works.headlines.some((h) => h.reached > 0) && (
+        {m.works &&
+          m.works.reached > 0 &&
+          m.works.headlines.some((h) => h.reached > 0) && (
             <div className="worked-group">
               <span className="worked-label">Headline</span>
-              {m.works.headlines.filter((h) => h.reached > 0).slice(0, 2).map((h, i) => (
+              {m.works!.headlines.filter((h) => h.reached > 0).slice(0, 2).map((h, i) => (
                 <div className="worked-item" key={i}>
                   <p className="worked-quote">{h.text}</p>
                   <span className="worked-score" title={h.usedIn.join(", ")}>
@@ -248,10 +256,12 @@ export function Career(
             </div>
           )}
 
-          {m.works.summaries.some((x) => x.reached > 0) && (
+        {m.works &&
+          m.works.reached > 0 &&
+          m.works.summaries.some((x) => x.reached > 0) && (
             <div className="worked-group">
               <span className="worked-label">Summary</span>
-              {m.works.summaries.filter((x) => x.reached > 0).slice(0, 2).map((x, i) => (
+              {m.works!.summaries.filter((x) => x.reached > 0).slice(0, 2).map((x, i) => (
                 <div className="worked-item" key={i}>
                   <p className="worked-quote">{x.text}</p>
                   <span className="worked-score" title={x.usedIn.join(", ")}>
@@ -262,32 +272,24 @@ export function Career(
             </div>
           )}
 
-          <div className="worked-group">
-            <span className="worked-label">Bullets</span>
-            <p className="worked-note">
-              The entries below carry their own record on the right of each row. Green means it was
-              on a CV that reached an interview.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {m.works && m.works.reached === 0 && m.works.withCv > 0 && (
-        <p className="record-note">
-          {m.works.withCv} sent CVs are in the vault, none of which has reached an interview yet.
-          When one does, what worked will appear here and feed back into the writing.
-        </p>
-      )}
-
-      {unused > 0 && (
-        <p className="record-note">
-          <b>{unused}</b> {unused === 1 ? "entry has" : "entries have"} never been picked by
-          tailoring. That usually means badly written rather than irrelevant.{" "}
-          <button className="linkish" onClick={() => setFilter("unused")}>
-            Show them
-          </button>
-        </p>
-      )}
+        {/*
+          The entries live inside the same card as the headline and summary,
+          because they are the third row of the same record, not a separate
+          page below it. The search and the filters come with them: a control
+          that filters a list belongs to the list.
+        */}
+        <div className="worked-group worked-entries">
+          <span className="worked-label">Bullets</span>
+          <div className="worked-body">
+            {unused > 0 && (
+              <p className="record-note">
+                <b>{unused}</b> {unused === 1 ? "entry has" : "entries have"} never been picked by
+                tailoring. That usually means badly written rather than irrelevant.{" "}
+                <button className="linkish" onClick={() => setFilter("unused")}>
+                  Show them
+                </button>
+              </p>
+            )}
 
       {/*
         Controls, and then a list you can actually read.
@@ -417,6 +419,9 @@ export function Career(
           </section>
         );
       })}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

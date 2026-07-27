@@ -1418,7 +1418,18 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   display: inline-block; margin-block-start: 3px;
   font-size: 11.5px; color: var(--accent-deep); font-variant-numeric: tabular-nums;
 }
-.worked-note { grid-column: 2; margin: 0; font-size: 12px; color: var(--ink-3); line-height: 1.55; }
+/* The entries row of the record: search, filters and the list itself. */
+.worked-entries { align-items: start; }
+.worked-body { grid-column: 2; min-inline-size: 0; }
+.worked-body .record-note { margin: 0 0 12px; }
+/* Sticky against the viewport, with the card's own background so entries
+   scroll under it rather than through it. */
+.worked-body .career-controls {
+  margin-block-start: 0; padding-block: 10px;
+  background: var(--panel); border-block-end: 1px solid var(--line);
+}
+.worked-body .role:first-of-type { margin-block-start: 14px; }
+.worked-body .role { margin-block-start: 20px; }
 .record-note {
   margin: 10px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-2);
 }
