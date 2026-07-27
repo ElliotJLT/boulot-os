@@ -846,9 +846,10 @@ export function Workbench({
      */
     if (talking) {
       send(
-        `Application: active/${slug}. This has already been sent and the interview is what ` +
-          `is left. Do not edit cv.md, cover-letter.md or application-answers.md, and do not ` +
-          `write any new document: the employer already has them.` +
+        `Use the boulot:prep skill. Application: active/${slug}. This has already been sent ` +
+          `and the interview is what is left. Do not edit cv.md, cover-letter.md or ` +
+          `application-answers.md, and do not write any new document: the employer already ` +
+          `has them.` +
           attach("job_description", job, "job.md") +
           attach("research", text.research ?? "", "research.md") +
           attach("prep_notes", text.prep ?? "", "prep.md") +
