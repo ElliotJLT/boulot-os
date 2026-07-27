@@ -120,6 +120,59 @@ const SOURCES = [
   { key: "research", label: "Research" },
 ] as const;
 
+/**
+ * The stage sequence, as a person would say it.
+ *
+ * The same three words the board's columns use, because a card that lives in
+ * Interviewing and a header that says "screening" are two names for one fact.
+ */
+const STAGE_ORDER = ["drafting", "applied", "interviewing"] as const;
+
+const STAGE_LABEL: Record<string, string> = {
+  lead: "Prep",
+  drafting: "Prep",
+  applied: "Applied",
+  screening: "Interviewing",
+  interviewing: "Interviewing",
+  offer: "Interviewing",
+  "closed-won": "Closed",
+  "closed-lost": "Closed",
+};
+
+/**
+ * Line icons, inline.
+ *
+ * Four shapes at one weight, drawn here rather than pulled from a set: an icon
+ * library is 40kB and a build step to draw a bin, and every icon in this app
+ * sits next to a word that already says what it does.
+ */
+function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" }) {
+  const paths: Record<string, string> = {
+    download: "M8 2v8m0 0 3-3m-3 3L5 7M2.5 11.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1",
+    refresh: "M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13 2v3h-3",
+    archive: "M2.5 5.5h11m-10 0v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7m-7 0v-2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6.5 8v3m3-3v3",
+    chevron: "m4.5 6.5 3.5 3 3.5-3",
+  };
+  return (
+    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden focusable="false">
+      <path
+        d={paths[name]}
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** "2026-07-26" reads as a serial number. "26 July" reads as a day. */
+function longDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+}
+
 /** Frontmatter is plumbing; it should not be the first thing you read. */
 function stripFrontmatter(md: string): string {
   if (!md.startsWith("---")) return md;
@@ -144,6 +197,8 @@ export function Workbench({
   /** Extras the user has ticked. Play produces exactly the ticked list. */
   const [include, setInclude] = useState<Set<string>>(new Set());
   const [stage, setStage] = useState("");
+  const [appliedDate, setAppliedDate] = useState<string | null>(null);
+  const [menu, setMenu] = useState(false);
   const [docs, setDocs] = useState<Doc[]>([]);
   // The file name, not a boolean: older applications carry the CV under the
   // download filename rather than cv.pdf, and the viewer has to fetch by name.
@@ -211,6 +266,7 @@ export function Workbench({
     }
     setFit(d.fit ?? null);
     setStage(String(d.stage ?? ""));
+    setAppliedDate((d.appliedDate as string | null) ?? null);
     if (d.downloadName) setPdfName(String(d.downloadName));
     // Always keep cv and job in memory: the tweak box attaches them regardless
     // of which tab is showing, and the PDF tab has no markdown of its own.
@@ -429,13 +485,16 @@ export function Workbench({
   };
 
   /** Record that it went out, and let the board work out the date. */
-  const markApplied = async () => {
+  const setStageTo = async (next: string) => {
     await fetch(`/api/${who}/job/${slug}/stage`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ stage: "applied" }),
+      body: JSON.stringify({ stage: next }),
     });
-    setStage("applied");
+    setStage(next);
+    setMenu(false);
+    void refresh();
+    if (next !== "applied") return;
     /*
      * Say it happened.
      *
@@ -464,19 +523,20 @@ export function Workbench({
   };
 
   /*
-   * Sent, so there is nothing left to build.
+   * Talking to them is the line, not sending it.
    *
-   * The checklist offered to tailor a CV for an application that had already
-   * gone, over an empty CV pane, which is an invitation to edit a document the
-   * employer is holding. Past drafting the work changes shape: the documents
-   * are finished and the only thing left is the interview.
+   * Prep mode first triggered at "applied", which is a day too early: most
+   * applications never get a reply, and switching the panel to interview
+   * preparation the moment something goes out prepares you for a conversation
+   * that in the median case never happens. It also took away the checklist
+   * while the CV was still the only thing that mattered.
    *
-   * What replaces it is not a second checklist. The job description and the
-   * research are already here, which is all the context a conversation about
-   * the interview needs, so the panel becomes the conversation and a place to
-   * write things down.
+   * So an applied application keeps the build view. Once somebody replies —
+   * screen, interview, offer — the documents are settled and the only work
+   * left is the conversation, and that is when the panel changes.
    */
-  const sent = ["applied", "screening", "interviewing", "offer"].includes(stage) || justApplied;
+  const talking = ["screening", "interviewing", "offer"].includes(stage);
+  const sent = talking || stage === "applied" || justApplied;
 
   const done = (key: string) =>
     key === "pdf" ? pdfExists : Boolean(docs.find((d) => d.key === key)?.exists);
@@ -686,7 +746,7 @@ export function Workbench({
      * drafting it gets the job description, the research and the prep notes
      * instead, and one place to write.
      */
-    if (sent) {
+    if (talking) {
       send(
         `Application: active/${slug}. This has already been sent and the interview is what ` +
           `is left. Do not edit cv.md, cover-letter.md or application-answers.md, and do not ` +
@@ -762,7 +822,10 @@ export function Workbench({
         <div className="bench-actions">
           {fit && (
             <span className={`fit ${fit.fits ? "fit-ok" : "fit-over"}`}>
-              {fit.fits ? `${fit.pages}pp` : `${fit.pages}pp · ${fit.overflowMm}mm over`}
+              {/* "2pp" is a typesetter's word. Nobody else has ever used it. */}
+              {fit.fits
+                ? `${fit.pages} page${fit.pages === 1 ? "" : "s"}`
+                : `${fit.pages} pages · ${fit.overflowMm}mm over`}
             </span>
           )}
           {dirty ? (
@@ -771,37 +834,91 @@ export function Workbench({
             <span className="saving">Re-rendering the page…</span>
           ) : null}
           {pdfExists && (
-            <a className="ghost" href={`/api/${who}/job/${slug}/file/${encodeURIComponent(pdfFile ?? "cv.pdf")}`} download={pdfName}>
+            <a
+              className="ghost"
+              href={`/api/${who}/job/${slug}/file/${encodeURIComponent(pdfFile ?? "cv.pdf")}`}
+              download={pdfName}
+            >
+              <Icon name="download" />
               Download
             </a>
           )}
           {/*
-            The other thing you do on this screen: say you sent it.
-            
-            Dragging the card works too, but you are here when you actually
-            press submit on their form, and going back to the board to record
-            that is the kind of errand nobody runs.
-          */}
-          {stage !== "applied" && !stage.startsWith("closed") && (
-            <button className="ghost" onClick={() => void markApplied()}>
-              Mark as applied
-            </button>
-          )}
-          {/*
             Anything regenerable counts.
-            
+
             This checked only for a CV or a PDF, so an application that had a
             cover letter and nothing else offered no way to start over, which is
             exactly the state a first attempt leaves you in.
           */}
           {(pdfExists || ["cv", "cover", "questions"].some((k) => done(k))) && (
             <button className="ghost" disabled={Boolean(running)} onClick={() => void reset()}>
+              <Icon name="refresh" />
               Start over
             </button>
           )}
-          <button className="ghost" onClick={() => setFiling((f) => !f)}>
-            {filing ? "Cancel" : "Archive"}
-          </button>
+
+          {/*
+            Where it is, as one control.
+
+            "Mark as applied", "Mark as interviewing" and "Archive" are the same
+            question asked three times, and as three buttons they appeared and
+            disappeared depending on the answer to it: the header changed shape
+            as an application progressed, so the thing you were looking for was
+            never where it was last time. One menu holds the whole sequence,
+            always in the same place, with the current state written on it.
+
+            Archive is in here too, below a rule, because it is the same
+            decision (where has this got to) with a different consequence.
+          */}
+          <div className="statusmenu">
+            <button
+              className={`ghost status-trigger${menu ? " on" : ""}`}
+              onClick={() => setMenu((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menu}
+            >
+              <span className={`status-dot stage-${stage || "drafting"}`} />
+              {STAGE_LABEL[stage] ?? "Prep"}
+              <Icon name="chevron" />
+            </button>
+            {menu && (
+              <>
+                {/*
+                  Click anywhere to dismiss, which is the only way out people
+                  try. A div, not a button: as a button it inherited the header's
+                  filled-button styling and painted the entire viewport dark.
+                */}
+                <div className="menu-scrim" onClick={() => setMenu(false)} />
+                <div className="menu" role="menu">
+                  {STAGE_ORDER.map((st) => (
+                    <button
+                      key={st}
+                      role="menuitemradio"
+                      aria-checked={stage === st}
+                      className={stage === st ? "on" : ""}
+                      onClick={() => void setStageTo(st)}
+                    >
+                      <span className={`status-dot stage-${st}`} />
+                      {STAGE_LABEL[st]}
+                      {stage === st && <span className="tick">✓</span>}
+                    </button>
+                  ))}
+                  <div className="menu-rule" />
+                  <button
+                    role="menuitem"
+                    className="danger"
+                    onClick={() => {
+                      setMenu(false);
+                      setFiling((f) => !f);
+                    }}
+                  >
+                    <Icon name="archive" />
+                    {filing ? "Cancel archiving" : "Archive…"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -834,7 +951,7 @@ export function Workbench({
                     !NO_DOCUMENT.has(e.key) &&
                     (include.has(e.key) || docs.find((d) => d.key === e.key)?.exists),
                 ).map((e) => ({ key: e.key, label: e.key === "cover" ? "Cover letter" : "Questions" })),
-                ...(sent ? [PREP] : []),
+                ...(talking ? [PREP] : []),
               ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
                 const d = docs.find((x) => x.key === t.key);
@@ -927,7 +1044,7 @@ export function Workbench({
         </section>
 
         <section className="pane side">
-          {sent ? (
+          {talking ? (
             <div className="checklist">
               <div className="checklist-top">
                 <h3>{running ? (running ?? "Working") : "Prepare"}</h3>
@@ -938,9 +1055,8 @@ export function Workbench({
                 )}
               </div>
               <p className="prep-lede">
-                Sent. The job description and the research are on the left, so ask about the
-                interview and the answer goes in <b>Prep</b>, where you can write your own notes
-                beside it.
+                The job description and the research are on the left, so ask about the interview
+                and the answer goes in <b>Prep</b>, where you can write your own notes beside it.
               </p>
             </div>
           ) : (
@@ -1003,6 +1119,25 @@ export function Workbench({
               })}
             </ol>
             {cost > 0 && <p className="cost">£{(cost * 0.79).toFixed(2)} this session</p>}
+
+            {/*
+              What you sent, and the one thing left to do about it.
+
+              An applied application keeps the build view because the documents
+              are still the point, but the panel said nothing about the fact
+              that it had gone. This says when, and asks for the only piece of
+              information the app cannot get for itself: whether anyone
+              replied. A rejection is as useful as an interview here, because
+              the funnel is built from both and a board of applications that
+              are all still "applied" a month later teaches nothing.
+            */}
+            {stage === "applied" && (
+              <p className="applied-note">
+                {appliedDate ? <>You applied on <b>{longDate(appliedDate)}</b>.</> : <>You marked this as applied.</>}{" "}
+                Move it to Interviewing when they reply, or archive it when it ends. Both are how
+                Boulot learns what actually works for you.
+              </p>
+            )}
           </div>
           )}
 
@@ -1076,7 +1211,7 @@ export function Workbench({
             )}
             {!running && !activity.length && !turns.length && (
               <p className="hint">
-                {sent
+                {talking
                   ? "Ask what they are likely to push on, how to answer something, or what to ask them. Anything worth keeping goes into Prep."
                   : "Press play and Boulot writes the whole application, updating the documents on the left as it goes. Edit anything yourself, or ask for a change below."}
               </p>
@@ -1087,7 +1222,7 @@ export function Workbench({
             <textarea
               rows={2}
               value={ask}
-              placeholder={sent ? "Ask about the interview…" : "Tweak something…"}
+              placeholder={talking ? "Ask about the interview…" : "Tweak something…"}
               onChange={(e) => setAsk(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) tweak();

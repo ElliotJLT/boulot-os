@@ -175,6 +175,46 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 .back { font: inherit; font-size: 13px; background: none; border: 0; color: var(--ink-3); cursor: pointer; padding: 4px; }
 .back:hover { color: var(--ink); }
 
+/* Icons sit inside the button, at the same weight as the word beside them. */
+.bench-actions button, .bench-actions a { display: inline-flex; align-items: center; gap: 6px; }
+.bench-actions svg { opacity: 0.55; margin-inline-start: -2px; }
+.bench-actions button:hover svg, .bench-actions a:hover svg { opacity: 0.85; }
+
+/* Where it is, as one control that never moves. */
+.statusmenu { position: relative; }
+.status-trigger { padding-inline-end: 10px; }
+.status-trigger.on { background: var(--muted-bg); }
+.status-trigger svg { opacity: 0.4; }
+.status-dot {
+  inline-size: 7px; block-size: 7px; border-radius: 50%; flex: none;
+  background: var(--ink-3);
+}
+.status-dot.stage-drafting, .status-dot.stage-lead { background: var(--line-2); }
+.status-dot.stage-applied { background: var(--accent); }
+.status-dot.stage-interviewing, .status-dot.stage-screening, .status-dot.stage-offer {
+  background: var(--warn);
+}
+.menu-scrim { position: fixed; inset: 0; z-index: 20; background: transparent; }
+.menu {
+  position: absolute; inset-block-start: calc(100% + 6px); inset-inline-end: 0; z-index: 21;
+  min-inline-size: 190px; padding: 5px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: var(--shadow-lift);
+  display: grid; gap: 1px;
+}
+.bench-actions .menu button {
+  font: inherit; font-size: 13px; text-align: start; cursor: pointer;
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border: 0; border-radius: 7px; background: none; color: var(--ink-2);
+  inline-size: 100%;
+}
+.bench-actions .menu button:hover { background: var(--bg-2); }
+.bench-actions .menu button.on { color: var(--ink); font-weight: 500; background: none; }
+.menu .tick { margin-inline-start: auto; color: var(--accent); font-size: 11px; }
+.menu-rule { block-size: 1px; background: var(--line); margin: 4px 2px; }
+.bench-actions .menu .danger { color: var(--urgent); background: none; }
+.menu .danger svg { opacity: 0.7; }
+
 .bench-actions button, .bench-actions a {
   font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--ink); background: var(--ink); color: #fff; text-decoration: none;
@@ -420,6 +460,12 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
   animation: breathe 1.3s ease-in-out infinite;
 }
 
+.applied-note {
+  margin: 14px 0 0; padding-block-start: 12px;
+  border-block-start: 1px solid var(--line);
+  font-size: 12px; line-height: 1.55; color: var(--ink-3);
+}
+.applied-note b { color: var(--ink-2); font-weight: 600; }
 .prep-lede { margin: 10px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--ink-2); }
 .prep-lede b { color: var(--ink); font-weight: 600; }
 /* Working, with nothing to press: the ring alone, in the button's place. */

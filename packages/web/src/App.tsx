@@ -49,10 +49,27 @@ type Board = {
  * still says what stage it reached, and the board's job is to show what needs
  * work, not to model a funnel it already draws on the Insights page.
  */
+/*
+ * Three columns, and the third is the one worth having.
+ *
+ * It used to be Closed, which is a column for things that are over: it filled
+ * up, it was never read, and the one state the board could not show was the
+ * only state where anything is happening. Interviewing takes its place, and
+ * closing an application happens through Archive, which asks how it ended
+ * instead of guessing.
+ *
+ * "Anyone has replied" is the line between Applied and Interviewing, which is
+ * why screening sits on the right of it. A phone screen is a reply.
+ *
+ * closed-* is here to stop a card vanishing rather than because it belongs.
+ * An application closed but not yet archived would otherwise match no column
+ * and silently leave the board; it shows in Applied, dimmed, with Archive one
+ * click away.
+ */
 const COLUMNS: Array<{ key: string; label: string; stages: string[] }> = [
   { key: "drafting", label: "Prep", stages: ["lead", "drafting"] },
-  { key: "applied", label: "Applied", stages: ["applied", "screening", "interviewing", "offer"] },
-  { key: "closed", label: "Closed", stages: ["closed-won", "closed-lost"] },
+  { key: "applied", label: "Applied", stages: ["applied", "closed-won", "closed-lost"] },
+  { key: "interviewing", label: "Interviewing", stages: ["screening", "interviewing", "offer"] },
 ];
 
 /**
@@ -343,7 +360,7 @@ export function App() {
     if (!current || !target || target.stages.includes(current.stage)) return;
 
     setBoard((b) =>
-      b ? { ...b, applications: b.applications.map((a) => (a.slug === slug ? { ...a, stage: column === "closed" ? "closed-lost" : column } : a)) } : b,
+      b ? { ...b, applications: b.applications.map((a) => (a.slug === slug ? { ...a, stage: column } : a)) } : b,
     );
     await fetch(`/api/${who}/job/${slug}/stage`, {
       method: "POST",

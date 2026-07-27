@@ -385,12 +385,17 @@ app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
   "/api/:who/job/:slug/stage",
   async (req, reply) => {
     const stage = req.body?.stage;
+    /*
+     * Only what a column can mean.
+     *
+     * "closed" is gone with the column that wrote it: the board knew an
+     * application had ended and never knew how, so it wrote closed-lost and
+     * put a guess into the funnel. Archive asks.
+     */
     const ALLOWED: Record<string, string> = {
       drafting: "drafting",
       applied: "applied",
-      // Never "rejected": the board knows it ended, not how, and guessing an
-      // outcome here would put fiction into the funnel.
-      closed: "closed",
+      interviewing: "interviewing",
     };
     const value = stage ? ALLOWED[stage] : undefined;
     if (!value) return reply.code(400).send({ error: "unknown stage" });
@@ -568,6 +573,10 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
     })(),
     // The workbench needs it to know whether to offer "Mark as applied".
     stage: existsSync(join(dir, "status.md")) ? readApplication(join(dir, "status.md")).stage : null,
+    // And when, so it can say so rather than making you go and look.
+    appliedDate: existsSync(join(dir, "status.md"))
+      ? (readApplication(join(dir, "status.md")).appliedDate ?? null)
+      : null,
     fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,
   };
 });
