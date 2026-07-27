@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildProgress, Markdown, Thinking, collapse } from "./Activity.js";
 import { PrepDoc } from "./Prep.js";
 import { useSocket } from "./socket.js";
-import { MODELS } from "./models.js";
+import { AGENTS, MODELS, type AgentKey } from "./models.js";
 
 /**
  * The application workbench.
@@ -123,6 +123,78 @@ const SOURCES = [
 ] as const;
 
 /**
+ * The prep work worth doing, as one-click asks.
+ *
+ * Not a checklist with a play button. A checklist implies a sequence you work
+ * through and a state you can be behind on, and preparing for an interview is
+ * not that: you do the two or three that apply to this call and ignore the
+ * rest. These are shortcuts for questions the user would otherwise type out,
+ * which is the only reason they exist.
+ *
+ * Every one of them was asked for out loud while preparing for a real
+ * interview, rather than invented as a feature. That is the bar for adding
+ * another.
+ */
+const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
+  {
+    label: "What are they building",
+    hint: "The problem underneath the marketing, and why it is hard",
+    ask:
+      "What is this company actually building? Not their marketing sentence: the problem " +
+      "underneath it, why it is technically hard, and what breaks for a user when it goes " +
+      "wrong. Name the specific techniques or datasets involved if you can find them.",
+  },
+  {
+    label: "Brief me on the stack",
+    hint: "Basics I could be quizzed on, assuming I am new to it",
+    ask:
+      "Brief me on the technologies in this job description as though I have never used them. " +
+      "Plain language, short examples, and flag the one or two questions I am most likely to " +
+      "be asked. End with an honest line I can say about my actual level.",
+  },
+  {
+    label: "Why we chose what we chose",
+    hint: "Defensible reasons for my own past technical decisions",
+    ask:
+      "Go through the technical decisions in my own past work and give me the defensible " +
+      "reasons behind each one, so I can answer 'why did you use that'. Give me options to " +
+      "pick from rather than one answer, and say which ones connect to this company's problem.",
+  },
+  {
+    label: "Competitors and casualties",
+    hint: "Who else tried this, and what happened to them",
+    ask:
+      "Who else has tried to solve this problem, and what happened to them? Include the " +
+      "failures and what actually killed them, not just the survivors. Then say how this " +
+      "company's approach differs, and what question that leaves unanswered.",
+  },
+  {
+    label: "My work that connects",
+    hint: "Side projects and past work in their domain",
+    ask:
+      "Search my vault and my own projects for anything in this company's domain or that " +
+      "solves the same shape of problem. Tell me what to lead with, and how to raise it " +
+      "without it sounding like a pitch.",
+  },
+  {
+    label: "Who I am meeting",
+    hint: "The interviewer and the company, checked today",
+    ask:
+      "Who am I likely to be meeting, what should I know about them and the company, and what " +
+      "does their background suggest about the kind of interview this will be? Verify anything " +
+      "date-dependent against a live source and say when you could not.",
+  },
+  {
+    label: "Grill me",
+    hint: "A hostile mock interview, no encouragement",
+    ask:
+      "Run a mock interview for this role. Be genuinely tough. Interrupt vague answers, ask " +
+      "'what was the number' when a claim has none, and ask the hostile follow-up. Do not be " +
+      "encouraging. One question at a time.",
+  },
+];
+
+/**
  * The stage sequence, as a person would say it.
  *
  * The same three words the board's columns use, because a card that lives in
@@ -201,6 +273,21 @@ export function Workbench({
   const [stage, setStage] = useState("");
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
+  /*
+   * Remembered per browser, not per application.
+   *
+   * Which agent you want is a fact about how you work, not about this
+   * employer, and having to reset it on every screen would make the control
+   * cost more than it saves.
+   */
+  const [agent, setAgent] = useState<AgentKey>(
+    () => (localStorage.getItem("boulot.agent") as AgentKey) ?? "thinker",
+  );
+  const pickAgent = (k: AgentKey) => {
+    setAgent(k);
+    localStorage.setItem("boulot.agent", k);
+  };
+  const modelFor = () => AGENTS.find((a) => a.key === agent)?.model ?? MODELS.tailor;
   const composer = useRef<HTMLTextAreaElement>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   // The file name, not a boolean: older applications carry the CV under the
@@ -729,8 +816,16 @@ export function Workbench({
    * what gets reasoned about. Reading from disk would have quietly ignored
    * whatever you had just typed.
    */
-  const tweak = async () => {
-    const q = ask.trim();
+  /** A prep question, from a button rather than the box. */
+  const askPrep = (question: string) => {
+    if (running) return;
+    setAsk(question);
+    // Let the state land before the send reads it.
+    setTimeout(() => void tweak(question), 0);
+  };
+
+  const tweak = async (override?: string) => {
+    const q = (override ?? ask).trim();
     if (!q || running) return;
     if (dirty) await save();
 
@@ -771,7 +866,7 @@ export function Workbench({
           `preparation and is not.`,
         "Working",
         "tweak",
-        MODELS.tailor,
+        modelFor(),
         q,
       );
       setAsk("");
@@ -803,7 +898,7 @@ export function Workbench({
         `write anything.`,
       "Working",
       "tweak",
-      MODELS.tweak,
+      modelFor(),
       q,
     );
     setAsk("");
@@ -1075,9 +1170,21 @@ export function Workbench({
                 )}
               </div>
               <p className="prep-lede">
-                The job description and the research are on the left, so ask about the interview
-                and the answer goes in <b>Prep</b>, where you can write your own notes beside it.
+                The job description and the research are on the left. Anything you ask goes into{" "}
+                <b>Prep</b>, where you can edit it and write your own notes beside it.
               </p>
+              <div className="prep-actions">
+                {PREP_ACTIONS.map((a) => (
+                  <button
+                    key={a.label}
+                    title={a.hint}
+                    disabled={Boolean(running)}
+                    onClick={() => askPrep(a.ask)}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
           <div className="checklist">
@@ -1239,6 +1346,26 @@ export function Workbench({
           </div>
 
           <div className="composer">
+            {/*
+              Who you are asking, above the box you ask in.
+
+              Two, not five. A list of models is a decision you have to be
+              qualified to make; "quick" and "deep" is a decision about what you
+              are doing, which you already know.
+            */}
+            <div className="agent-pick">
+              {AGENTS.map((a) => (
+                <button
+                  key={a.key}
+                  className={agent === a.key ? "on" : ""}
+                  title={a.hint}
+                  onClick={() => pickAgent(a.key)}
+                >
+                  {a.label}
+                </button>
+              ))}
+              <span className="agent-hint">{AGENTS.find((a) => a.key === agent)?.hint}</span>
+            </div>
             <textarea
               ref={composer}
               rows={2}
@@ -1249,7 +1376,7 @@ export function Workbench({
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) tweak();
               }}
             />
-            <button onClick={tweak} disabled={Boolean(running) || !ask.trim()}>
+            <button onClick={() => void tweak()} disabled={Boolean(running) || !ask.trim()}>
               Send
             </button>
           </div>

@@ -16,6 +16,14 @@ to this role.
 
 Write `active/{company}/prep.md` with:
 
+0. **What they are actually building**, first, before anything about the
+   candidate. Not their marketing sentence: the problem underneath it, why it is
+   hard, and what breaks when it goes wrong. A prep document that opens with
+   likely questions assumes the candidate already understands the company, and
+   the whole reason interviews are lost is that they did not. If you cannot say
+   what is technically hard about this product in three sentences, the research
+   is not finished and the rest of the document is guesswork.
+
 1. **Likely questions**, grouped: background, technical, situational, and the
    one they will ask that the candidate is dreading.
 2. **A drafted answer per question**, drawn from real experience. Mark any
@@ -28,6 +36,10 @@ Write `active/{company}/prep.md` with:
 
 Every answer should land in 60 to 90 seconds spoken. Long answers are where
 people lose interviews.
+
+Bullets, not paragraphs. This is a document someone skims twenty minutes before
+a call, standing up, with their coat on. Prose is for the answers themselves;
+everything around them is a list.
 
 ## Mock interview
 

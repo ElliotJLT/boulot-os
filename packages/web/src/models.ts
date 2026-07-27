@@ -26,3 +26,33 @@ export const MODELS = {
   /** Turning a pasted CV into the master record on first run. */
   import: "claude-sonnet-5",
 } as const;
+
+/**
+ * Who you are talking to, when you get to choose.
+ *
+ * Everywhere else in the app the model is a decision the product has already
+ * made, and that is right: nobody opening a career tool wants to pick a model
+ * before they can ask a question. The conversation is the exception. Asking
+ * "what will they push on" and asking "shorten this line" are different jobs
+ * with an order-of-magnitude of cost between them, and the person typing knows
+ * which one they are doing.
+ *
+ * Named for the work rather than the model, because "Sonnet" is not a fact
+ * about what you are about to get.
+ */
+export const AGENTS = [
+  {
+    key: "quick",
+    label: "Quick",
+    hint: "Edits, rewrites, small questions",
+    model: "claude-sonnet-5",
+  },
+  {
+    key: "thinker",
+    label: "Deep",
+    hint: "Strategy, hard questions, anything you will say out loud",
+    model: "claude-opus-4-8",
+  },
+] as const;
+
+export type AgentKey = (typeof AGENTS)[number]["key"];
