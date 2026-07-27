@@ -107,6 +107,58 @@ export function PrepDoc({
   const [picked, setPicked] = useState<{ text: string; x: number; y: number } | null>(null);
   const pane = useRef<HTMLDivElement>(null);
 
+  /*
+   * Dismiss it the way anything floating gets dismissed.
+   *
+   * The button only cleared on a mouse-up inside a block with nothing
+   * selected, so every other way of moving on left it behind: clicking the
+   * margin, clicking the conversation, scrolling, pressing Escape, or just
+   * clearing the selection with a keystroke. It sat over the text it was
+   * offering to help with, which is the one place it must not sit once you
+   * have stopped caring about it.
+   *
+   * Listening on the document rather than the pane, because the click that
+   * means "not that" usually lands outside the pane entirely.
+   */
+  useEffect(() => {
+    if (!picked) return;
+
+    const dismiss = (e: Event) => {
+      // Its own click has to survive long enough to fire.
+      if ((e.target as HTMLElement | null)?.closest?.(".ask-about")) return;
+      setPicked(null);
+    };
+    const onSelection = () => {
+      if (!window.getSelection()?.toString().trim()) setPicked(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      /*
+       * Drop the highlight, not just the button.
+       *
+       * Escape that hides the button and leaves the text selected looks like it
+       * worked and is not finished: the next drag starts inside a live
+       * selection, which the browser reads as picking the text up to move it
+       * rather than as selecting something new, so the offer never comes back.
+       * Escape means "forget that passage", so forget all of it.
+       */
+      setPicked(null);
+      window.getSelection()?.removeAllRanges();
+    };
+
+    document.addEventListener("mousedown", dismiss, true);
+    document.addEventListener("selectionchange", onSelection);
+    document.addEventListener("keydown", onKey);
+    // Capture, because the pane scrolls rather than the page.
+    document.addEventListener("scroll", dismiss, true);
+    return () => {
+      document.removeEventListener("mousedown", dismiss, true);
+      document.removeEventListener("selectionchange", onSelection);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("scroll", dismiss, true);
+    };
+  }, [picked]);
+
   const write = (next: string[]) =>
     onChange(`${front}${front ? "\n" : ""}${next.filter((b) => b.trim()).join("\n\n")}\n`);
 
