@@ -185,6 +185,16 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
       "date-dependent against a live source and say when you could not.",
   },
   {
+    label: "Questions to ask",
+    hint: "Ones that are genuinely unanswered, not a quiz",
+    ask:
+      "Give me questions to ask them. Every one must be genuinely unanswered — if the answer " +
+      "is on their site, in a press release or in the job description, it is a quiz and they " +
+      "will know it. Each should reveal a tradeoff I understand, and each should have an " +
+      "answer that changes whether I would take the job or what I would do first. Give me a " +
+      "follow-up for each, and say what each one signals about me.",
+  },
+  {
     label: "Grill me",
     hint: "A hostile mock interview, no encouragement",
     ask:

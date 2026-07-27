@@ -56,8 +56,30 @@ Then, in this order:
    the first month if they do not.
 4. **Competitors and casualties** — who else tried this and what actually killed
    them, how this company's shape differs, and what that leaves unanswered.
-5. **What to ask them.** Four at most, each revealing that the research
-   happened. A question that could be asked of any company is worse than none.
+5. **What to ask them.** The hardest section to get right and the one that is
+   usually padding. Four or five, each passing all three tests:
+
+   - **Genuinely unanswered.** If the answer is on their site, in a press
+     release or in the job description, it is a quiz and they will know it.
+     Write the question you could not resolve while researching.
+   - **Reveals a tradeoff you understand.** The good shape is "you could have
+     done X or Y — which did you pick and what did it cost you". That shows the
+     candidate knows both options exist, which is the thing being assessed.
+   - **The candidate actually wants the answer**, because it changes whether
+     they would take the job or what they would do in the first month.
+
+   Never ask a question whose answer you think you already know: interviewers
+   can smell a test and it reads as arrogance. Never ask what the culture is
+   like. Have one follow-up ready for each, because the follow-up is where the
+   conversation actually happens.
+
+   Productive shapes, when nothing better presents itself:
+
+   - **The fork** — two strategies are visible from outside; which one is real?
+   - **The cost** — what have you accepted because of the stage you are at?
+   - **The retreat** — what have you shipped and then pulled back?
+   - **The unglamorous** — what is hard about this that nobody outside would
+     guess?
 6. **The number** — the band, whether it is light for the title, the walk-away
    decided before the call rather than during it, and what to ask about equity.
 7. **A technical brief**, only if the job description names something the
