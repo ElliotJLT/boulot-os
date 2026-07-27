@@ -29,6 +29,24 @@ export interface Details {
    * recipient can find again, and different people file things differently.
    */
   filename: string;
+  /*
+   * What you will not take, written down before you are tempted.
+   *
+   * These exist because the expensive part of a bad application is not the
+   * tokens, it is the evening. A role paying twenty thousand less than you can
+   * accept, in a city you will not move to, at a company you have already
+   * decided against, costs a research pass and an hour of reading before you
+   * remember any of that. Written down once, they are checked before the work
+   * starts rather than remembered afterwards.
+   *
+   * Free text rather than structured fields on purpose. "£90k, or £80k with
+   * real equity" is a real constraint and no number picker can hold it, and the
+   * thing reading these is a language model.
+   */
+  minSalary: string;
+  /** Where you will and will not work: "London or remote, no relocation". */
+  locationRules: string;
+  avoid: string;
 }
 
 export const DEFAULT_FILENAME = "{name} - {role} (CV)";
@@ -42,6 +60,9 @@ const FIELDS: Array<[keyof Details, string]> = [
   ["location", "Location"],
   ["headline", "Headline"],
   ["filename", "Filename"],
+  ["minSalary", "Minimum salary"],
+  ["locationRules", "Location rules"],
+  ["avoid", "Will not apply to"],
 ];
 
 const empty = (): Details => ({
@@ -53,6 +74,9 @@ const empty = (): Details => ({
   github: "",
   location: "",
   filename: DEFAULT_FILENAME,
+  minSalary: "",
+  locationRules: "",
+  avoid: "",
 });
 
 /**

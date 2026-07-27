@@ -14,6 +14,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import puppeteer from "puppeteer";
 import { mkdtempSync, rmSync } from "node:fs";
+import { checkAts } from "./ats.mjs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { findBrowser, describeBrowser } from "./find-browser.mjs";
@@ -1179,7 +1180,7 @@ async function measureLayout(page, budgetPx) {
 }
 
 /** Print the fit report and write the machine-readable sidecar. */
-function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, sidecarPath, markdown }) {
+function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, sidecarPath, markdown, ats }) {
   /*
    * Voice, measured rather than trusted.
    *
@@ -1229,6 +1230,7 @@ function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, si
   const report = {
     fits,
     voice,
+    ats,
     pages,
     maxPages,
     pageCountSource: actualPages != null ? "pdf" : "estimated",
@@ -1247,6 +1249,27 @@ function reportFit({ layout, actualPages, estimatedPages, maxPages, budgetPx, si
   };
 
   writeFileSync(sidecarPath, `${JSON.stringify(report, null, 2)}\n`);
+
+  /*
+   * The ATS line goes first, because it is the only pass/fail here that stops
+   * the document being read at all. A CV that fits perfectly and cannot be
+   * parsed is worse than one that runs long.
+   */
+  if (ats?.checked) {
+    const fatal = ats.problems.filter((x) => x.severity === "fatal");
+    const warn = ats.problems.filter((x) => x.severity === "warn");
+    console.log("\n─── MACHINE READ ─────────────────────────────────────────");
+    if (!fatal.length && !warn.length) {
+      console.log(`  ✓ Parses cleanly. Name, email${ats.found?.phone ? " and phone" : ""} all readable.`);
+    }
+    for (const x of [...fatal, ...warn]) {
+      console.log(`  ${x.severity === "fatal" ? "✗" : "!"} ${x.what}`);
+      console.log(`      ${x.detail}`);
+    }
+  } else if (ats && !ats.checked) {
+    console.log("\n─── MACHINE READ ─────────────────────────────────────────");
+    console.log(`  – Not checked: ${ats.reason}`);
+  }
 
   console.log("\n─── FIT REPORT ───────────────────────────────────────────");
   console.log(`  Pages: ${pages} (target ${maxPages})${actualPages == null ? "  [estimated — could not read page count from PDF]" : ""}`);
@@ -1424,6 +1447,21 @@ await page.pdf({
 await browser.close();
 rmSync(profileDir, { recursive: true, force: true });
 
+/*
+ * What the first reader sees.
+ *
+ * Everything above measures the PDF as a picture. The first thing that reads a
+ * CV is a parser pulling a text layer out of the file, and if the name and the
+ * email do not survive that, nobody ever looks at the layout we just spent all
+ * this effort measuring. Done after the file is closed, against the real PDF on
+ * disk, because the point is to check the artefact rather than the intention.
+ */
+const ats = checkAts(outputPath, {
+  name: cv.name ?? null,
+  email: (cv.contactParts ?? []).find((p) => p.includes("@")) ?? null,
+  sections: (cv.sections ?? []).map((s) => s.title).filter(Boolean),
+});
+
 const stats = readFileSync(outputPath);
 console.log(`Written: ${outputPath} (${(stats.length / 1024).toFixed(1)}KB)`);
 
@@ -1435,6 +1473,7 @@ const fits = reportFit({
   budgetPx,
   sidecarPath: outputPath.replace(/\.pdf$/, ".fit.json"),
   markdown,
+  ats,
 });
 
 // Exit 3 = rendered fine, but longer than the target. The PDF is still written

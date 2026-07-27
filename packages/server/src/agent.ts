@@ -1,5 +1,5 @@
 import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
-import { whatWorked, readVault } from "@boulot/core";
+import { whatWorked, readVault, readDetails } from "@boulot/core";
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
 import { resolve, relative, isAbsolute, dirname, basename } from "node:path";
@@ -428,6 +428,26 @@ function memoryContext(vaultRoot: string, person: string): string {
   const outcomes = read("profile", "outcomes.md");
 
   /*
+   * Deal-breakers, above everything else in the prompt.
+   *
+   * The cheapest application is the one not written. These are the constraints
+   * the person set when they were thinking clearly, and the moment they matter
+   * is before a research pass has been spent, not after an evening has.
+   */
+  let breakers = "";
+  try {
+    const d = readDetails(resolve(vaultRoot, person));
+    const lines = [
+      d.minSalary ? `- Minimum salary: ${d.minSalary}` : "",
+      d.locationRules ? `- Location: ${d.locationRules}` : "",
+      d.avoid ? `- Will not apply to: ${d.avoid}` : "",
+    ].filter(Boolean);
+    if (lines.length) breakers = lines.join("\n");
+  } catch {
+    /* no profile, no constraints */
+  }
+
+  /*
    * What has actually worked, computed fresh at the start of every run.
    *
    * The bullet match already feeds usage back through consolidation, but the
@@ -467,7 +487,7 @@ function memoryContext(vaultRoot: string, person: string): string {
     /* a vault that cannot be read simply contributes nothing here */
   }
 
-  if (!text && !lessons && !outcomes && !worked) return "";
+  if (!text && !lessons && !outcomes && !worked && !breakers) return "";
   return [
     "",
     ...(lessons
@@ -488,6 +508,19 @@ function memoryContext(vaultRoot: string, person: string): string {
     "different tool and are not available here. Do not try them, and do not search",
     "for them inside the vault either. If something is not here, say so and carry on.",
     "",
+    ...(breakers
+      ? [
+          "# Deal-breakers",
+          "",
+          "Constraints this person set in advance. Check a new role against them BEFORE",
+          "researching it or writing anything. If a role breaks one, say so plainly and",
+          "ask whether to continue rather than carrying on: the point of these is to save",
+          "an evening, and that only works if the check happens first.",
+          "",
+          breakers,
+          "",
+        ]
+      : []),
     ...(worked
       ? ["# What has actually worked", "", worked, ""]
       : []),

@@ -178,42 +178,22 @@ export function Career(
       )}
 
       {/*
-        Three bars, and they are the filters.
+        The three bars that used to sit here are gone.
 
-        The verdict sentence said the numbers and the chips repeated them, so
-        the same three facts appeared twice in different clothes. A bar shows a
-        proportion, which is the thing a number cannot: "8 have earned an
-        interview" means nothing without the denominator, and "8 of 16" is a
-        different feeling from "8 of 90".
+        "Used in a CV 19/24" and "Carry a figure 14/24" are proportions of an
+        evidence bank, and a proportion implies a target. There is no right
+        percentage of your career that should carry a figure, so the bar drew a
+        goal line where none exists and invited progress towards a number that
+        means nothing.
 
-        Clicking a bar filters to it, so the progress and the control are the
-        same object. A number you cannot act on is decoration, and this page had
-        four of them.
+        Worse, they were the third telling of the same three facts: the filter
+        chips carry the counts and act on them, and the never-picked line below
+        says the one thing worth doing about it. Three representations, one of
+        which was actionable.
+
+        The proportion that does mean something is applications to replies, and
+        that lives in the panel below, where the denominator is real.
       */}
-      <div className="record">
-        {[
-          { key: "proven" as Filter, label: "Earned an interview", n: proven, tone: "good" },
-          { key: "all" as Filter, label: "Used in a CV", n: m.totals.used, tone: "" },
-          { key: "no-number" as Filter, label: "Carry a figure", n: m.totals.withNumbers, tone: "" },
-        ].map((row) => (
-          <button
-            key={row.label}
-            className={`bar ${row.tone}${filter === row.key ? " on" : ""}`}
-            onClick={() => setFilter(filter === row.key ? "all" : row.key)}
-          >
-            <span className="bar-label">{row.label}</span>
-            <span className="bar-track">
-              <span
-                className="bar-fill"
-                style={{ inlineSize: `${Math.round((row.n / Math.max(1, m.totals.bullets)) * 100)}%` }}
-              />
-            </span>
-            <span className="bar-n">
-              {row.n}<em>/{m.totals.bullets}</em>
-            </span>
-          </button>
-        ))}
-      </div>
 
       {/*
         What has worked, laid out the way a CV is laid out.

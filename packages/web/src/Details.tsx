@@ -21,6 +21,9 @@ type Details = {
   github: string;
   location: string;
   filename: string;
+  minSalary: string;
+  locationRules: string;
+  avoid: string;
 };
 
 const FIELDS: Array<{ key: keyof Details; label: string; hint?: string; placeholder: string }> = [
@@ -107,6 +110,51 @@ export function Details({ who }: { who: string }) {
             {f.hint && <em>{f.hint}</em>}
           </label>
         ))}
+      </div>
+
+      {/*
+        What you will not take, written down before you are tempted.
+        
+        The expensive part of a bad application is not the tokens, it is the
+        evening. Written here once, these are checked before the research pass
+        rather than remembered after it.
+        
+        Free text rather than pickers, because "£90k, or £80k with real equity"
+        is a real constraint that no number field can hold, and the thing
+        reading it is a language model.
+      */}
+      <h3 className="second">Deal-breakers</h3>
+      <p className="lede">
+        Checked before any work starts on a new role. Anything that breaks one of these gets
+        flagged rather than researched. Leave blank to skip.
+      </p>
+      <div className="detail-grid">
+        <label>
+          <span>Minimum salary</span>
+          <input
+            value={d.minSalary ?? ""}
+            placeholder="£90,000, or £80,000 with real equity"
+            onChange={(e) => set("minSalary", e.target.value)}
+          />
+          <em>In your words. It is read, not parsed.</em>
+        </label>
+        <label>
+          <span>Location rules</span>
+          <input
+            value={d.locationRules ?? ""}
+            placeholder="London or fully remote. No relocation, no 5 days in office"
+            onChange={(e) => set("locationRules", e.target.value)}
+          />
+        </label>
+        <label className="wide">
+          <span>Will not apply to</span>
+          <input
+            value={d.avoid ?? ""}
+            placeholder="Companies, sectors or role types you have already ruled out"
+            onChange={(e) => set("avoid", e.target.value)}
+          />
+          <em>Named companies, whole sectors, or shapes of role. Whatever you would regret.</em>
+        </label>
       </div>
 
       <h3 className="second">Downloaded file name</h3>

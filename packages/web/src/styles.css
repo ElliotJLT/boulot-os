@@ -1361,38 +1361,7 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 
 /* The record, as three proportions that are also the filters. */
 .record { display: grid; gap: 6px; margin: 18px 0 0; }
-.record {
-  display: grid; gap: 0; margin: 18px 0 0;
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-  box-shadow: var(--shadow); overflow: hidden;
-}
-.bar {
-  display: flex; align-items: center; gap: 16px; inline-size: 100%;
-  font: inherit; text-align: start; cursor: pointer;
-  padding: 13px 18px; border: 0; background: none;
-  border-block-end: 1px solid var(--line);
-  transition: background 140ms ease;
-}
-.bar:last-child { border-block-end: 0; }
-.bar:hover { background: var(--bg-2); }
-.bar.on { background: var(--accent-soft); }
-.bar-label { font-size: 13px; color: var(--ink-2); min-inline-size: 156px; }
-.bar.on .bar-label { color: var(--accent-deep); font-weight: 500; }
-.bar-track {
-  flex: 1; block-size: 5px; border-radius: 999px; background: var(--bg-2); overflow: hidden;
-}
-.bar.on .bar-track { background: rgb(63 107 74 / 12%); }
-.bar-fill {
-  display: block; block-size: 100%; border-radius: 999px; background: var(--line-2);
-  transition: inline-size 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.bar.good .bar-fill { background: var(--accent); }
-.bar-n {
-  font-family: var(--serif); font-size: 16px; color: var(--ink);
-  font-variant-numeric: tabular-nums; min-inline-size: 64px; text-align: end;
-}
-.bar-n em { font-style: normal; color: var(--ink-3); font-size: 12px; font-family: Inter, sans-serif; }
-
+/* The never-picked prompt: the one actionable fact the bars used to bury. */
 /* What has worked: the sentences that earned replies, laid out like the CV
    they came from. One accent meaning, same as everywhere: it earned something. */
 .worked {
@@ -1431,7 +1400,7 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .worked-body .role:first-of-type { margin-block-start: 14px; }
 .worked-body .role { margin-block-start: 20px; }
 .record-note {
-  margin: 10px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-2);
+  margin: 16px 0 0; font-size: 13px; line-height: 1.6; color: var(--ink-2);
 }
 .record-note b { color: var(--warn); }
 .career .tagrow { display: flex; flex-wrap: wrap; gap: 5px; margin-block: 10px 0; }

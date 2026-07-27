@@ -5,6 +5,24 @@ description: Start tracking a new role from a job link or pasted description. Us
 
 # Start a new application
 
+
+## Check the deal-breakers first
+
+If the prompt carries a Deal-breakers section, test the posting against it
+before doing anything else. Salary band, location and working pattern are
+usually in the posting itself, so this costs one read rather than a research
+pass.
+
+If the role breaks one, say which and stop:
+
+> This pays £70,000–90,000 and your floor is £90,000. Want me to set it up
+> anyway?
+
+Then do as you are told. The point is not to refuse work, it is to make the
+person decide before an evening goes into it rather than after. A role that
+breaks a deal-breaker and gets set up anyway is fine; a role that breaks one
+silently is the failure.
+
 ## Step 1: Get the job description
 
 If given a **URL**, call `boulot_fetch_job` first, always. Ashby, Greenhouse,
