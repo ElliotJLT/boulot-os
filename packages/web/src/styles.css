@@ -1078,13 +1078,34 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .answer .md-table td:last-child { font-weight: 500; color: var(--ink); white-space: nowrap; }
 
 /* ── Your details ─────────────────────────────────────────────────────── */
-.details h3 { font-family: var(--serif); font-size: 15px; margin: 0 0 6px; }
-.details h3.second { margin-block-start: 34px; }
-.details .lede { font-size: 13px; color: var(--ink-2); margin: 0 0 18px; max-inline-size: 62ch; line-height: 1.6; }
+/* A form has a measure, and it is not the width of the window.
+   
+   The pane is up to 1600px, and auto-fit columns took all of it: name, headline,
+   email and phone landed in one row of four, LinkedIn and GitHub in another row
+   of three, and nothing lined up with anything above it. A settings form reads
+   as a form when it is a column of pairs, not a grid that reflows differently
+   for every section. */
+.details { max-inline-size: 760px; }
+.details h3 { font-family: var(--serif); font-size: 16px; margin: 0 0 6px; }
+.details h3.second {
+  margin-block-start: 40px; padding-block-start: 28px;
+  border-block-start: 1px solid var(--line);
+}
+.details .lede { font-size: 13px; color: var(--ink-2); margin: 0 0 20px; max-inline-size: 62ch; line-height: 1.6; }
 .details code { font-size: 12px; background: var(--muted-bg); padding: 2px 6px; border-radius: 4px; }
-.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-.detail-grid label { display: grid; gap: 5px; }
-.detail-grid label.wide { grid-column: 1 / -1; max-inline-size: 520px; }
+
+.detail-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px; align-items: start;
+}
+/* Explicit rows, so a two-line hint under one field cannot push the input
+   beside it out of line. Label, input, hint — always in that order, always at
+   the same height. */
+.detail-grid label {
+  display: grid; grid-template-rows: 18px auto auto; gap: 6px; align-content: start;
+}
+.detail-grid label.wide { grid-column: 1 / -1; }
+@media (max-width: 720px) { .detail-grid { grid-template-columns: minmax(0, 1fr); } }
 .detail-grid span { font-size: 12.5px; font-weight: 500; color: var(--ink); }
 .detail-grid input {
   font: inherit; font-size: 13.5px; padding: 9px 12px;
