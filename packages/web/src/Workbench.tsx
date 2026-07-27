@@ -359,13 +359,30 @@ export function Workbench({
     const d = await fetch(`/api/${who}/job/${slug}/docs`).then((r) => r.json());
     setDocs(d.docs ?? []);
     setPdfFile(d.pdf ?? null);
-    if (d.pdf && !chosen.current) {
-      chosen.current = true;
-      tabRef.current = "pdf";
-      setTab("pdf");
+    /*
+     * Open on the thing this stage is about.
+     *
+     * The PDF is the right landing tab while an application is being built,
+     * because the rendered CV is what you are judging. Once someone has replied
+     * it is the wrong one: you are not looking at the CV any more, you are
+     * preparing for a conversation, and Prep was two clicks away every single
+     * time.
+     */
+    const st = String(d.stage ?? "");
+    const talkingNow = ["screening", "interviewing", "offer"].includes(st);
+    if (!chosen.current) {
+      if (talkingNow && d.docs?.some((x: Doc) => x.key === "prep" && x.exists)) {
+        chosen.current = true;
+        tabRef.current = "prep";
+        setTab("prep");
+      } else if (d.pdf) {
+        chosen.current = true;
+        tabRef.current = "pdf";
+        setTab("pdf");
+      }
     }
     setFit(d.fit ?? null);
-    setStage(String(d.stage ?? ""));
+    setStage(st);
     setAppliedDate((d.appliedDate as string | null) ?? null);
     if (d.downloadName) setPdfName(String(d.downloadName));
     // Always keep cv and job in memory: the tweak box attaches them regardless
