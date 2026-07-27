@@ -74,15 +74,15 @@
   .hero h1{font-size:clamp(2.5rem,5.6vw,4.3rem);margin-top:22px;color:#222c25;font-weight:600;letter-spacing:-.015em;
     text-shadow:0 1px 1px rgba(255,255,255,.4),0 2px 24px rgba(252,248,240,.5)}
   .hero h1 .hl{color:var(--accent-deep);font-style:italic}
-  .hero .sub{font-size:clamp(17px,2.1vw,20px);color:#27302a;margin-top:20px;max-width:500px;line-height:1.55;
+  .hero .sub{font-size:clamp(17px,2.1vw,20px);color:#27302a;margin-top:20px;max-width:580px;line-height:1.55;
     text-shadow:0 1px 2px rgba(252,248,240,.9)}
   .hero .btns{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
 
   /* generic section */
   section{padding:clamp(72px,11vw,128px) 0;position:relative}
-  .intro{max-width:680px}
-  h2.head{font-size:clamp(1.9rem,3.6vw,2.8rem);margin-top:14px;max-width:18ch}
-  .lead{color:var(--muted);font-size:19px;margin-top:18px;max-width:62ch}
+  .intro{max-width:840px}
+  h2.head{font-size:clamp(1.9rem,3.6vw,2.8rem);margin-top:14px;max-width:22ch}
+  .lead{color:var(--muted);font-size:19px;margin-top:18px;max-width:70ch}
   .soft{background:linear-gradient(180deg,#fff7ec,var(--cream))}
 
   .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:46px}
@@ -100,7 +100,7 @@
   .stat{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 28px;box-shadow:0 1px 2px rgba(60,50,30,.03)}
   .stat .big{font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.4rem);color:var(--accent-deep);line-height:1;font-weight:600}
   .stat .cap{color:var(--muted);font-size:15px;margin-top:10px}
-  .retro-note{margin-top:24px;color:var(--dim);font-size:14.5px;max-width:60ch}
+  .retro-note{margin-top:24px;color:var(--dim);font-size:14.5px;max-width:72ch}
 
   /* how it works — numbered steps */
   .flow{margin-top:46px;display:grid;gap:16px}
@@ -124,7 +124,7 @@
   tbody td.col-b{color:var(--ink);font-weight:600}
   tr:last-child td,tr:last-child th{border-bottom:none}
   .honest{margin-top:30px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--leaf);
-    border-radius:14px;padding:22px 24px;color:var(--muted);font-size:16px;max-width:780px}
+    border-radius:14px;padding:22px 24px;color:var(--muted);font-size:16px;max-width:960px}
   .honest b{color:var(--ink)}
 
   /* setup steps */
@@ -245,7 +245,7 @@
     <div class="hero-inner"><div class="wrap"><div class="hero-copy">
       <span class="badge"><span class="dot"></span>Free &amp; open source · runs on your own laptop</span>
       <h1>Hiring is run by robots now. Boulot is <span class="hl">your edge</span>.</h1>
-      <p class="sub">Your CV gets screened by bots, recruiters run on autopilot, and everyone's firing off the same 200 applications. Boulot is the AI on your side. It knows everything you've done and turns it into applications the screeners can't ignore.</p>
+      <p class="sub">Your CV gets screened by bots, recruiters run on autopilot, and everyone's firing off the same 200 applications. Boulot is the AI on your side. It knows everything you've done, remembers which wording actually earned interviews, and turns it into applications the screeners can't ignore.</p>
       <div class="btns">
         <a class="btn primary" href="https://github.com/ElliotJLT/boulot-os">Get it free on GitHub</a>
         <a class="btn ghost" href="#how">See how it works</a>
@@ -292,8 +292,8 @@
     <div class="frow reveal"><span class="n">1</span><div><h3>It learns the real you</h3><p>The first time you run it, it interviews you and writes a living profile and a master CV that hold everything you've ever done, every role and every number. That's what each new CV gets built from, and it grows as you do. It never invents anything.</p></div></div>
     <div class="frow reveal"><span class="n">2</span><div><h3>It runs your pipeline</h3><p>Roles move from "maybe" to "applying" to "done." It researches each company for you: news, funding, who you'd report to, any red flags. And it helps you find the ones actually worth your time.</p></div></div>
     <div class="frow reveal"><span class="n">3</span><div><h3>It builds each application by hand</h3><p>For every role it pulls the right bullets from your master CV, then three agents argue over the draft: the hiring manager, a sharp second reader, and a strategist hunting your hidden strengths. They go at it until the draft holds up, and you get the version that survived.</p></div></div>
-    <div class="frow reveal"><span class="n">4</span><div><h3>It gets you ready</h3><p>Cover letters that say something true about <i>that</i> company, then a proper mock interview: a friendly interviewer, a hostile one, and someone who finds exactly where you're bluffing. By the time the real one comes round, you've already had the hard version.</p></div></div>
-    <div class="frow reveal"><span class="n">5</span><div><h3>It tracks everything and learns</h3><p>What's stale, what's next, what's landing. Every application teaches it something, so the next one is sharper. The grind stops living in your head.</p></div></div>
+    <div class="frow reveal"><span class="n">4</span><div><h3>It gets you ready for the room</h3><p>When they reply, the app switches with you: a prep document that opens with what the company is actually building, the thing they'll probe, questions worth asking, and your number. Highlight any line and ask about it. Then a proper mock: a tough interviewer who interrupts vague answers and asks for the figure.</p></div></div>
+    <div class="frow reveal"><span class="n">5</span><div><h3>Every rejection makes the next one sharper</h3><p>It keeps the record most tools throw away: which headline earned an interview, which summary never got a reply, what you learned when one ended. When you archive an application you can write one honest sentence about why, and the agent reads all of it before it writes the next CV. Your search stops repeating its own mistakes.</p></div></div>
   </div>
 </div></section>
 
@@ -387,18 +387,21 @@
     </div>
 
     <div class="show reveal">
-      <h3>A record that tells you what is working</h3>
-      <p>Your master CV is not a document, it is a log. Boulot reads it as one, and crosses it with what actually happened.</p>
-      <pre class="term">  <span class="c">WORTH DOING</span>
-  Zero Gravity is still marked "Feb 2022 – Present"
-    <span class="g">→ An out-of-date end date goes out on every CV.</span>
+      <h3>It remembers what earned interviews</h3>
+      <p>The headline and summary are the most rewritten sentences on any CV — and most tools forget every version the moment it's sent. Boulot keeps the score, and starts the next CV from a version that got a reply.</p>
+      <pre class="term">  <span class="c">WHAT HAS WORKED</span>  <span class="g">from 29 CVs on file, 5 reached interview</span>
 
-  10 entries carry no figure
-    <span class="g">→ A claim without a number reads as an opinion.</span>
+  <span class="c">HEADLINE</span>
+  "Product engineer for regulated, AI-native systems"
+    <span class="g">→ 2 of 3 reached interview</span>
 
-  <span class="c">EARNED AN INTERVIEW</span>
-  3/18  Shipped internal tooling and API integrations…
-  2/3   Drove code-first culture transformation…</pre>
+  <span class="c">SUMMARY</span>
+  "I take models from demo to dependable…"
+    <span class="g">→ 1 of 1 reached interview</span>
+
+  <span class="c">BULLETS</span>
+  2 of 9 → interview   Led design and build of an AI assistant…
+  2 of 5 → interview   Built evaluation infrastructure from scratch…</pre>
     </div>
   </div>
 </div></section>
@@ -416,6 +419,7 @@
       <tr><th>Built for</th><td>Volume</td><td>Matches in their network</td><td>Staying organised</td><td class="col-b">Making each application great</td></tr>
       <tr><th>Your CV is</th><td>One PDF, sprayed everywhere</td><td>A profile in their database</td><td>Scored by a bolt-on</td><td class="col-b">Rebuilt &amp; stress-tested per role</td></tr>
       <tr><th>Interview prep</th><td>None</td><td>Light</td><td>Light</td><td class="col-b">A real, tough mock</td></tr>
+      <tr><th>After a rejection</th><td>Nothing</td><td>A new match</td><td>You update a label</td><td class="col-b">It logs why, and writes the next one differently</td></tr>
       <tr><th>Your data lives</th><td>Their cloud</td><td>Their cloud</td><td>Their cloud</td><td class="col-b">On your laptop</td></tr>
       <tr><th>Cost</th><td>Monthly fee</td><td>Free, but their goals ≠ yours</td><td>Monthly fee</td><td class="col-b">Free &amp; open source</td></tr>
     </tbody>
@@ -429,21 +433,21 @@
   <div class="intro reveal">
     <span class="label">Getting started</span>
     <h2 class="head">No terminal skills needed. Set it up once, then talk to it like a person.</h2>
-    <p class="lead">About twenty minutes to set up. From then on you type in plain English and it does the work.</p>
+    <p class="lead">About two minutes to set up. From then on you press play and it does the work — and when you want something changed, you say so in plain English.</p>
   </div>
   <div class="steps">
-    <div class="step reveal"><span class="n">1</span><div><b>Install Claude Code</b><p>A free app from Anthropic that lets the AI work with files on your computer. There's a desktop version, so no terminal needed.</p></div></div>
-    <div class="step reveal"><span class="n">2</span><div><b>Download Boulot</b><p>One click from GitHub. It becomes a folder on your machine.</p></div></div>
-    <div class="step reveal"><span class="n">3</span><div><b>Type <code>/start</code></b><p>Boulot interviews you one question at a time and writes your profile and CV from your answers. Paste an old CV or your LinkedIn to go faster. Nothing to fill in by hand.</p></div></div>
-    <div class="step reveal"><span class="n">4</span><div><b>Apply for your first role</b><p>Paste a job link and say "tailor my CV for this." You get a tailored CV, a cover letter, company research, and a mock interview. Boulot tracks the rest.</p></div></div>
+    <div class="step reveal"><span class="n">1</span><div><b>Run it</b><p>One command, or the Mac app. It opens in your browser, on your machine. No account.</p></div></div>
+    <div class="step reveal"><span class="n">2</span><div><b>Paste your CV once</b><p>It builds your record from it: every role, every achievement, tagged so the right ones can be picked for each job. That record is what every application is built from, and it never invents anything.</p></div></div>
+    <div class="step reveal"><span class="n">3</span><div><b>Paste a job link and press play</b><p>It researches the company, maps every requirement to your evidence, writes the CV, has three agents argue over it, and renders a PDF that it measures against a real page.</p></div></div>
+    <div class="step reveal"><span class="n">4</span><div><b>Move the card when they reply</b><p>Applied, interviewing, archived — the board is how it learns. Each outcome, and anything you write about why, feeds the next application.</p></div></div>
   </div>
   <div class="says reveal">
     <p class="says-label">Talking to it sounds like this:</p>
     <ul>
-      <li>"Read my profile and tell me which roles I should go for."</li>
-      <li>"I want to apply for Head of Ops at Acme. Here's the link."</li>
-      <li>"Tailor my CV for it, then make a PDF."</li>
-      <li>"Give me a tough mock interview for this one."</li>
+      <li>"Here's the link. Write the whole application."</li>
+      <li>"Make the summary less grand, more concrete."</li>
+      <li>"What will they push on in the interview?"</li>
+      <li>"Grill me. Don't be nice about it."</li>
     </ul>
   </div>
 </div></section>
