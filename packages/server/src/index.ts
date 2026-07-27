@@ -24,6 +24,8 @@ import {
   writeConfig,
   updateFrontmatter,
   today as todayStr,
+  whatWorked,
+  reachedInterview,
 } from "@boulot/core";
 import { run } from "./agent.js";
 
@@ -187,17 +189,22 @@ app.get<{ Params: { who: string } }>("/api/:who/master", async (req, reply) => {
   if (!existsSync(dir)) return reply.code(404).send({ error: "no such person" });
   // Cross bullet usage with what actually happened to those applications.
   const { applications } = readVault(dir);
-  const reachedInterview = new Set<string>();
+  const reachedSet = new Set<string>();
   const rejected = new Set<string>();
   for (const a of applications) {
-    const got = ["screening", "interviewing", "offer", "closed-won"].includes(a.stage) ||
-      /interview|screen|final|task day/i.test(a.substage ?? "");
-    if (got) reachedInterview.add(a.slug);
+    if (reachedInterview(a)) reachedSet.add(a.slug);
     else if (a.stage === "closed-lost") rejected.add(a.slug);
   }
-  const m = readMaster(dir, { reachedInterview, rejected });
+  const m = readMaster(dir, { reachedInterview: reachedSet, rejected });
   if (!m) return reply.code(404).send({ error: "no cv-master.md" });
-  return { ...m, profile: readProfile(dir) };
+  /*
+   * What has worked, from the sent CVs themselves.
+   *
+   * Computed here, on the same parse the agent's memory uses, so the page and
+   * the prompt can never show different numbers for the same fact.
+   */
+  const works = whatWorked(dir, applications);
+  return { ...m, works, profile: readProfile(dir) };
 });
 
 /**

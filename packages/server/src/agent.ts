@@ -1,4 +1,5 @@
 import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
+import { whatWorked, readVault } from "@boulot/core";
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
 import { resolve, relative, isAbsolute, dirname, basename } from "node:path";
@@ -425,7 +426,48 @@ function memoryContext(vaultRoot: string, person: string): string {
    * the writing rather than only to the person doing the remembering.
    */
   const outcomes = read("profile", "outcomes.md");
-  if (!text && !lessons && !outcomes) return "";
+
+  /*
+   * What has actually worked, computed fresh at the start of every run.
+   *
+   * The bullet match already feeds usage back through consolidation, but the
+   * two most-tailored sentences on any CV — the headline and the summary —
+   * were written new every time and forgotten. The agent kept rewriting its
+   * most important line with no memory of which versions had ever earned a
+   * reply.
+   *
+   * Live rather than cached, because an application moving to Interviewing
+   * this morning should change what gets written this afternoon. Deterministic
+   * and from the same code the Profile page uses, so the person and the agent
+   * are always looking at the same numbers.
+   */
+  let worked = "";
+  try {
+    const { applications } = readVault(resolve(vaultRoot, person));
+    const w = whatWorked(resolve(vaultRoot, person), applications);
+    if (w.reached > 0) {
+      const quote = (r: { text: string; usedIn: string[]; reached: number }) =>
+        `- "${r.text.length > 160 ? r.text.slice(0, 157) + "..." : r.text}" — on ${r.usedIn.length} CV${r.usedIn.length === 1 ? "" : "s"}, ${r.reached} reached interview`;
+      worked = [
+        `Of ${w.withCv} applications with a CV on file, ${w.reached} reached a screen or interview.`,
+        "",
+        ...(w.headlines.some((h) => h.reached)
+          ? ["Headlines that reached interviews:", ...w.headlines.filter((h) => h.reached).slice(0, 3).map(quote), ""]
+          : []),
+        ...(w.summaries.some((x) => x.reached)
+          ? ["Summaries that reached interviews:", ...w.summaries.filter((x) => x.reached).slice(0, 2).map(quote), ""]
+          : []),
+        "Small sample: treat these as the strongest available starting point, not a",
+        "rule. When tailoring a headline or summary, start from a version that has",
+        "reached an interview and adapt it to this role, rather than inventing a new",
+        "positioning from scratch. Never reuse company-specific wording.",
+      ].join("\n");
+    }
+  } catch {
+    /* a vault that cannot be read simply contributes nothing here */
+  }
+
+  if (!text && !lessons && !outcomes && !worked) return "";
   return [
     "",
     ...(lessons
@@ -446,6 +488,9 @@ function memoryContext(vaultRoot: string, person: string): string {
     "different tool and are not available here. Do not try them, and do not search",
     "for them inside the vault either. If something is not here, say so and carry on.",
     "",
+    ...(worked
+      ? ["# What has actually worked", "", worked, ""]
+      : []),
     ...(outcomes
       ? [
           "# What happened to previous applications",

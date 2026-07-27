@@ -37,9 +37,9 @@ function stateOf(b: Bullet): State {
  * information; the words belong in the row you have opened.
  */
 const STATE_MARK: Record<State, (b: Bullet) => string> = {
-  proven: (b) => `${b.reachedInterview}/${b.usedIn.length}`,
-  used: (b) => `${b.usedIn.length}×`,
-  never: () => "—",
+  proven: (b) => `${b.reachedInterview} of ${b.usedIn.length} → interview`,
+  used: (b) => `on ${b.usedIn.length} CV${b.usedIn.length === 1 ? "" : "s"}`,
+  never: () => "unused",
 };
 
 const STATE_WORDS: Record<State, (b: Bullet) => string> = {
@@ -59,8 +59,18 @@ type Bullet = {
 };
 type Attention = { kind: string; detail: string; action: string; count?: number };
 type Role = { org: string; title: string; dates: string; context: string; bullets: Bullet[]; deeperDetail: number };
+type Ranked = { text: string; usedIn: string[]; reached: number };
+type Works = {
+  applications: number;
+  withCv: number;
+  reached: number;
+  headlines: Ranked[];
+  summaries: Ranked[];
+};
+
 type Master = {
   updated: string | null;
+  works?: Works;
   summaryVariants: string[];
   roles: Role[];
   totals: { bullets: number; tagged: number; withNumbers: number; used: number };
@@ -205,6 +215,70 @@ export function Career(
         ))}
       </div>
 
+      {/*
+        What has worked, laid out the way a CV is laid out.
+
+        The headline and the summary are the two most-tailored sentences on any
+        CV, and they were the two with no memory: rewritten fresh every time,
+        then forgotten. This shows the versions that actually earned a reply,
+        quoted, with the honest denominator underneath — and the same numbers
+        are fed to the agent before it writes anything, so what you see here is
+        what it knows there.
+      */}
+      {m.works && m.works.reached > 0 && (
+        <section className="worked">
+          <h3>What has worked</h3>
+          <p className="lede">
+            From the {m.works.withCv} applications with a CV in the vault, {m.works.reached} reached
+            a screen or interview. Small sample — a hint, not a rule — but these are the versions
+            that earned a reply, and Boulot starts from them when it writes.
+          </p>
+
+          {m.works.headlines.some((h) => h.reached > 0) && (
+            <div className="worked-group">
+              <span className="worked-label">Headline</span>
+              {m.works.headlines.filter((h) => h.reached > 0).slice(0, 2).map((h, i) => (
+                <div className="worked-item" key={i}>
+                  <p className="worked-quote">{h.text}</p>
+                  <span className="worked-score" title={h.usedIn.join(", ")}>
+                    {h.reached} of {h.usedIn.length} reached interview
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {m.works.summaries.some((x) => x.reached > 0) && (
+            <div className="worked-group">
+              <span className="worked-label">Summary</span>
+              {m.works.summaries.filter((x) => x.reached > 0).slice(0, 2).map((x, i) => (
+                <div className="worked-item" key={i}>
+                  <p className="worked-quote">{x.text}</p>
+                  <span className="worked-score" title={x.usedIn.join(", ")}>
+                    {x.reached} of {x.usedIn.length} reached interview
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="worked-group">
+            <span className="worked-label">Bullets</span>
+            <p className="worked-note">
+              The entries below carry their own record on the right of each row. Green means it was
+              on a CV that reached an interview.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {m.works && m.works.reached === 0 && m.works.withCv > 0 && (
+        <p className="record-note">
+          {m.works.withCv} sent CVs are in the vault, none of which has reached an interview yet.
+          When one does, what worked will appear here and feed back into the writing.
+        </p>
+      )}
+
       {unused > 0 && (
         <p className="record-note">
           <b>{unused}</b> {unused === 1 ? "entry has" : "entries have"} never been picked by
@@ -294,11 +368,15 @@ export function Career(
               <h3>{r.org}</h3>
               <span className="dates">{r.dates}</span>
               <span className="role-count">
-                {shown.length}
-                {shown.length === r.bullets.length ? "" : ` of ${r.bullets.length}`}
+                {shown.length === r.bullets.length
+                  ? `${r.bullets.length} entries`
+                  : `showing ${shown.length} of ${r.bullets.length}`}
                 {r.deeperDetail > 0 && (
-                  <span className="interview-only" title="Kept for interview prep, never printed on a CV">
-                    +{r.deeperDetail} notes
+                  <span
+                    className="interview-only"
+                    title="Detail kept for interview prep. Never printed on a CV."
+                  >
+                    +{r.deeperDetail} interview-prep notes
                   </span>
                 )}
               </span>
