@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildProgress, Markdown, Thinking, collapse } from "./Activity.js";
+import { PrepDoc } from "./Prep.js";
 import { useSocket } from "./socket.js";
 import { MODELS } from "./models.js";
 
@@ -200,23 +201,7 @@ export function Workbench({
   const [stage, setStage] = useState("");
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
-  /*
-   * The prep document reads and writes in the same place.
-   *
-   * Shown as raw markdown it was frontmatter, hashes and angle brackets, which
-   * is the least readable form of the one document you are going to read under
-   * pressure. Shown only rendered it would be a report, and the whole point is
-   * that it is yours to change: tying the job to your own experience, pasting
-   * in what you find, cutting what turns out not to matter.
-   *
-   * So it renders, and clicking the prose puts you in it. Nothing to learn and
-   * no mode to remember, because the mode is wherever your cursor is.
-   */
-  const [editingPrep, setEditingPrep] = useState(false);
-  /** The highlighted passage, and where to float the button that acts on it. */
-  const [picked, setPicked] = useState<{ text: string; x: number; y: number } | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
-  const prepBox = useRef<HTMLTextAreaElement>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   // The file name, not a boolean: older applications carry the CV under the
   // download filename rather than cv.pdf, and the viewer has to fetch by name.
@@ -1029,74 +1014,16 @@ export function Workbench({
             <iframe className="pdf" key={pdfKey} title="CV" src={`/api/${who}/job/${slug}/file/${encodeURIComponent(pdfFile ?? "cv.pdf")}?v=${pdfKey}`} />
           ) : text[tab] === undefined ? (
             <p className="hint">Loading…</p>
-          ) : tab === "prep" && !editingPrep ? (
-            /*
-             * Read it, select it, or click into it.
-             *
-             * Selecting a passage offers to ask about that passage, which is
-             * the move this document is actually for. Prep is not a report the
-             * agent hands you; it is the job description reconciled against
-             * your own experience, one paragraph at a time, and the reconciling
-             * happens by pointing at a line and saying "this bit". Retyping the
-             * line into a chat box to ask about it is the friction that stops
-             * people asking.
-             */
-            <div
-              className="reading prep-doc"
-              onMouseUp={(e) => {
-                const sel = window.getSelection();
-                const chosen = sel?.toString().trim() ?? "";
-                if (chosen.length > 2) {
-                  const box = e.currentTarget.getBoundingClientRect();
-                  // Kept inside the pane: released near the right edge, the
-                  // button hung off it and read as "Ask about".
-                  const x = Math.min(Math.max(e.clientX - box.left, 8), box.width - 130);
-                  setPicked({ text: chosen, x, y: e.clientY - box.top });
-                } else {
-                  setPicked(null);
-                  // A click with nothing selected means you want to type here.
-                  setEditingPrep(true);
-                }
-              }}
-            >
-              <Markdown text={stripFrontmatter(text.prep ?? "")} />
-              {!((text.prep ?? "").trim()) && (
-                <p className="hint">
-                  Nothing here yet. Ask a question on the right and the answer lands here, or click
-                  to start writing.
-                </p>
-              )}
-              {picked && (
-                <button
-                  className="ask-about"
-                  style={{ insetInlineStart: picked.x, insetBlockStart: picked.y + 10 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAsk(`About this bit:\n\n> ${picked.text.replace(/\n+/g, " ")}\n\n`);
-                    setPicked(null);
-                    window.getSelection()?.removeAllRanges();
-                    composer.current?.focus();
-                  }}
-                >
-                  Ask about this
-                </button>
-              )}
-            </div>
           ) : tab === "prep" ? (
-            <textarea
-              ref={prepBox}
-              className="editor prep-edit"
-              value={text.prep ?? ""}
-              spellCheck
-              autoFocus
-              placeholder="Your notes. Anything you write here goes into the room with you."
-              onBlur={() => setEditingPrep(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") setEditingPrep(false);
-              }}
-              onChange={(e) => {
-                setText((t) => ({ ...t, prep: e.target.value }));
+            <PrepDoc
+              text={text.prep ?? ""}
+              onChange={(next) => {
+                setText((t) => ({ ...t, prep: next }));
                 setDirty(true);
+              }}
+              onAsk={(passage) => {
+                setAsk(`About this bit:\n\n> ${passage.replace(/\n+/g, " ")}\n\n`);
+                composer.current?.focus();
               }}
             />
           ) : READ_ONLY.has(tab) ? (

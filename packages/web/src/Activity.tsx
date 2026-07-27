@@ -145,6 +145,27 @@ export function Markdown({ text }: { text: string }) {
       continue;
     }
 
+    /*
+     * Blockquotes, which the prep document is full of.
+     *
+     * Without this a quoted passage fell through to the paragraph branch, so
+     * every ">" printed literally and the lines were joined into one run:
+     * "> Rails 8 monolith ... 122 > commits, 61 merged PRs". The one thing in
+     * a prep document you are meant to read out loud was the one thing that
+     * came out unreadable.
+     */
+    if (/^>\s?/.test(line)) {
+      flush();
+      const quoted: string[] = [];
+      let j = i;
+      for (; j < lines.length && /^>\s?/.test(lines[j] ?? ""); j++) {
+        quoted.push((lines[j] ?? "").replace(/^>\s?/, ""));
+      }
+      out.push(<blockquote key={`q${out.length}`}>{inline(quoted.join(" "))}</blockquote>);
+      i = j - 1;
+      continue;
+    }
+
     const heading = /^(#{1,4})\s+(.*)$/.exec(line);
     if (heading) {
       flush();
@@ -169,6 +190,21 @@ export function Markdown({ text }: { text: string }) {
     if (numbered) {
       flushPara();
       list.push(numbered[1] ?? "");
+      continue;
+    }
+
+    /*
+     * A wrapped line belongs to the bullet above it.
+     *
+     * Markdown lets a list item run over several lines without indenting the
+     * continuation, and real documents are full of them because that is what a
+     * hard wrap at eighty columns produces. Treated as a new paragraph, the
+     * second half of every long bullet fell out of the list and sat under it
+     * as loose prose, which looked like a formatting bug in the document
+     * rather than in the renderer.
+     */
+    if (list.length) {
+      list[list.length - 1] = `${list[list.length - 1]} ${line.trim()}`;
       continue;
     }
 

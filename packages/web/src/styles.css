@@ -1212,9 +1212,53 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 /* ── Prep ─────────────────────────────────────────────────────────────────
    The one document you read under pressure, so it renders; and the one you
    rewrite as you learn things, so it edits. Same pane, no mode to remember. */
-.prep-doc { position: relative; cursor: text; }
+.prep-doc { position: relative; }
 .prep-doc ::selection { background: var(--accent-soft); }
-.prep-edit { font-family: inherit; font-size: 14px; line-height: 1.7; }
+
+/* A block is a hover target, so it is discoverable that it can be edited,
+   without a pencil icon on every paragraph saying so. */
+.prep-doc .block {
+  cursor: text; border-radius: 7px;
+  margin-inline: -8px; padding-inline: 8px;
+  transition: background 120ms ease;
+}
+.prep-doc .block:hover { background: var(--bg-2); }
+/* Margins collapse inside a block wrapper, so the rhythm between paragraphs
+   has to live on the wrapper. Without this every block sat on the one above. */
+.prep-doc .block > :first-child { margin-block-start: 0; }
+.prep-doc .block > :last-child { margin-block-end: 0; }
+.prep-doc .block { padding-block: 5px; }
+.prep-doc .block + .block { margin-block-start: 9px; }
+.prep-doc .block:has(h1), .prep-doc .block:has(h2), .prep-doc .block:has(h3) {
+  margin-block-start: 22px;
+}
+.prep-doc .block:first-child { margin-block-start: 0; }
+
+/* Editing one paragraph, in the space the paragraph occupied. */
+.block-edit {
+  inline-size: 100%; display: block; resize: none; overflow: hidden;
+  font: inherit; font-size: 14px; line-height: 1.7; color: var(--ink);
+  margin-inline: -9px; padding: 7px 8px;
+  border: 1px solid var(--accent); border-radius: 7px;
+  background: var(--panel);
+  box-shadow: 0 0 0 3px rgb(63 107 74 / 8%);
+}
+.block-edit:focus { outline: none; }
+
+.block-add {
+  inline-size: 100%; text-align: start; cursor: text;
+  font: inherit; font-size: 13px; color: var(--ink-3);
+  margin: 10px -8px 0; padding: 10px 8px;
+  border: 0; border-radius: 7px; background: none;
+}
+.block-add:hover { background: var(--bg-2); color: var(--ink-2); }
+
+/* Quoted passages: the line you are going to say out loud. */
+.reading blockquote {
+  margin: 14px 0; padding: 2px 0 2px 16px;
+  border-inline-start: 2px solid var(--accent);
+  color: var(--ink); font-size: 14.5px; line-height: 1.65;
+}
 
 /* Offered where the selection ended, because that is where you are looking. */
 .ask-about {
