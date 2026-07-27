@@ -167,6 +167,13 @@ export const Application = z.object({
     })
     .default({ onHold: false, atRisk: false, awaitingResponse: false }),
   appliedDate: z.string().nullable().default(null),
+  /**
+   * When the stage last moved, which is not the same as when it was last
+   * touched. A card in Interviewing wants to say how long you have been in
+   * process; last_updated changes every time a document is saved, so it would
+   * answer a different question and look like an answer to this one.
+   */
+  stageChanged: z.string().nullable().default(null),
   lastUpdated: z.string().nullable().default(null),
   nextActionDate: z.string().nullable().default(null),
   nextAction: z.string().nullable().default(null),

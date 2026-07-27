@@ -429,6 +429,9 @@ app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
       updateFrontmatter(before, {
         stage: value,
         last_updated: todayStr(),
+        // When the stage moved, which is what "Interviewing since" measures
+        // from. last_updated moves whenever a document is saved.
+        stage_changed: todayStr(),
         ...(value === "applied" && !hasApplied ? { applied_date: todayStr() } : {}),
       }),
     );

@@ -1208,3 +1208,21 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .career .entry-open { animation: none; } }
+
+/* ── Prep ─────────────────────────────────────────────────────────────────
+   The one document you read under pressure, so it renders; and the one you
+   rewrite as you learn things, so it edits. Same pane, no mode to remember. */
+.prep-doc { position: relative; cursor: text; }
+.prep-doc ::selection { background: var(--accent-soft); }
+.prep-edit { font-family: inherit; font-size: 14px; line-height: 1.7; }
+
+/* Offered where the selection ended, because that is where you are looking. */
+.ask-about {
+  position: absolute; z-index: 5;
+  font: inherit; font-size: 12px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--accent);
+  background: var(--accent); color: #fff; cursor: pointer;
+  box-shadow: var(--shadow-lift); white-space: nowrap;
+  animation: settle 140ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ask-about:hover { background: var(--accent-deep); }

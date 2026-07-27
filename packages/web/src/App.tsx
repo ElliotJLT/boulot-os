@@ -15,6 +15,7 @@ type App = {
   outcome: string | null;
   lastUpdated: string | null;
   appliedDate: string | null;
+  stageChanged: string | null;
   salary: string | null;
   source: string | null;
   warnings: string[];
@@ -123,6 +124,34 @@ function sinceApplied(date: string): { label: string; band: "fresh" | "aging" | 
   return { label, band: days < 7 ? "fresh" : days < 21 ? "aging" : "cold" };
 }
 
+/**
+ * What the pill should say, which depends on where the card is.
+ *
+ * A card sitting in Interviewing that reads "Applied yesterday" is answering
+ * a question nobody is asking any more. Once you are in process the clock that
+ * matters is the one since they replied, and going quiet mid-process is a
+ * different and worse silence than never hearing back at all — so the bands
+ * tighten: a week without word after an interview is already worth a nudge.
+ */
+const IN_PROCESS = new Set(["screening", "interviewing", "offer"]);
+
+function cardTiming(app: App): { label: string; band: string } | null {
+  if (IN_PROCESS.has(app.stage)) {
+    const from = app.stageChanged ?? app.appliedDate;
+    if (!from) return { label: "Interviewing", band: "fresh" };
+    const { label, band } = sinceApplied(from);
+    return {
+      label: `Interviewing since ${label.replace(/ ago$/, "")}`.replace("since today", "since today"),
+      band: band === "fresh" ? (Date.now() - Date.parse(from) > 7 * 86_400_000 ? "aging" : "fresh") : band,
+    };
+  }
+  if (app.stage === "applied" && app.appliedDate) {
+    const { label, band } = sinceApplied(app.appliedDate);
+    return { label: `Applied ${label}`, band };
+  }
+  return null;
+}
+
 function Card({ app, working, onOpen }: { app: App; working?: boolean; onOpen: () => void }) {
   const flag = app.flags2[0];
   const dead = app.stage.startsWith("closed");
@@ -145,20 +174,16 @@ function Card({ app, working, onOpen }: { app: App; working?: boolean; onOpen: (
     >
       <h3>{app.company}</h3>
       {app.role && <p className="role">{app.role}</p>}
-      {/*
-        Any stage past sending, not just "applied".
-        
-        Gated on stage === "applied" alone, an application that progressed to a
-        screen or an interview lost its date entirely: the one card on the board
-        where things are actually happening became the one card with no sense of
-        time on it.
-      */}
-      {["applied", "screening", "interviewing", "offer"].includes(app.stage) && app.appliedDate && (() => {
-        const { label, band } = sinceApplied(app.appliedDate);
+      {(() => {
+        const t = cardTiming(app);
+        if (!t) return null;
         return (
-          <span className={`sent sent-${band}`} title={`Applied ${app.appliedDate}`}>
+          <span
+            className={`sent sent-${t.band}`}
+            title={app.appliedDate ? `Applied ${app.appliedDate}` : undefined}
+          >
             <span className="sent-dot" />
-            Applied {label}
+            {t.label}
           </span>
         );
       })()}

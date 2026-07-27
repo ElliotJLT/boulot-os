@@ -141,6 +141,7 @@ export function readApplication(
     outcome: norm.outcome,
     flags,
     appliedDate: pick(data, "applied_date"),
+    stageChanged: pick(data, "stage_changed"),
     lastUpdated: pick(data, "last_updated", "updated"),
     nextActionDate: pick(data, "next_action_date"),
     nextAction: pick(data, "next_action"),
