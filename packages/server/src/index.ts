@@ -425,6 +425,36 @@ app.post<{ Params: { who: string; slug: string }; Body: { outcome?: string; note
  * are accepted, so a drag can never put a record into a state the UI cannot
  * then display.
  */
+/*
+ * When the interview is.
+ *
+ * Its own endpoint rather than a field on the stage change, because the two
+ * happen at different moments: the stage moves when they reply, the date
+ * arrives in a later email, and often from a calendar invite rather than a
+ * sentence.
+ */
+app.post<{ Params: { who: string; slug: string }; Body: { date?: string | null } }>(
+  "/api/:who/job/:slug/interview-date",
+  async (req, reply) => {
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+    const status = join(dir, "status.md");
+    if (!existsSync(status)) return reply.code(404).send({ error: "no status.md" });
+    const date = (req.body?.date ?? "").trim();
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return reply.code(400).send({ error: "date must be YYYY-MM-DD or empty" });
+    }
+    writeFileSync(
+      status,
+      updateFrontmatter(readFileSync(status, "utf8"), {
+        interview_date: date || null,
+        last_updated: todayStr(),
+      }),
+    );
+    return { slug: req.params.slug, interviewDate: date || null };
+  },
+);
+
 app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
   "/api/:who/job/:slug/stage",
   async (req, reply) => {
@@ -479,6 +509,34 @@ app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
         ...(value === "applied" && !hasApplied ? { applied_date: todayStr() } : {}),
       }),
     );
+    /*
+     * Reaching Interviewing starts the preparation.
+     *
+     * The moment they reply is when there is most to find out and least chance
+     * of anyone sitting down to find it. A first draft that exists beats a
+     * better one you have to remember to ask for.
+     *
+     * Server-side rather than in the board, so dragging a card and using the
+     * status menu behave the same way. Only when there is no prep document yet,
+     * so moving a card back and forth cannot overwrite notes already written.
+     */
+    if (value === "interviewing" && !existsSync(join(dir, "prep.md"))) {
+      const app = readApplication(status, req.params.slug);
+      startRun({
+        prompt:
+          `Use the boulot:prep skill to write the first draft of active/${req.params.slug}/prep.md. ` +
+          `They have replied and an interview is coming. Follow the skill's section order and skip ` +
+          `any section you cannot fill honestly. Do not edit cv.md, cover-letter.md or ` +
+          `application-answers.md: the employer already has them.`,
+        person: req.params.who,
+        job: req.params.slug,
+        slug: req.params.slug,
+        company: app.company ?? req.params.slug,
+        label: "Preparing for the interview",
+        model: "claude-opus-4-8",
+      });
+    }
+
     return { slug: req.params.slug, stage: value };
   },
 );
@@ -623,6 +681,9 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
     // And when, so it can say so rather than making you go and look.
     appliedDate: existsSync(join(dir, "status.md"))
       ? (readApplication(join(dir, "status.md")).appliedDate ?? null)
+      : null,
+    interviewDate: existsSync(join(dir, "status.md"))
+      ? (readApplication(join(dir, "status.md")).interviewDate ?? null)
       : null,
     fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,
   };
@@ -790,17 +851,7 @@ wss.on("connection", (socket) => {
   socket.on("close", () => sockets.delete(socket));
 
   socket.on("message", async (raw) => {
-    let msg: {
-      prompt?: string;
-      person?: string;
-      job?: string;
-      label?: string;
-      slug?: string;
-      company?: string;
-      model?: string;
-      /** What the user actually asked, in their words, for the record. */
-      note?: string;
-    };
+    let msg: Ask;
     try {
       msg = JSON.parse(String(raw));
     } catch {
@@ -808,21 +859,44 @@ wss.on("connection", (socket) => {
     }
     if (!msg.prompt || !msg.person) return;
 
+    const refused = startRun(msg);
+    if (refused) socket.send(JSON.stringify({ t: "error", job: msg.job, message: refused }));
+  });
+});
+
+/** What a run needs, whether it was asked for over the socket or over HTTP. */
+interface Ask {
+  prompt?: string;
+  person?: string;
+  job?: string;
+  label?: string;
+  slug?: string;
+  company?: string;
+  model?: string;
+  /** What the user actually asked, in their words, for the record. */
+  note?: string;
+}
+
+/*
+ * Starting a run, from anywhere.
+ *
+ * This lived inside the websocket handler, which meant the only way to begin
+ * work was for a browser tab to ask for it. Moving a card to Interviewing has
+ * to be able to start the preparation too, and that decision is made on the
+ * server. Returns a refusal string, or null when the run is away.
+ */
+function startRun(msg: Ask): string | null {
+  {
+    // Checked by every caller, restated here so the closure below has a string.
+    const prompt = msg.prompt;
+    const person = msg.person;
+    if (!prompt || !person) return "Nothing to do.";
+
     const id = msg.job ?? `job-${Date.now()}`;
     const existing = jobs.get(id);
-    if (existing?.running) {
-      socket.send(JSON.stringify({ t: "error", job: id, message: "That application is already running." }));
-      return;
-    }
+    if (existing?.running) return "That application is already running.";
     if (activeJobs().length >= MAX_CONCURRENT) {
-      socket.send(
-        JSON.stringify({
-          t: "error",
-          job: id,
-          message: `Three applications are already running. Wait for one to finish.`,
-        }),
-      );
-      return;
+      return "Three applications are already running. Wait for one to finish.";
     }
 
     const previous = jobs.get(id);
@@ -862,7 +936,7 @@ wss.on("connection", (socket) => {
      */
     const logTurn = (who: string, text: string) => {
       if (!job.slug || !text.trim()) return;
-      const dir = jobDir(msg.person!, job.slug);
+      const dir = jobDir(person, job.slug);
       if (!dir) return;
       try {
         const path = join(dir, "conversation.md");
@@ -876,11 +950,12 @@ wss.on("connection", (socket) => {
     };
     if (msg.note) logTurn("You", msg.note);
 
+    void (async () => {
     try {
       job.sessionId = await run({
-        prompt: msg.prompt,
+        prompt,
         vaultRoot: VAULT,
-        person: msg.person,
+        person,
         rendererPath: RENDERER,
         // Continues this application's conversation, and only this one's.
         ...(job.sessionId ? { sessionId: job.sessionId } : {}),
@@ -926,8 +1001,10 @@ wss.on("connection", (socket) => {
       job.running = false;
       broadcast({ t: "job", job: id, slug: job.slug, company: job.company, label: job.label, running: false });
     }
-  });
-});
+    })();
+    return null;
+  }
+}
 
 console.log(`Boulot on ${address}`);
 console.log(`  vault:  ${VAULT}${existsSync(VAULT) ? "" : "  (not found)"}`);

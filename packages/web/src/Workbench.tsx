@@ -43,8 +43,18 @@ type Event =
  * Both are one click away below. Making them opt-in costs a click on the
  * applications that want them and saves the work on the ones that do not.
  */
+/**
+ * What always happens, and is therefore not a question.
+ *
+ * These were tickboxes, which asked whether you wanted a CV from a tool whose
+ * entire purpose is producing one. A checkbox that is always ticked is not a
+ * choice, it is a claim that you had one. The adversarial review joined them:
+ * it is the part of this that is actually worth having, and offering to skip it
+ * invited people to skip the only step that makes the draft better.
+ */
 const STEPS = [
   { key: "cv", label: "Tailor the CV", verb: "Tailoring the CV" },
+  { key: "review", label: "Stress-tested by three reviewers", verb: "Three reviewers are reading it" },
   { key: "pdf", label: "Render the PDF", verb: "Rendering the PDF" },
 ] as const;
 
@@ -56,14 +66,16 @@ const STEPS = [
  * change it. The previous arrangement had the CV tab promising "press play and
  * Boulot will write it" on a document play was never going to write.
  */
+/**
+ * The two things most applications do not ask for.
+ *
+ * Buttons rather than boxes. A tickbox implies a default, and both of these
+ * default to no: most postings want a CV and nothing else, and a cover letter
+ * nobody asked for is tokens spent on a document nobody reads.
+ */
 const EXTRAS = [
-  { key: "cover", label: "Write a cover letter", verb: "Drafting the cover letter" },
-  { key: "questions", label: "Answer their questions", verb: "Answering their questions" },
-  {
-    key: "review",
-    label: "Review it with three agents",
-    verb: "Three reviewers are reading it",
-  },
+  { key: "cover", label: "Cover letter", verb: "Drafting the cover letter" },
+  { key: "questions", label: "Their questions", verb: "Answering their questions" },
 ] as const;
 
 /**
@@ -135,9 +147,10 @@ const SOURCES = [
  * interview, rather than invented as a feature. That is the bar for adding
  * another.
  */
-const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
+const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string; covers: string[] }> = [
   {
     label: "What are they building",
+    covers: ["what they are actually building"],
     hint: "The problem underneath the marketing, and why it is hard",
     ask:
       "What is this company actually building? Not their marketing sentence: the problem " +
@@ -146,6 +159,7 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
   },
   {
     label: "Brief me on the stack",
+    covers: ["technical brief", "if it comes up"],
     hint: "Basics I could be quizzed on, assuming I am new to it",
     ask:
       "Brief me on the technologies in this job description as though I have never used them. " +
@@ -154,6 +168,7 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
   },
   {
     label: "Why we chose what we chose",
+    covers: ["the \"why\" answers", "why answers"],
     hint: "Defensible reasons for my own past technical decisions",
     ask:
       "Go through the technical decisions in my own past work and give me the defensible " +
@@ -162,6 +177,7 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
   },
   {
     label: "Competitors and casualties",
+    covers: ["competitors and casualties", "the graveyard"],
     hint: "Who else tried this, and what happened to them",
     ask:
       "Who else has tried to solve this problem, and what happened to them? Include the " +
@@ -170,6 +186,7 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
   },
   {
     label: "My work that connects",
+    covers: ["already built in this", "work that connects"],
     hint: "Side projects and past work in their domain",
     ask:
       "Search my vault and my own projects for anything in this company's domain or that " +
@@ -178,6 +195,7 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
   },
   {
     label: "Who I am meeting",
+    covers: ["facts, checked", "who i am meeting"],
     hint: "The interviewer and the company, checked today",
     ask:
       "Who am I likely to be meeting, what should I know about them and the company, and what " +
@@ -186,6 +204,7 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
   },
   {
     label: "Questions to ask",
+    covers: ["what to ask them", "questions to ask"],
     hint: "Ones that are genuinely unanswered, not a quiz",
     ask:
       "Give me questions to ask them. Every one must be genuinely unanswered — if the answer " +
@@ -196,6 +215,7 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string }> = [
   },
   {
     label: "Grill me",
+    covers: [],
     hint: "A hostile mock interview, no encouragement",
     ask:
       "Run a mock interview for this role. Be genuinely tough. Interrupt vague answers, ask " +
@@ -284,6 +304,8 @@ export function Workbench({
   const [include, setInclude] = useState<Set<string>>(new Set());
   const [stage, setStage] = useState("");
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
+  const [interviewDate, setInterviewDate] = useState<string | null>(null);
+  const [editingDate, setEditingDate] = useState(false);
   const [menu, setMenu] = useState(false);
   /*
    * Remembered per browser, not per application.
@@ -386,6 +408,7 @@ export function Workbench({
     setFit(d.fit ?? null);
     setStage(st);
     setAppliedDate((d.appliedDate as string | null) ?? null);
+    setInterviewDate((d.interviewDate as string | null) ?? null);
     if (d.downloadName) setPdfName(String(d.downloadName));
     // Always keep cv and job in memory: the tweak box attaches them regardless
     // of which tab is showing, and the PDF tab has no markdown of its own.
@@ -604,6 +627,17 @@ export function Workbench({
   };
 
   /** Record that it went out, and let the board work out the date. */
+  const saveInterviewDate = async (date: string) => {
+    setInterviewDate(date || null);
+    setEditingDate(false);
+    await fetch(`/api/${who}/job/${slug}/interview-date`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ date }),
+    }).catch(() => {});
+    void refresh();
+  };
+
   const setStageTo = async (next: string) => {
     await fetch(`/api/${who}/job/${slug}/stage`, {
       method: "POST",
@@ -700,7 +734,9 @@ export function Workbench({
      * CV that is about to change.
      */
     const ticked = EXTRAS.filter((e) => include.has(e.key));
-    const plan = [STEPS[0], ...ticked, STEPS[1]] as ReadonlyArray<{
+    // CV, then anything extra, then the review, then the render. The review
+    // reads whatever was written, so it has to come after all of it.
+    const plan = [STEPS[0], ...ticked, STEPS[1], STEPS[2]] as ReadonlyArray<{
       key: string;
       label: string;
       verb: string;
@@ -1241,8 +1277,47 @@ export function Workbench({
         <section className="pane side">
           {talking ? (
             <div className="checklist">
+              {/*
+                The date is the headline, because it is the only fact on this
+                screen that has a deadline attached. Editable in place: it
+                arrives in a later email than the reply does, usually as a
+                calendar invite, so it is never known at the moment the stage
+                changes.
+              */}
               <div className="checklist-top">
-                <h3>{running ? (running ?? "Working") : "Prepare"}</h3>
+                <h3>
+                  {running ? (
+                    (running ?? "Working")
+                  ) : editingDate ? (
+                    <span className="when-edit">
+                      Preparing for interview on{" "}
+                      <input
+                        type="date"
+                        autoFocus
+                        defaultValue={interviewDate ?? ""}
+                        onBlur={(e) => void saveInterviewDate(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") void saveInterviewDate(e.currentTarget.value);
+                          if (e.key === "Escape") setEditingDate(false);
+                        }}
+                      />
+                    </span>
+                  ) : interviewDate ? (
+                    <>
+                      Preparing for interview on{" "}
+                      <button className="when" onClick={() => setEditingDate(true)}>
+                        {longDate(interviewDate)}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Preparing —{" "}
+                      <button className="when when-empty" onClick={() => setEditingDate(true)}>
+                        add the date
+                      </button>
+                    </>
+                  )}
+                </h3>
                 {running && (
                   <span className="play busy">
                     <span className="pip" />
@@ -1253,18 +1328,34 @@ export function Workbench({
                 The job description and the research are on the left. Anything you ask goes into{" "}
                 <b>Prep</b>, where you can edit it and write your own notes beside it.
               </p>
-              <div className="prep-actions">
-                {PREP_ACTIONS.map((a) => (
-                  <button
-                    key={a.label}
-                    title={a.hint}
-                    disabled={Boolean(running)}
-                    onClick={() => askPrep(a.ask)}
-                  >
-                    {a.label}
-                  </button>
-                ))}
-              </div>
+              {/*
+                Only what the document does not already cover.
+                
+                The first prep run writes most of these sections, and offering
+                eight buttons over a document that already answers six of them
+                is a wall of work that has been done. Each action names the
+                heading it produces; if that heading is in prep.md, the button
+                has nothing to add.
+              */}
+              {(() => {
+                const has = (text.prep ?? "").toLowerCase();
+                const left = PREP_ACTIONS.filter((a) => !a.covers.some((h) => has.includes(h)));
+                if (!left.length) return null;
+                return (
+                  <div className="prep-actions">
+                    {left.map((a) => (
+                      <button
+                        key={a.label}
+                        title={a.hint}
+                        disabled={Boolean(running)}
+                        onClick={() => askPrep(a.ask)}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
           <div className="checklist">
@@ -1286,37 +1377,9 @@ export function Workbench({
               </button>
             </div>
             <ol>
-              {[
-                STEPS[0],
-                ...EXTRAS,
-                STEPS[1],
-              ].map((s) => {
-                const optional = EXTRAS.some((e) => e.key === s.key);
-                const ticked = include.has(s.key);
+              {STEPS.map((s) => {
                 const isDone = done(s.key);
-                const isLive = runKind === "build" && Boolean(running) && !isDone && (!optional || ticked);
-                if (optional && !isDone) {
-                  return (
-                    <li key={s.key} className={ticked ? "step-opt on" : "step-opt"}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={ticked}
-                          disabled={Boolean(running)}
-                          onChange={(e) =>
-                            setInclude((prev) => {
-                              const next = new Set(prev);
-                              if (e.target.checked) next.add(s.key);
-                              else next.delete(s.key);
-                              return next;
-                            })
-                          }
-                        />
-                        <span>{isLive ? s.verb : s.label}</span>
-                      </label>
-                    </li>
-                  );
-                }
+                const isLive = runKind === "build" && Boolean(running) && !isDone;
                 return (
                   <li key={s.key} className={isDone ? "step-done" : isLive ? "step-live" : ""}>
                     <span className="box">{isDone ? "✓" : isLive ? <span className="dot" /> : ""}</span>
@@ -1324,7 +1387,52 @@ export function Workbench({
                   </li>
                 );
               })}
+              {/*
+                The extras that have been asked for join the list; the ones that
+                have not sit underneath as buttons. A thing you have requested is
+                a step, and a thing you have not is an offer.
+              */}
+              {EXTRAS.filter((e) => include.has(e.key) || done(e.key)).map((s) => {
+                const isDone = done(s.key);
+                const isLive = runKind === "build" && Boolean(running) && !isDone;
+                return (
+                  <li key={s.key} className={isDone ? "step-done" : isLive ? "step-live" : ""}>
+                    <span className="box">{isDone ? "✓" : isLive ? <span className="dot" /> : ""}</span>
+                    <span>{isLive ? s.verb : s.label}</span>
+                    {!running && (
+                      <button
+                        className="step-drop"
+                        title="Do not write this"
+                        onClick={() =>
+                          setInclude((prev) => {
+                            const next = new Set(prev);
+                            next.delete(s.key);
+                            return next;
+                          })
+                        }
+                      >
+                        ×
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ol>
+
+            {EXTRAS.some((e) => !include.has(e.key) && !done(e.key)) && (
+              <div className="add-extras">
+                {EXTRAS.filter((e) => !include.has(e.key) && !done(e.key)).map((e) => (
+                  <button
+                    key={e.key}
+                    disabled={Boolean(running)}
+                    onClick={() => setInclude((prev) => new Set(prev).add(e.key))}
+                  >
+                    + {e.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {cost > 0 && <p className="cost">£{(cost * 0.79).toFixed(2)} this session</p>}
 
             {/*

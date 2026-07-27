@@ -16,6 +16,7 @@ type App = {
   lastUpdated: string | null;
   appliedDate: string | null;
   stageChanged: string | null;
+  interviewDate: string | null;
   salary: string | null;
   source: string | null;
   warnings: string[];
@@ -136,6 +137,30 @@ function sinceApplied(date: string): { label: string; band: "fresh" | "aging" | 
 const IN_PROCESS = new Set(["screening", "interviewing", "offer"]);
 
 function cardTiming(app: App): { label: string; band: string } | null {
+  /*
+   * A date in the future beats any elapsed count.
+   *
+   * "Interviewing since 5d" tells you how long you have been waiting;
+   * "Interview Thursday" tells you what you have to do. Once one of these
+   * exists it is the only thing on the card worth reading.
+   */
+  if (app.interviewDate) {
+    const at = Date.parse(app.interviewDate);
+    if (!Number.isNaN(at)) {
+      const days = Math.ceil((at - new Date().setHours(0, 0, 0, 0)) / 86_400_000);
+      if (days >= 0) {
+        const when =
+          days === 0
+            ? "today"
+            : days === 1
+              ? "tomorrow"
+              : days < 7
+                ? new Date(at).toLocaleDateString("en-GB", { weekday: "long" })
+                : new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+        return { label: `Interview ${when}`, band: days <= 2 ? "due" : "fresh" };
+      }
+    }
+  }
   if (IN_PROCESS.has(app.stage)) {
     const from = app.stageChanged ?? app.appliedDate;
     if (!from) return { label: "Interviewing", band: "fresh" };

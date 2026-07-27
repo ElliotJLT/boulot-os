@@ -175,6 +175,15 @@ export const Application = z.object({
    */
   stageChanged: z.string().nullable().default(null),
   lastUpdated: z.string().nullable().default(null),
+  /**
+   * When the next conversation is.
+   *
+   * Distinct from `nextActionDate`, which is a reminder you set for yourself.
+   * This is a commitment to another person: it has a time, it does not slip
+   * quietly, and it is the one date in the vault where being a day late is
+   * fatal rather than untidy.
+   */
+  interviewDate: z.string().nullable().default(null),
   nextActionDate: z.string().nullable().default(null),
   nextAction: z.string().nullable().default(null),
   /** `salary_range` merges here. `salary_target` does NOT: different meaning. */

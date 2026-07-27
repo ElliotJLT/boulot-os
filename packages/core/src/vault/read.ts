@@ -142,6 +142,7 @@ export function readApplication(
     flags,
     appliedDate: pick(data, "applied_date"),
     stageChanged: pick(data, "stage_changed"),
+    interviewDate: pick(data, "interview_date"),
     lastUpdated: pick(data, "last_updated", "updated"),
     nextActionDate: pick(data, "next_action_date"),
     nextAction: pick(data, "next_action"),

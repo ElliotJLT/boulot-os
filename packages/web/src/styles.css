@@ -1429,3 +1429,38 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .record-note b { color: var(--warn); }
 .career .tagrow { display: flex; flex-wrap: wrap; gap: 5px; margin-block: 10px 0; }
 @media (prefers-reduced-motion: reduce) { .bar-fill { transition: none; } }
+
+/* Steps you add rather than tick. A tickbox implies a default; both of these
+   default to no, so they are offers until you take one. */
+.add-extras { display: flex; flex-wrap: wrap; gap: 6px; margin-block-start: 12px; }
+.add-extras button {
+  font: inherit; font-size: 12px; padding: 5px 11px; cursor: pointer;
+  border: 1px dashed var(--line-2); border-radius: 999px;
+  background: none; color: var(--ink-3);
+}
+.add-extras button:hover:not(:disabled) {
+  border-style: solid; border-color: var(--accent); color: var(--accent-deep);
+  background: var(--accent-soft);
+}
+.add-extras button:disabled { opacity: 0.4; cursor: default; }
+.checklist li .step-drop {
+  margin-inline-start: auto; font: inherit; font-size: 13px; line-height: 1;
+  border: 0; background: none; color: var(--ink-3); cursor: pointer; padding: 2px 4px;
+}
+.checklist li .step-drop:hover { color: var(--urgent); }
+
+/* The interview date, edited where it is read. */
+.checklist-top .when {
+  font: inherit; font-size: inherit; font-weight: 600; color: var(--accent-deep);
+  background: none; border: 0; border-block-end: 1px dashed var(--line-2);
+  cursor: pointer; padding: 0 1px;
+}
+.checklist-top .when:hover { border-block-end-color: var(--accent); }
+.checklist-top .when-empty { color: var(--ink-3); font-weight: 400; }
+.when-edit input {
+  font: inherit; font-size: 13px; padding: 2px 6px;
+  border: 1px solid var(--accent); border-radius: 6px; background: var(--panel); color: var(--ink);
+}
+
+/* The intake rail, same shape as the build rail it replaced a step list with. */
+.newapp-body .stages { margin-block-start: 4px; }

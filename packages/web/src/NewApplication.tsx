@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Markdown, Phases, Thinking, collapse, phaseOf, type Phase } from "./Activity.js";
+import { IntakeProgress, Markdown, Thinking } from "./Activity.js";
 import { MODELS } from "./models.js";
 
 /**
@@ -42,7 +42,6 @@ export function NewApplication({
   const [done, setDone] = useState(false);
   const [lines, setLines] = useState<Line[]>([]);
   const [cost, setCost] = useState(0);
-  const [phases, setPhases] = useState<Set<Phase>>(new Set());
   const [failed, setFailed] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const ws = useRef<WebSocket | null>(null);
@@ -132,7 +131,6 @@ export function NewApplication({
       if ((ev as { t: string }).t === "job") return;
       if (ev.t === "tool") {
         setLines((l) => [...l, { kind: "activity", text: ev.label }]);
-        setPhases((p) => new Set(p).add(phaseOf(ev.label)));
       }
       else if (ev.t === "file") {
         setLines((l) => [...l, { kind: "activity", text: `Created ${ev.path.split("/").slice(-2).join("/")}` }]);
@@ -189,7 +187,6 @@ export function NewApplication({
     setRunning(true);
     setStartedAt(Date.now());
     setLines([]);
-    setPhases(new Set());
     setFailed(false);
     setDone(false);
 
@@ -282,7 +279,6 @@ export function NewApplication({
                 {running ? <span className="pip" /> : done ? "✓" : "▶"}
               </button>
             </div>
-            <Phases active={running} seen={phases} />
           </div>
 
           <div className="log" ref={log}>
@@ -300,33 +296,31 @@ export function NewApplication({
               </div>
             )}
 
-            {(() => {
-              const activity = collapse(lines.filter((l) => l.kind === "activity").map((l) => l.text));
-              const said = lines.filter((l) => l.kind !== "activity");
-              return (
-                <>
-                  <details className="steps">
-                    <summary>{activity.length} step{activity.length === 1 ? "" : "s"}</summary>
-                    {activity.map((a, i) => (
-                      <p className="activity" key={i}>
-                        {a.text}
-                        {a.count > 1 && <span className="times"> ×{a.count}</span>}
-                      </p>
-                    ))}
-                  </details>
+            {/*
+              The stages, and nothing else.
 
-                  {said.map((l, i) =>
-                    l.kind === "problem" ? (
-                      <p className="problem" key={i}>{l.text}</p>
-                    ) : (
-                      <div className="answer" key={i}>
-                        <Markdown text={l.text} />
-                      </div>
-                    ),
-                  )}
-                </>
-              );
-            })()}
+              What used to be here was a collapsible list of every tool call and
+              a running commentary: "No prior application on file. Let me set up
+              the folder and research the company." That is the agent narrating
+              itself, and it reads as a machine performing work rather than
+              doing it. The rail says how far along this is, which is the only
+              thing anyone is watching for, and the line underneath says what it
+              is doing right now.
+            */}
+            {(running || lines.length > 0) && (
+              <IntakeProgress
+                labels={lines.filter((l) => l.kind === "activity").map((l) => l.text)}
+                running={running}
+              />
+            )}
+
+            {lines
+              .filter((l) => l.kind === "problem")
+              .map((l, i) => (
+                <p className="problem" key={i}>
+                  {l.text}
+                </p>
+              ))}
 
             {running && (
               <Thinking

@@ -401,3 +401,58 @@ export function Thinking({ label, since }: { label: string; since: number | null
     </div>
   );
 }
+
+/**
+ * The stages of setting up a new application, as the same rail a build uses.
+ *
+ * The intake screen showed a collapsible list of every tool call, which is the
+ * agent's diary rather than the user's progress: eleven lines saying "Searching
+ * the web for…" answer a question nobody asked and read as a machine talking to
+ * itself. Six named stages answer the only one that matters, which is how far
+ * along this is.
+ */
+export type IntakeStage = "reading" | "folder" | "research" | "fit";
+
+export const INTAKE_STAGES: Array<{ key: IntakeStage; label: string }> = [
+  { key: "reading", label: "Reading the job" },
+  { key: "folder", label: "Setting up the folder" },
+  { key: "research", label: "Researching the company" },
+  { key: "fit", label: "Working out the fit" },
+];
+
+export function intakeStageOf(label: string): IntakeStage | null {
+  if (/fit|match|mapping/i.test(label)) return "fit";
+  if (/Searching the web|Reading (?:https?|[a-z0-9-]+\.)/i.test(label)) return "research";
+  if (/research\.md/i.test(label)) return "research";
+  if (/status\.md|job\.md|Created/i.test(label)) return "folder";
+  return "reading";
+}
+
+export function IntakeProgress({ labels, running }: { labels: string[]; running: boolean }) {
+  const reached = new Set<IntakeStage>();
+  let furthest = -1;
+  const order = INTAKE_STAGES.map((s) => s.key);
+  for (const l of labels) {
+    const st = intakeStageOf(l);
+    if (!st) continue;
+    const at = order.indexOf(st);
+    if (at > furthest) furthest = at;
+  }
+  for (let i = 0; i <= furthest; i++) reached.add(order[i]!);
+  const current = furthest >= 0 ? order[furthest] : null;
+
+  return (
+    <ol className="stages">
+      {INTAKE_STAGES.map((s) => {
+        const live = running && s.key === current;
+        const doneNow = reached.has(s.key) && !live;
+        return (
+          <li key={s.key} className={doneNow ? "stage done" : live ? "stage live" : "stage"}>
+            <span className="stage-dot">{doneNow ? "✓" : live ? <i /> : ""}</span>
+            {s.label}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
