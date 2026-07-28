@@ -250,12 +250,13 @@ const STAGE_LABEL: Record<string, string> = {
  * library is 40kB and a build step to draw a bin, and every icon in this app
  * sits next to a word that already says what it does.
  */
-function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" }) {
+function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" | "doc" }) {
   const paths: Record<string, string> = {
     download: "M8 2v8m0 0 3-3m-3 3L5 7M2.5 11.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1",
     refresh: "M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13 2v3h-3",
     archive: "M2.5 5.5h11m-10 0v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7m-7 0v-2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6.5 8v3m3-3v3",
     chevron: "m4.5 6.5 3.5 3 3.5-3",
+    doc: "M9 1.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5m-4-3.5L12.5 5m-4-3.5V4a1 1 0 0 0 1 1h3",
   };
   return (
     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden focusable="false">
@@ -306,6 +307,18 @@ export function Workbench({
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
   const [interviewDate, setInterviewDate] = useState<string | null>(null);
   const [editingDate, setEditingDate] = useState(false);
+  /*
+   * Big pastes become attachments, not text in the box.
+   *
+   * Pasting a job description or a recruiter's email into a two-line composer
+   * buries the box under a thousand words: you cannot see what you are typing,
+   * you cannot see the conversation above it, and the one sentence you actually
+   * wanted to add is somewhere in the middle of somebody else's prose.
+   *
+   * The text is kept whole and sent whole. Only the display collapses.
+   */
+  const [attached, setAttached] = useState<Array<{ id: number; name: string; text: string }>>([]);
+  const [openAttachment, setOpenAttachment] = useState<number | null>(null);
   const [menu, setMenu] = useState(false);
   /*
    * Remembered per browser, not per application.
@@ -889,8 +902,19 @@ export function Workbench({
     setTimeout(() => void tweak(question), 0);
   };
 
+  /** What was typed, plus anything pasted, in the order it arrived. */
+  const composed = (typed: string) =>
+    attached.length
+      ? [
+          typed.trim(),
+          ...attached.map((a) => `\n<pasted name="${a.name}">\n${a.text}\n</pasted>`),
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : typed.trim();
+
   const tweak = async (override?: string) => {
-    const q = (override ?? ask).trim();
+    const q = composed(override ?? ask);
     if (!q || running) return;
     if (dirty) await save();
 
@@ -936,6 +960,7 @@ export function Workbench({
         q,
       );
       setAsk("");
+      setAttached([]);
       return;
     }
 
@@ -968,6 +993,7 @@ export function Workbench({
       q,
     );
     setAsk("");
+    setAttached([]);
   };
 
   return (
@@ -1554,10 +1580,73 @@ export function Workbench({
               ))}
               <span className="agent-hint">{AGENTS.find((a) => a.key === agent)?.hint}</span>
             </div>
+            {attached.length > 0 && (
+              <div className="attached">
+                {attached.map((a) => (
+                  <span key={a.id} className="chip-file">
+                    <button
+                      className="chip-open"
+                      title={`${a.text.length.toLocaleString()} characters. Click to read it.`}
+                      onClick={() => setOpenAttachment(openAttachment === a.id ? null : a.id)}
+                    >
+                      <Icon name="doc" />
+                      {a.name}
+                      <em>{Math.max(1, Math.round(a.text.length / 100) / 10)}k</em>
+                    </button>
+                    <button
+                      className="chip-x"
+                      title="Remove"
+                      onClick={() => {
+                        setAttached((prev) => prev.filter((x) => x.id !== a.id));
+                        if (openAttachment === a.id) setOpenAttachment(null);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {openAttachment != null && (
+              <pre className="attached-peek">
+                {attached.find((a) => a.id === openAttachment)?.text}
+              </pre>
+            )}
             <textarea
               ref={composer}
               rows={2}
               value={ask}
+              onPaste={(e) => {
+                /*
+                 * A paste this size is a document, not a sentence.
+                 *
+                 * Below the threshold it behaves like any other paste, because
+                 * intercepting a pasted line would be infuriating. Above it,
+                 * the text is held whole and the box stays usable.
+                 */
+                const text = e.clipboardData.getData("text");
+                if (text.length < 320) return;
+                e.preventDefault();
+                /*
+                 * Named by when, not by what it starts with.
+                 *
+                 * The first line looked like a better label until a real email
+                 * arrived and the chip said "Hi Elliot,". A greeting, a heading
+                 * or a stray bullet are all equally likely to be first, and a
+                 * label that is sometimes meaningful and sometimes noise is
+                 * worse than one that is always the same. The timestamp always
+                 * distinguishes two pastes; the size says how much there is.
+                 */
+                const now = new Date();
+                const pad = (n: number) => String(n).padStart(2, "0");
+                const stamp =
+                  `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+                  `_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+                setAttached((prev) => [
+                  ...prev,
+                  { id: Date.now() + prev.length, name: `pasted_text_${stamp}.txt`, text },
+                ]);
+              }}
               placeholder={talking ? "Ask about the interview…" : "Tweak something…"}
               onChange={(e) => setAsk(e.target.value)}
               onKeyDown={(e) => {
