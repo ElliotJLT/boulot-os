@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Workbench } from "./Workbench.js";
 import { NewApplication } from "./NewApplication.js";
+import { ago, daysUntil, whenIn } from "./dates.js";
 import { Settings } from "./Settings.js";
 import { Profile } from "./Profile.js";
 import { Setup } from "./Setup.js";
@@ -106,73 +107,47 @@ function Chip({ flag }: { flag: Flag }) {
  *
  * A date on a card is a fact you have to do arithmetic on, and the arithmetic
  * is the only reason the date is there: an application sent yesterday and one
- * sent five weeks ago need completely different things from you, and "Applied
- * 2026-06-18" says that only if you happen to know today's date and care to
- * subtract.
+ * sent five weeks ago need completely different things from you.
  *
  * Three bands, because there are three actions. This week is live and needs
  * nothing. Two to three weeks is where a polite nudge belongs. Past that it has
  * almost certainly gone quiet, which is worth seeing without being shouted at,
- * so it fades rather than turning red. Colour here means the same thing it
- * means everywhere else in the app: how urgently this wants you.
+ * so it fades rather than turning red.
  */
-function sinceApplied(date: string): { label: string; band: "fresh" | "aging" | "cold" } {
-  const then = Date.parse(date);
-  if (Number.isNaN(then)) return { label: date, band: "fresh" };
-  const days = Math.floor((Date.now() - then) / 86_400_000);
-  const label =
-    days <= 0 ? "today" : days === 1 ? "yesterday" : days < 7 ? `${days}d ago` : days < 14 ? "last week" : `${Math.floor(days / 7)}w ago`;
-  return { label, band: days < 7 ? "fresh" : days < 21 ? "aging" : "cold" };
+function band(days: number): "fresh" | "aging" | "cold" {
+  return days < 7 ? "fresh" : days < 21 ? "aging" : "cold";
 }
 
-/**
- * What the pill should say, which depends on where the card is.
- *
- * A card sitting in Interviewing that reads "Applied yesterday" is answering
- * a question nobody is asking any more. Once you are in process the clock that
- * matters is the one since they replied, and going quiet mid-process is a
- * different and worse silence than never hearing back at all — so the bands
- * tighten: a week without word after an interview is already worth a nudge.
- */
 const IN_PROCESS = new Set(["screening", "interviewing", "offer"]);
 
+/**
+ * What the card should say, which depends on where it is.
+ *
+ * A date in the future beats any elapsed count: "Interview Thursday" tells you
+ * what to do, "Interviewing since 5d" tells you how long you have waited.
+ */
 function cardTiming(app: App): { label: string; band: string } | null {
-  /*
-   * A date in the future beats any elapsed count.
-   *
-   * "Interviewing since 5d" tells you how long you have been waiting;
-   * "Interview Thursday" tells you what you have to do. Once one of these
-   * exists it is the only thing on the card worth reading.
-   */
   if (app.interviewDate) {
-    const at = Date.parse(app.interviewDate);
-    if (!Number.isNaN(at)) {
-      const days = Math.ceil((at - new Date().setHours(0, 0, 0, 0)) / 86_400_000);
-      if (days >= 0) {
-        const when =
-          days === 0
-            ? "today"
-            : days === 1
-              ? "tomorrow"
-              : days < 7
-                ? new Date(at).toLocaleDateString("en-GB", { weekday: "long" })
-                : new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-        return { label: `Interview ${when}`, band: days <= 2 ? "due" : "fresh" };
-      }
+    const days = daysUntil(app.interviewDate);
+    if (days != null && days >= 0) {
+      return {
+        label: `Interview ${whenIn(days, app.interviewDate)}`,
+        band: days <= 2 ? "due" : "fresh",
+      };
     }
   }
   if (IN_PROCESS.has(app.stage)) {
     const from = app.stageChanged ?? app.appliedDate;
-    if (!from) return { label: "Interviewing", band: "fresh" };
-    const { label, band } = sinceApplied(from);
+    const since = from ? ago(from) : null;
+    if (!since) return { label: "Interviewing", band: "fresh" };
     return {
-      label: `Interviewing since ${label.replace(/ ago$/, "")}`.replace("since today", "since today"),
-      band: band === "fresh" ? (Date.now() - Date.parse(from) > 7 * 86_400_000 ? "aging" : "fresh") : band,
+      label: `Interviewing since ${since.label.replace(/ ago$/, "")}`,
+      band: since.days > 7 ? "aging" : "fresh",
     };
   }
   if (app.stage === "applied" && app.appliedDate) {
-    const { label, band } = sinceApplied(app.appliedDate);
-    return { label: `Applied ${label}`, band };
+    const since = ago(app.appliedDate);
+    if (since) return { label: `Applied ${since.label}`, band: band(since.days) };
   }
   return null;
 }

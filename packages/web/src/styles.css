@@ -1541,10 +1541,34 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 }
 .bench-body > .side { opacity: 1; transition: opacity 260ms ease 160ms; }
 
-/* Reading measure, not window width. Prose past about ninety characters a line
-   is harder to read wide than narrow, so widening the pane adds margin rather
-   than adding characters. */
-.bench-body.wide .reading, .bench-body.wide .prep-doc { max-inline-size: 78ch; margin-inline: auto; }
+/* Reading measure, not window width.
+   
+   Prose past about ninety characters a line is harder to read wide than narrow,
+   so widening adds margin rather than characters. And once there is room, the
+   type can breathe: a document you have deliberately made bigger to read should
+   look like one, not like the same pane with more air on either side. Not the
+   CV or the PDF, which have their own typography and a page to fit. */
+.bench-body.wide .reading {
+  max-inline-size: 74ch; margin-inline: auto;
+  padding-block: 44px; font-size: 15.5px; line-height: 1.8;
+}
+.bench-body.wide .reading h1 { font-size: 27px; margin-block-end: 18px; }
+.bench-body.wide .reading h2 { font-size: 19px; margin-block: 34px 10px; }
+.bench-body.wide .reading h3 { font-size: 15px; margin-block: 26px 8px; }
+
+/*
+ * Inside the prep document a heading is its own block, so the block already
+ * carries the space above it. Leaving the heading's own top margin on as well
+ * stacked the two and opened a gap you could park a car in.
+ */
+.prep-doc .block > h1, .prep-doc .block > h2, .prep-doc .block > h3 { margin-block-start: 0; }
+.bench-body.wide .reading blockquote { font-size: 16px; margin-block: 20px; padding-inline-start: 20px; }
+.bench-body.wide .reading li { margin-block: 7px; }
+.bench-body.wide .reading hr { margin-block: 44px; }
+.bench-body.wide .prep-doc .block + .block { margin-block-start: 12px; }
+.bench-body.wide .prep-doc .block:has(h1),
+.bench-body.wide .prep-doc .block:has(h2),
+.bench-body.wide .prep-doc .block:has(h3) { margin-block-start: 34px; }
 
 .widen {
   order: 99; margin-inline-start: auto; align-self: center;
@@ -1553,6 +1577,9 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   color: var(--ink-3);
 }
 .widen:hover { background: var(--muted-bg); color: var(--ink); }
+/* The browser's blue ring is the one thing on this page that is not on brand. */
+.widen:focus { outline: none; }
+.widen:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tabs { align-items: center; }
 @media (prefers-reduced-motion: reduce) {
   .bench-body, .bench-body > .side { transition: none; }

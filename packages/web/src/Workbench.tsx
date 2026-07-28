@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildProgress, Markdown, Thinking, collapse } from "./Activity.js";
 import { PrepDoc } from "./Prep.js";
+import { longDate } from "./dates.js";
 import { useSocket } from "./socket.js";
 import { AGENTS, MODELS, type AgentKey } from "./models.js";
 
@@ -214,6 +215,36 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string; covers: st
       "follow-up for each, and say what each one signals about me.",
   },
   {
+    /*
+     * Two that act on the document rather than adding to it.
+     *
+     * A prep document written a week ago and edited twice since is the one
+     * most likely to be out of date and the one nobody rewrites, because
+     * rewriting it means reading all of it first. Both of these are explicitly
+     * non-destructive: the failure mode of an agent editing a document you have
+     * been working in is that your own sentences quietly disappear, and once
+     * that happens once you stop trusting it with the file.
+     */
+    label: "Update it",
+    hint: "Check it against the latest, keep everything of yours",
+    covers: [],
+    ask:
+      "Re-check this prep document against the job description, the research and anything you " +
+      "can verify now, and update it. Correct anything that has become wrong, add what is " +
+      "genuinely new, and leave everything else exactly as it is. Do not remove or reword my own " +
+      "notes. Say what you changed and why in the conversation, in one line per change.",
+  },
+  {
+    label: "Tighten it",
+    hint: "Same content, fewer words. Nothing cut",
+    covers: [],
+    ask:
+      "Tighten this prep document. Cut filler, collapse repetition, and turn paragraphs into " +
+      "bullets where a bullet says it better. Keep every fact, every figure, every quoted line " +
+      "and every section heading: this is compression, not editing, and nothing may be lost. " +
+      "Leave my own notes alone. Tell me roughly how much shorter it got.",
+  },
+  {
     label: "Grill me",
     covers: [],
     hint: "A hostile mock interview, no encouragement",
@@ -257,9 +288,15 @@ function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" |
     archive: "M2.5 5.5h11m-10 0v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7m-7 0v-2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6.5 8v3m3-3v3",
     chevron: "m4.5 6.5 3.5 3 3.5-3",
     doc: "M9 1.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5m-4-3.5L12.5 5m-4-3.5V4a1 1 0 0 0 1 1h3",
-    // Arrows pushing outward, and pulling back in.
-    expand: "M6.5 3.5h-3v3m0 6v3h3m6-12h3v3m0 6v3h-3",
-    collapse: "M3.5 6.5h3v-3m9 3h-3v-3m-6 9h3v3m9-3h-3v3",
+    /*
+     * Two arrows on the diagonal, pointing out and pointing in.
+     *
+     * The first attempt drew four corner brackets, which is the "fullscreen"
+     * glyph and reads as neither direction. An arrow has to have a head and a
+     * tail or it is a decoration.
+     */
+    expand: "M6.5 2.5H2.5v4M2.5 2.5 6.5 6.5M9.5 13.5h4v-4M13.5 13.5 9.5 9.5",
+    collapse: "M2.5 6.5h4v-4M6.5 6.5 2.5 2.5M13.5 9.5h-4v4M9.5 9.5l4 4",
   };
   return (
     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden focusable="false">
@@ -319,13 +356,6 @@ function Asked({ text }: { text: string }) {
       {open != null && <pre className="attached-peek">{parts[open]?.body}</pre>}
     </div>
   );
-}
-
-/** "2026-07-26" reads as a serial number. "26 July" reads as a day. */
-function longDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 }
 
 /** Frontmatter is plumbing; it should not be the first thing you read. */
