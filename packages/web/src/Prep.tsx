@@ -164,12 +164,22 @@ export function PrepDoc({
 
   const commit = (i: number, next: string) => {
     setEditing(null);
-    if (next === blocks[i]) return;
+    if (next === (blocks[i] ?? "")) return;
     const copy = [...blocks];
+    /*
+     * Index past the end means a new block.
+     *
+     * The old "Add a note" wrote an empty block immediately, and write() drops
+     * empty blocks on the way out, so it was stripped before it reached the
+     * file and the cursor was sent to a block that no longer existed. Nothing
+     * is written until there is something to write now: the editor is rendered
+     * one past the end, and only what you type becomes a block.
+     */
+    if (i >= copy.length) copy.push(next);
     // Emptying a block deletes it, which is the only delete this needs: a
     // paragraph you have selected all of and typed over is a paragraph you
     // meant to remove.
-    copy[i] = next;
+    else copy[i] = next;
     write(copy);
   };
 
@@ -210,16 +220,27 @@ export function PrepDoc({
         ),
       )}
 
-      {/* Somewhere to start, and somewhere to carry on. */}
-      <button
-        className="block-add"
-        onClick={() => {
-          write([...blocks, ""]);
-          setEditing(blocks.length);
-        }}
-      >
-        {blocks.length ? "Add a note" : "Nothing here yet. Click to start writing, or ask a question on the right."}
-      </button>
+      {/*
+        A new block at the end, written only once it says something.
+        
+        This is also where a brief goes. Paste a task spec, an email or a
+        take-home into it and it becomes part of the document the agent reads,
+        which is the difference between the model knowing what you have been
+        asked to do and you describing it from memory.
+      */}
+      {editing === blocks.length ? (
+        <Editing
+          value=""
+          onCommit={(next) => commit(blocks.length, next)}
+          onCancel={() => setEditing(null)}
+        />
+      ) : (
+        <button className="block-add" onClick={() => setEditing(blocks.length)}>
+          {blocks.length
+            ? "Add a note, or paste the brief"
+            : "Nothing here yet. Click to write or paste, or ask a question on the right."}
+        </button>
+      )}
 
       {picked && (
         <button

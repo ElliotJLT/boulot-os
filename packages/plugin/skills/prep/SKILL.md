@@ -101,14 +101,33 @@ beats a complete one that is padded.
 
 ## Answering a single question
 
-When asked one thing rather than for the whole document, answer in the
-conversation **and** append it to `prep.md` under a heading of its own. Leave
-everything already in that file alone: some of it is the candidate's own
-writing, and some of it they have edited on purpose.
+Answer in the conversation first. Then decide whether it belongs in the
+document at all, and if it does, where.
 
-If the question quotes a passage from `prep.md`, that passage is the subject.
-Edit it in place rather than appending a new section saying the same thing
-differently.
+**Most answers do not belong in it.** The test is whether it changes what the
+candidate would say or do in the room. Explaining a term, confirming a guess,
+talking something through — that is a conversation, and the conversation is
+already kept. Putting it in the document makes the document longer without
+making it more useful, and length is the enemy of a thing read twenty minutes
+before a call.
+
+**When it does belong, file it, do not append it.** Find the section it is
+about and put it there, rewriting that section so it reads as one thought
+rather than an original plus a correction. A new heading is for something the
+document genuinely does not cover yet.
+
+Appending under a new heading every time is what produces a good document
+followed by fifteen sections called "Q&A — ...", ordered by when they were asked
+rather than by what they are about. Everything after the first screenful stops
+being read, which means the best material — usually the later material — is the
+material that gets lost.
+
+**If the question quotes a passage**, that passage is the subject. Edit it in
+place. Never leave the old version above the new one.
+
+**Never touch the candidate's own writing**, wherever it sits. Some of the file
+is theirs and some of it they have deliberately edited; both are off limits
+unless they ask.
 
 ## Mock interview
 
