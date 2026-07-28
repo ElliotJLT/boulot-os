@@ -1493,3 +1493,20 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   background: var(--panel); color: var(--ink-2);
   font-size: 12px; line-height: 1.55; white-space: pre-wrap;
 }
+
+/* A pasted attachment inside the sent bubble: same chip, on the accent. */
+.asked .asked-text { margin: 0; }
+.asked .attached { padding: 0; margin-block-start: 8px; }
+.asked .attached:first-child { margin-block-start: 0; }
+.asked .chip-file {
+  background: rgb(255 255 255 / 14%); border-color: rgb(255 255 255 / 22%);
+}
+.asked .chip-file .chip-open { color: rgb(255 255 255 / 90%); padding-inline-end: 10px; }
+.asked .chip-file .chip-open:hover { color: #fff; }
+.asked .chip-file svg { opacity: 0.75; }
+.asked .chip-file em { color: rgb(255 255 255 / 65%); }
+.asked .attached-peek {
+  margin-block-start: 8px; margin-block-end: 0; white-space: pre-wrap;
+  background: rgb(255 255 255 / 10%); border-color: rgb(255 255 255 / 20%);
+  color: rgb(255 255 255 / 88%);
+}

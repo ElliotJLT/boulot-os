@@ -271,6 +271,53 @@ function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" |
   );
 }
 
+/**
+ * What you asked, with the pasted material folded back up.
+ *
+ * The composer collapses a big paste to a chip, and then sending it unrolled a
+ * thousand words into the transcript anyway. The point of collapsing was to
+ * keep the conversation readable, and the conversation is mostly the record of
+ * what was said rather than the box you say it in: a recruiter's whole email
+ * sitting above your one-line question is the same problem one screen later.
+ *
+ * The text is unchanged. It is stored whole, sent whole, and written whole into
+ * conversation.md. Only this view folds it.
+ */
+function Asked({ text }: { text: string }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const parts: Array<{ name: string; body: string }> = [];
+  const typed = text
+    .replace(/<pasted name="([^"]*)">\n?([\s\S]*?)\n?<\/pasted>/g, (_m, name: string, body: string) => {
+      parts.push({ name, body });
+      return "";
+    })
+    .trim();
+
+  return (
+    <div className="asked">
+      {typed && <p className="asked-text">{typed}</p>}
+      {parts.length > 0 && (
+        <div className="attached">
+          {parts.map((a, i) => (
+            <span key={i} className="chip-file">
+              <button
+                className="chip-open"
+                title={`${a.body.length.toLocaleString()} characters. Click to read it.`}
+                onClick={() => setOpen(open === i ? null : i)}
+              >
+                <Icon name="doc" />
+                {a.name}
+                <em>{Math.max(1, Math.round(a.body.length / 100) / 10)}k</em>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {open != null && <pre className="attached-peek">{parts[open]?.body}</pre>}
+    </div>
+  );
+}
+
 /** "2026-07-26" reads as a serial number. "26 July" reads as a day. */
 function longDate(iso: string): string {
   const d = new Date(iso);
@@ -1502,9 +1549,7 @@ export function Workbench({
             */}
             {turns.map((t, i) =>
               t.who === "you" ? (
-                <div className="asked" key={i}>
-                  {t.text}
-                </div>
+                <Asked key={i} text={t.text} />
               ) : (
                 <div className="answer" key={i}>
                   <Markdown text={t.text} />
