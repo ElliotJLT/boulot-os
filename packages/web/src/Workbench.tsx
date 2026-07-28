@@ -1092,15 +1092,26 @@ export function Workbench({
               `answer changes it, edit that passage in place rather than appending a new section ` +
               `saying the same thing differently.\n\n`
             : "") +
-          `Answer in the conversation. If the answer is worth having in the room, append it to ` +
-          `active/${slug}/${target} under a heading of its own, creating the file if needed, and ` +
-          `leave everything already in that file alone: the notes there are the user's own and ` +
-          `some of them will be theirs rather than yours.` +
-          (target !== "prep.md"
-            ? ` That file is "${targetName}", a later stage of this process with its own tab. ` +
-              `Write there rather than in prep.md, which belongs to the first round. The user can ` +
-              `make more of these; each is a stage, not a draft of another one.`
-            : "") +
+          (target === "prep.md"
+            ? `Answer in the conversation. Prep is already written, so only write into ` +
+              `active/${slug}/prep.md if this genuinely changes what gets said in the room, and ` +
+              `then file it into the section it belongs to rather than appending a new one.`
+            : /*
+               * A tab the user made is an instruction, not a suggestion.
+               *
+               * Making a tab called "Stack basics" and then asking about the
+               * stack inside it says exactly where the answer goes. The rule
+               * that most answers stay in the conversation is right for prep,
+               * which fills with Q&A otherwise, and wrong here: it produced a
+               * long answer in the chat and an empty document beside it, which
+               * is the one outcome the tab was created to prevent.
+               */
+              `Write the answer into active/${slug}/${target}, and summarise it in the ` +
+              `conversation rather than repeating it. That file is "${targetName}": the user ` +
+              `made this tab for exactly this material, so asking here is an instruction to ` +
+              `write there. Build it into a document that stands on its own and reads in order, ` +
+              `rather than appending question-and-answer sections. Create it if it is empty.`) +
+          ` Never edit anything under a heading called "My notes": that section is the user's.` +
           ` Be specific to this company and this job description. Generic interview advice is ` +
           `worse than nothing, because it reads as preparation and is not.`,
         "Working",

@@ -125,6 +125,23 @@ material that gets lost.
 **If the question quotes a passage**, that passage is the subject. Edit it in
 place. Never leave the old version above the new one.
 
+## Tabs the candidate made
+
+`prep.md` is the first round. A file named after something else — `stack-basics.md`,
+`take-home-task.md`, `round-2.md` — is a tab the candidate created, and creating
+it is the instruction.
+
+**When the question arrives against one of those, write the answer into it.**
+The rule below about most answers staying in the conversation exists because
+prep.md fills with Q&A sections otherwise. It does not apply here: a tab called
+"Stack basics", asked a question about the stack, is someone telling you exactly
+where the answer goes. Answering at length in the conversation and leaving the
+document empty is the one outcome the tab was made to prevent.
+
+Build these as documents that stand on their own and read in order, not as a
+log of questions and answers. Someone opening "Stack basics" cold wants a
+briefing, not a transcript of how it was assembled.
+
 ## Who owns what in the file
 
 One heading is protected and the rest of the document is yours.
