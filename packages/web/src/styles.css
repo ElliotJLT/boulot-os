@@ -1510,3 +1510,15 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   background: rgb(255 255 255 / 10%); border-color: rgb(255 255 255 / 20%);
   color: rgb(255 255 255 / 88%);
 }
+
+/* A section break, drawn the way the CV draws them: a hairline that stops
+   short of both edges, so it reads as a pause rather than a border. */
+.reading hr {
+  border: 0; block-size: 1px; margin: 22px auto;
+  inline-size: 72%;
+  background: linear-gradient(90deg, transparent, var(--line-2) 22%, var(--line-2) 78%, transparent);
+}
+/* Inside the prep document a rule is its own block, so the block padding would
+   double the space around it. */
+.prep-doc .block:has(hr) { padding-block: 0; }
+.prep-doc .block:has(hr):hover { background: none; }

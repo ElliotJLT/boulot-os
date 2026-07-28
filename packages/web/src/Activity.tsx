@@ -146,6 +146,21 @@ export function Markdown({ text }: { text: string }) {
     }
 
     /*
+     * A horizontal rule, which had no branch at all.
+     *
+     * Three dashes fell through to the paragraph handler and printed as the
+     * literal characters "---" in a box of their own, which is worse than not
+     * supporting rules: the document looked like it had a typo in it. Written
+     * documents use them to separate sections and the prep exemplar is full of
+     * them.
+     */
+    if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
+      flush();
+      out.push(<hr key={`r${out.length}`} />);
+      continue;
+    }
+
+    /*
      * Blockquotes, which the prep document is full of.
      *
      * Without this a quoted passage fell through to the paragraph branch, so
