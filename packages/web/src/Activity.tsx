@@ -361,7 +361,17 @@ export function BuildProgress({ labels, running }: { labels: string[]; running: 
             {s.key === "reviewing" && reached.has("reviewing") && (
               <ul className="rail-agents">
                 {AGENTS.map((agent) => {
-                  const spoke = labels.some((l) => agent.match.test(l));
+                  /*
+                   * A finished parent cannot have unfinished children.
+                   *
+                   * Each reviewer is matched by the wording of its own tool
+                   * calls, and a reviewer that says nothing quotable leaves no
+                   * label to match. Once the run has moved past reviewing, all
+                   * three have been and gone, so an empty circle underneath a
+                   * ticked "Three agent review" is the display failing rather
+                   * than the reviewer.
+                   */
+                  const spoke = labels.some((l) => agent.match.test(l)) || done || doneNow;
                   return (
                     <li key={agent.key} className={spoke ? "agent-on" : "agent-off"}>
                       <span className="rail-mark">{spoke ? "✓" : ""}</span>

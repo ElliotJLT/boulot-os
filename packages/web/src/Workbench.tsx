@@ -1591,13 +1591,19 @@ export function Workbench({
           <div className="log">
             {/*
               Where the work has got to, above the list of what it touched.
-              
+
               A build reads the job description three times because three
               reviewers each read it, which is correct and reads as a stuck
-              loop. The calls are still here, one fold down, for anyone who
-              wants them.
+              loop. The rail says it once.
+
+              Only for a build. This rail names the stages of writing a CV —
+              mapping the job description, three reviewers, rendering the page —
+              and none of that is happening once the application is out. Adopting
+              a prep run put it on the interview screen, where it announced work
+              nobody had asked for and that was not being done, next to a
+              conversation about what to say on a call.
             */}
-            {activity.length > 0 && runKind !== "tweak" && (
+            {activity.length > 0 && runKind !== "tweak" && !talking && (
               <BuildProgress labels={activity} running={Boolean(running)} />
             )}
             {/*
