@@ -137,7 +137,16 @@ export function readApplication(
     company: displayCompany(company, slug),
     role: pick(data, "role") ?? "",
     stage: norm.stage ?? "lead",
-    substage: norm.substage,
+    /*
+     * An explicit substage beats one salvaged from a malformed stage.
+     *
+     * normaliseStage recovers a substage from compound values like
+     * "interview - in-office task day", which is why it exists. But a file that
+     * says `substage: Take-home task` on its own line has said so deliberately,
+     * and reading only the salvaged one meant the app wrote that field on every
+     * new round and then never read it back.
+     */
+    substage: pick(data, "substage") ?? norm.substage,
     outcome: norm.outcome,
     flags,
     appliedDate: pick(data, "applied_date"),

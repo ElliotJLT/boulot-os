@@ -811,6 +811,33 @@ app.post<{ Params: { who: string; slug: string }; Body: { name?: string } }>(
     const path = join(dir, `${key}.md`);
     if (existsSync(path)) return { key, label: titleOf(path, name), existed: true };
     writeFileSync(path, `# ${name}\n\n`);
+
+    /*
+     * A named round is the record that the round exists.
+     *
+     * substage has been in the schema since the beginning, meant for exactly
+     * this — "Round 2", "In-office task day" — and nothing has ever written to
+     * it. Making a tab called "Round 2 task" is the moment that fact becomes
+     * true, and it is the only moment anybody would ever have typed it in.
+     * Asking separately would be asking a person to record what the system just
+     * watched them do.
+     */
+    const status = join(dir, "status.md");
+    if (existsSync(status)) {
+      const app = readApplication(status, req.params.slug);
+      if (["screening", "interviewing", "offer"].includes(app.stage)) {
+        writeFileSync(
+          status,
+          updateFrontmatter(readFileSync(status, "utf8"), {
+            substage: name,
+            // The old date belonged to the round that has just been superseded.
+            interview_date: null,
+            last_updated: todayStr(),
+          }),
+        );
+      }
+    }
+
     return { key, label: name, existed: false };
   },
 );

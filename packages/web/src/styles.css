@@ -907,6 +907,11 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   box-shadow: inset 0 0 0 1px rgb(63 107 74 / 22%);
 }
 .card .sent-due .sent-dot { opacity: 1; }
+/* A date that has gone by, waiting on you to say what happened. */
+.card .sent-ask {
+  background: var(--warn-bg); color: var(--warn); font-weight: 500;
+  box-shadow: inset 0 0 0 1px rgb(138 100 16 / 22%);
+}
 .card .sent-fresh { background: var(--accent-soft); color: var(--accent-deep); }
 .card .sent-fresh .sent-dot { opacity: 1; }
 .card .sent-aging { background: var(--warn-bg); color: var(--warn); }

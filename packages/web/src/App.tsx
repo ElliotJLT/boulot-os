@@ -139,17 +139,27 @@ function cardTiming(app: App): { label: string; band: string } | null {
        * further out sits with everything else.
        */
       return {
-        label: `Interview ${whenIn(days, app.interviewDate)}`,
+        label: `${app.substage ?? "Interview"} ${whenIn(days, app.interviewDate)}`,
         band: days === 0 ? "today" : days <= 2 ? "due" : "fresh",
       };
     }
+    /*
+     * A date that has passed is a question, not a claim.
+     *
+     * "Interview today" was still on the card the following morning, which is
+     * the one reading that is definitely wrong. The app can see the date went
+     * by. It cannot see how it went, and that is the only thing worth knowing,
+     * so it stops asserting and starts asking.
+     */
+    return { label: "Interview done — what next?", band: "ask" };
   }
   if (IN_PROCESS.has(app.stage)) {
     const from = app.stageChanged ?? app.appliedDate;
     const since = from ? ago(from) : null;
-    if (!since) return { label: "Interviewing", band: "fresh" };
+    const what = app.substage ?? "Interviewing";
+    if (!since) return { label: what, band: "fresh" };
     return {
-      label: `Interviewing since ${since.label.replace(/ ago$/, "")}`,
+      label: `${what} since ${since.label.replace(/ ago$/, "")}`,
       band: since.days > 7 ? "aging" : "fresh",
     };
   }

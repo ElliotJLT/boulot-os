@@ -742,6 +742,23 @@ export function Workbench({
   };
 
   /** Record that it went out, and let the board work out the date. */
+  const addTab = async (raw: string) => {
+    const name = raw.trim();
+    setNaming(false);
+    if (!name) return;
+    const d = await fetch(`/api/${who}/job/${slug}/doc`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    })
+      .then((r) => r.json())
+      .catch(() => null);
+    if (!d?.key) return;
+    chosen.current = true;
+    setTab(d.key);
+    void refresh();
+  };
+
   const saveInterviewDate = async (date: string) => {
     setInterviewDate(date || null);
     setEditingDate(false);
@@ -1372,26 +1389,21 @@ export function Workbench({
                       className="tab-new"
                       autoFocus
                       placeholder="Round 2, take-home…"
-                      onBlur={() => setNaming(false)}
+                      /*
+                       * Clicking away creates it, the same as pressing Enter.
+                       *
+                       * Discarding on blur throws away typing that took effort
+                       * on the theory that leaving the field means changing your
+                       * mind. It usually means you thought you were finished.
+                       * Escape is the way to mean no, and it still is.
+                       */
+                      onBlur={(e) => void addTab(e.currentTarget.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Escape") setNaming(false);
-                        if (e.key !== "Enter") return;
-                        const name = e.currentTarget.value.trim();
-                        if (!name) return setNaming(false);
-                        void fetch(`/api/${who}/job/${slug}/doc`, {
-                          method: "POST",
-                          headers: { "content-type": "application/json" },
-                          body: JSON.stringify({ name }),
-                        })
-                          .then((r) => r.json())
-                          .then((d: { key?: string }) => {
-                            setNaming(false);
-                            if (!d.key) return;
-                            chosen.current = true;
-                            setTab(d.key);
-                            void refresh();
-                          })
-                          .catch(() => setNaming(false));
+                        if (e.key === "Escape") {
+                          e.currentTarget.value = "";
+                          setNaming(false);
+                        }
+                        if (e.key === "Enter") void addTab(e.currentTarget.value);
                       }}
                     />
                   ) : (
