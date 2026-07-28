@@ -130,9 +130,17 @@ function cardTiming(app: App): { label: string; band: string } | null {
   if (app.interviewDate) {
     const days = daysUntil(app.interviewDate);
     if (days != null && days >= 0) {
+      /*
+       * Today is its own state, not the top of a scale.
+       *
+       * "Interview today" and "Interview on Thursday" ask for completely
+       * different behaviour in the next hour, and a slightly stronger green
+       * does not carry that. Today fills; the next two days tint; anything
+       * further out sits with everything else.
+       */
       return {
         label: `Interview ${whenIn(days, app.interviewDate)}`,
-        band: days <= 2 ? "due" : "fresh",
+        band: days === 0 ? "today" : days <= 2 ? "due" : "fresh",
       };
     }
   }
