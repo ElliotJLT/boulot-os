@@ -617,6 +617,79 @@ const DOCS = {
 } as const;
 type DocKey = keyof typeof DOCS;
 
+/*
+ * Tabs you make yourself.
+ *
+ * The fixed six carry an application from posting to interview, and then stop.
+ * A process that goes further — a second round, a take-home, a panel — has
+ * documents nobody could have named in advance, and the alternative to making
+ * them here is a folder of markdown the app cannot see.
+ *
+ * Stored as plain files beside the others, named from what you called the tab,
+ * so they read without this app and the agent can be pointed at them by name.
+ */
+const RESERVED = new Set([
+  ...Object.values(DOCS).map((d) => d.file),
+  "status.md",
+  "outcome.md",
+  "conversation.md",
+  "cv.fit.json",
+  "cv.html",
+]);
+
+/** A tab name to a filename: lowercase, hyphens, nothing that escapes a folder. */
+function docSlug(name: string): string | null {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : null;
+}
+
+/** The title a custom document carries, so renaming happens in the file. */
+function titleOf(path: string, fallback: string): string {
+  try {
+    const text = readFileSync(path, "utf8");
+    return (
+      /^title:\s*(.+)$/m.exec(text)?.[1]?.trim() ||
+      /^#\s+(.+)$/m.exec(text)?.[1]?.trim() ||
+      fallback
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+/** Every custom document in an application folder, in creation order. */
+function customDocs(dir: string): Array<{ key: string; label: string; file: string; exists: true }> {
+  try {
+    return readdirSync(dir)
+      .filter((f) => f.endsWith(".md") && !RESERVED.has(f))
+      .map((f) => ({ f, at: statSync(join(dir, f)).birthtimeMs || statSync(join(dir, f)).mtimeMs }))
+      .sort((a, b) => a.at - b.at)
+      .map(({ f }) => {
+        const key = f.replace(/\.md$/, "");
+        return {
+          key,
+          label: titleOf(join(dir, f), key.replace(/-/g, " ")),
+          file: f,
+          exists: true as const,
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
+/** Resolve a document key to a filename, fixed or custom. */
+function docFile(key: string): string | null {
+  const fixed = (DOCS as Record<string, { file: string } | undefined>)[key];
+  if (fixed) return fixed.file;
+  const slug = docSlug(key);
+  return slug && !RESERVED.has(`${slug}.md`) ? `${slug}.md` : null;
+}
+
 function jobDir(who: string, slug: string): string | null {
   for (const bucket of ["active", "archive"]) {
     try {
@@ -667,6 +740,11 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
       const exists = existsSync(p);
       return { key, label: d.label, file: d.file, exists, chars: exists ? readFileSync(p, "utf8").length : 0 };
     }),
+    // Tabs the user made, discovered from the folder rather than from a list.
+    extra: customDocs(dir).map((d) => ({
+      ...d,
+      chars: readFileSync(join(dir, d.file), "utf8").length,
+    })),
     pdf: findPdf(dir),
     downloadName: (() => {
       const status = join(dir, "status.md");
@@ -689,28 +767,51 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
   };
 });
 
-app.get<{ Params: { who: string; slug: string; doc: DocKey } }>(
+app.get<{ Params: { who: string; slug: string; doc: string } }>(
   "/api/:who/job/:slug/doc/:doc",
   async (req, reply) => {
-    const meta = DOCS[req.params.doc];
-    if (!meta) return reply.code(400).send({ error: "unknown document" });
+    const file = docFile(req.params.doc);
+    if (!file) return reply.code(400).send({ error: "unknown document" });
     const dir = jobDir(req.params.who, req.params.slug);
     if (!dir) return reply.code(404).send({ error: "no such application" });
-    const p = join(dir, meta.file);
+    const p = join(dir, file);
     return { markdown: existsSync(p) ? readFileSync(p, "utf8") : "", exists: existsSync(p) };
   },
 );
 
-app.put<{ Params: { who: string; slug: string; doc: DocKey }; Body: { markdown: string } }>(
+app.put<{ Params: { who: string; slug: string; doc: string }; Body: { markdown: string } }>(
   "/api/:who/job/:slug/doc/:doc",
   async (req, reply) => {
-    const meta = DOCS[req.params.doc];
-    if (!meta) return reply.code(400).send({ error: "unknown document" });
+    const file = docFile(req.params.doc);
+    if (!file) return reply.code(400).send({ error: "unknown document" });
     if (typeof req.body?.markdown !== "string") return reply.code(400).send({ error: "markdown required" });
     const dir = jobDir(req.params.who, req.params.slug);
     if (!dir) return reply.code(404).send({ error: "no such application" });
-    writeFileSync(join(dir, meta.file), req.body.markdown);
+    writeFileSync(join(dir, file), req.body.markdown);
     return { saved: true };
+  },
+);
+
+/*
+ * A new tab, which is a new file.
+ *
+ * Created with its title as the first line, so the name lives in the document
+ * rather than in a registry the file knows nothing about. Rename the heading
+ * and the tab follows.
+ */
+app.post<{ Params: { who: string; slug: string }; Body: { name?: string } }>(
+  "/api/:who/job/:slug/doc",
+  async (req, reply) => {
+    const name = (req.body?.name ?? "").trim();
+    const key = docSlug(name);
+    if (!name || !key) return reply.code(400).send({ error: "name required" });
+    if (RESERVED.has(`${key}.md`)) return reply.code(409).send({ error: "that name is taken" });
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+    const path = join(dir, `${key}.md`);
+    if (existsSync(path)) return { key, label: titleOf(path, name), existed: true };
+    writeFileSync(path, `# ${name}\n\n`);
+    return { key, label: name, existed: false };
   },
 );
 

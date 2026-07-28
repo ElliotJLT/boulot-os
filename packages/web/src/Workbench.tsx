@@ -131,7 +131,7 @@ const OUTPUTS = [
 const PREP = { key: "prep", label: "Prep" } as const;
 
 const SOURCES = [
-  { key: "job", label: "Job description" },
+  { key: "job", label: "JD" },
   { key: "research", label: "Research" },
 ] as const;
 
@@ -418,6 +418,9 @@ export function Workbench({
     });
   };
   const [menu, setMenu] = useState(false);
+  /** Tabs made for this application: a second round, a task, a panel. */
+  const [extra, setExtra] = useState<Array<{ key: string; label: string; exists: boolean }>>([]);
+  const [naming, setNaming] = useState(false);
   /*
    * Remembered per browser, not per application.
    *
@@ -493,6 +496,7 @@ export function Workbench({
   const refresh = useCallback(async () => {
     const d = await fetch(`/api/${who}/job/${slug}/docs`).then((r) => r.json());
     setDocs(d.docs ?? []);
+    setExtra(d.extra ?? []);
     setPdfFile(d.pdf ?? null);
     /*
      * Open on the thing this stage is about.
@@ -1032,6 +1036,16 @@ export function Workbench({
      * instead, and one place to write.
      */
     if (talking) {
+      /*
+       * Whichever document you are looking at is the one being written.
+       *
+       * Prep is the first round. A second round, a take-home or a panel gets a
+       * tab of its own, and answers belong in the tab that is open rather than
+       * all reverting to prep.md, which would turn one document into a pile of
+       * unrelated rounds.
+       */
+      const target = extra.some((e) => e.key === tab) ? `${tab}.md` : "prep.md";
+      const targetName = extra.find((e) => e.key === tab)?.label ?? "Prep";
       send(
         `Use the boulot:prep skill. Application: active/${slug}. This has already been sent ` +
           `and the interview is what is left. Do not edit cv.md, cover-letter.md or ` +
@@ -1040,6 +1054,7 @@ export function Workbench({
           attach("job_description", job, "job.md") +
           attach("research", text.research ?? "", "research.md") +
           attach("prep_notes", text.prep ?? "", "prep.md") +
+          (target !== "prep.md" ? attach("this_round", text[tab] ?? "", target) : "") +
           `\n\nQuestion: ${q}\n\n` +
           (q.includes("> ")
             ? `The quoted passage is from prep.md and is what the question is about. If your ` +
@@ -1047,11 +1062,16 @@ export function Workbench({
               `saying the same thing differently.\n\n`
             : "") +
           `Answer in the conversation. If the answer is worth having in the room, append it to ` +
-          `active/${slug}/prep.md under a heading of its own, creating the file if needed, and ` +
+          `active/${slug}/${target} under a heading of its own, creating the file if needed, and ` +
           `leave everything already in that file alone: the notes there are the user's own and ` +
-          `some of them will be theirs rather than yours. Be specific to this company and this ` +
-          `job description. Generic interview advice is worse than nothing, because it reads as ` +
-          `preparation and is not.`,
+          `some of them will be theirs rather than yours.` +
+          (target !== "prep.md"
+            ? ` That file is "${targetName}", a later stage of this process with its own tab. ` +
+              `Write there rather than in prep.md, which belongs to the first round. The user can ` +
+              `make more of these; each is a stage, not a draft of another one.`
+            : "") +
+          ` Be specific to this company and this job description. Generic interview advice is ` +
+          `worse than nothing, because it reads as preparation and is not.`,
         "Working",
         "tweak",
         modelFor(),
@@ -1302,7 +1322,6 @@ export function Workbench({
                     !NO_DOCUMENT.has(e.key) &&
                     (include.has(e.key) || docs.find((d) => d.key === e.key)?.exists),
                 ).map((e) => ({ key: e.key, label: e.key === "cover" ? "Cover letter" : "Questions" })),
-                ...(talking ? [PREP] : []),
               ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
                 const d = docs.find((x) => x.key === t.key);
@@ -1322,6 +1341,67 @@ export function Workbench({
                 );
               })}
             </div>
+
+            {/*
+              Prep and anything after it are their own group.
+
+              The first group is what was sent. These are what happens next, and
+              a second round or a take-home is not another draft of the
+              application: it is a different stage of the same process, and the
+              rule keeps that legible without a label explaining it.
+            */}
+            {talking && (
+              <>
+                <span className="tab-split" />
+                <div className="tab-group">
+                  {[PREP, ...extra].map((t) => (
+                    <button
+                      key={t.key}
+                      className={tab === t.key ? "on" : ""}
+                      onClick={() => {
+                        chosen.current = true;
+                        setTab(t.key);
+                        setDirty(false);
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                  {naming ? (
+                    <input
+                      className="tab-new"
+                      autoFocus
+                      placeholder="Round 2, take-home…"
+                      onBlur={() => setNaming(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setNaming(false);
+                        if (e.key !== "Enter") return;
+                        const name = e.currentTarget.value.trim();
+                        if (!name) return setNaming(false);
+                        void fetch(`/api/${who}/job/${slug}/doc`, {
+                          method: "POST",
+                          headers: { "content-type": "application/json" },
+                          body: JSON.stringify({ name }),
+                        })
+                          .then((r) => r.json())
+                          .then((d: { key?: string }) => {
+                            setNaming(false);
+                            if (!d.key) return;
+                            chosen.current = true;
+                            setTab(d.key);
+                            void refresh();
+                          })
+                          .catch(() => setNaming(false));
+                      }}
+                    />
+                  ) : (
+                    <button className="tab-add" title="Add a tab for this round" onClick={() => setNaming(true)}>
+                      +
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             <span className="tab-split" />
 
@@ -1357,11 +1437,11 @@ export function Workbench({
             <iframe className="pdf" key={pdfKey} title="CV" src={`/api/${who}/job/${slug}/file/${encodeURIComponent(pdfFile ?? "cv.pdf")}?v=${pdfKey}`} />
           ) : text[tab] === undefined ? (
             <p className="hint">Loading…</p>
-          ) : tab === "prep" ? (
+          ) : tab === "prep" || extra.some((e) => e.key === tab) ? (
             <PrepDoc
-              text={text.prep ?? ""}
+              text={text[tab] ?? ""}
               onChange={(next) => {
-                setText((t) => ({ ...t, prep: next }));
+                setText((t) => ({ ...t, [tab]: next }));
                 setDirty(true);
               }}
               onAsk={(passage) => {
@@ -1458,7 +1538,8 @@ export function Workbench({
               </div>
               <p className="prep-lede">
                 The job description and the research are on the left. Anything you ask goes into{" "}
-                <b>Prep</b>, where you can edit it and write your own notes beside it.
+                <b>{extra.find((e) => e.key === tab)?.label ?? "Prep"}</b>, the tab you have open,
+                where you can edit it and write your own notes beside it.
               </p>
               {/*
                 Only what the document does not already cover.

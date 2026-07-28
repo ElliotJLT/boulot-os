@@ -1596,3 +1596,18 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 @media (prefers-reduced-motion: reduce) {
   .bench-body, .bench-body > .side { transition: none; }
 }
+
+/* A tab you make yourself, and the plus that makes it. */
+.tab-add {
+  font: inherit; font-size: 15px; line-height: 1; cursor: pointer;
+  border: 0; background: none; color: var(--ink-3);
+  padding: 4px 9px 6px; border-radius: 6px;
+}
+.tab-add:hover { background: var(--muted-bg); color: var(--ink); }
+.tab-new {
+  font: inherit; font-size: 12px; inline-size: 130px;
+  padding: 5px 9px; margin-inline-start: 2px;
+  border: 1px solid var(--accent); border-radius: 6px;
+  background: var(--panel); color: var(--ink);
+}
+.tab-new:focus { outline: none; }
