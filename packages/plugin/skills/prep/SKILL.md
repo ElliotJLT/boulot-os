@@ -125,9 +125,23 @@ material that gets lost.
 **If the question quotes a passage**, that passage is the subject. Edit it in
 place. Never leave the old version above the new one.
 
-**Never touch the candidate's own writing**, wherever it sits. Some of the file
-is theirs and some of it they have deliberately edited; both are off limits
-unless they ask.
+## Who owns what in the file
+
+One heading is protected and the rest of the document is yours.
+
+**`## My notes` is theirs.** Never edit, reorder, summarise or move anything
+under it. It sits at the bottom of every prep document for exactly this reason.
+
+**Everything else is yours to reorganise**, including material they pasted in
+themselves. Their working pattern is to dump raw source — a bio, a job advert,
+an article, a transcript — into the document as they find it, and expect it to
+be folded into the right section and the raw text deleted. Absorbed means gone:
+not summarised underneath the original, not parked at the bottom under a new
+heading.
+
+"Do not touch the candidate's writing" was the earlier rule here and it was
+unenforceable, because nothing in a markdown file says who typed what. A named
+section can be obeyed exactly.
 
 ## Mock interview
 

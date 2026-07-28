@@ -226,30 +226,34 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string; covers: st
      * that happens once you stop trusting it with the file.
      */
     label: "Update it",
-    hint: "Check it against the latest, keep everything of yours",
+    hint: "Re-check against reality, correct what has gone stale",
     covers: [],
     ask:
-      "Re-check this prep document against the job description, the research and anything you " +
-      "can verify now, and update it. Correct anything that has become wrong, add what is " +
-      "genuinely new, and leave everything else exactly as it is. Do not remove or reword my own " +
-      "notes. Say what you changed and why in the conversation, in one line per change.",
+      "Re-check this document against the job description, the research and anything you can " +
+      "verify now. Correct what has become wrong, add what is genuinely new, and leave the rest " +
+      "exactly as it is: this is a correction pass, not a rewrite. Never touch anything under a " +
+      "heading called \"My notes\" — that section is mine. Say what you changed and why, one " +
+      "line per change.",
   },
   {
-    label: "Tighten it",
-    hint: "Cut hard. Raw pasted material becomes what it taught you",
+    label: "Fold it in",
+    hint: "Absorb what I pasted, cut what does not earn its place",
     covers: [],
     ask:
-      "Tighten this document, and be bold about it. Two different things are in here and they " +
-      "get treated differently.\n\n" +
-      "Raw source material — anything obviously pasted in from somewhere else, a bio, a job " +
-      "advert, a web page, an email, a transcript — is input, not document. Once it has been " +
-      "read it has done its job. Replace it with the two or three lines it actually taught me " +
-      "and delete the rest. Do not preserve it out of caution.\n\n" +
-      "The written document is compressed rather than cut: keep every fact, figure and drafted " +
-      "line I would say out loud, but collapse repetition, delete anything superseded by a later " +
-      "section, and remove anything that does not change what I would say or do in the room. If " +
-      "a section only tells me something I already know, it goes.\n\n" +
-      "Never touch my own notes. Tell me what you removed and roughly how much shorter it got.",
+      "I dump raw material into this document as I find it. Your job is to fold it into the " +
+      "document and get rid of what does not earn its place. Be bold. Assume I want this " +
+      "shorter and sharper when you are done, not longer.\n\n" +
+      "Anything pasted in from elsewhere — a bio, a job advert, an article, an email, a " +
+      "transcript — is raw input, not part of the document. Work out what it actually tells me " +
+      "that changes how I should behave in the room, write that into the section where it " +
+      "belongs, and delete the raw text. Do not keep it out of caution and do not park it at the " +
+      "bottom under a new heading: absorbed means gone.\n\n" +
+      "If it tells me nothing that changes what I would say or do, say so and delete it anyway. " +
+      "In the rest of the document, collapse repetition and cut anything a later section has " +
+      "superseded. Keep every fact, figure and drafted line I would say out loud.\n\n" +
+      "The one thing you never touch is anything under a heading called \"My notes\". That " +
+      "section is mine. Everything else in the file is yours to reorganise.\n\n" +
+      "Tell me what you cut and roughly how much shorter it got.",
   },
   {
     label: "Grill me",
