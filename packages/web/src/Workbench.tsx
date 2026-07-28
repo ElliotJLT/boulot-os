@@ -236,13 +236,20 @@ const PREP_ACTIONS: Array<{ label: string; hint: string; ask: string; covers: st
   },
   {
     label: "Tighten it",
-    hint: "Same content, fewer words. Nothing cut",
+    hint: "Cut hard. Raw pasted material becomes what it taught you",
     covers: [],
     ask:
-      "Tighten this prep document. Cut filler, collapse repetition, and turn paragraphs into " +
-      "bullets where a bullet says it better. Keep every fact, every figure, every quoted line " +
-      "and every section heading: this is compression, not editing, and nothing may be lost. " +
-      "Leave my own notes alone. Tell me roughly how much shorter it got.",
+      "Tighten this document, and be bold about it. Two different things are in here and they " +
+      "get treated differently.\n\n" +
+      "Raw source material — anything obviously pasted in from somewhere else, a bio, a job " +
+      "advert, a web page, an email, a transcript — is input, not document. Once it has been " +
+      "read it has done its job. Replace it with the two or three lines it actually taught me " +
+      "and delete the rest. Do not preserve it out of caution.\n\n" +
+      "The written document is compressed rather than cut: keep every fact, figure and drafted " +
+      "line I would say out loud, but collapse repetition, delete anything superseded by a later " +
+      "section, and remove anything that does not change what I would say or do in the room. If " +
+      "a section only tells me something I already know, it goes.\n\n" +
+      "Never touch my own notes. Tell me what you removed and roughly how much shorter it got.",
   },
   {
     label: "Grill me",
@@ -281,7 +288,7 @@ const STAGE_LABEL: Record<string, string> = {
  * library is 40kB and a build step to draw a bin, and every icon in this app
  * sits next to a word that already says what it does.
  */
-function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" | "doc" | "expand" | "collapse" }) {
+function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" | "doc" | "expand" | "collapse" | "copy" | "tick" }) {
   const paths: Record<string, string> = {
     download: "M8 2v8m0 0 3-3m-3 3L5 7M2.5 11.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1",
     refresh: "M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13 2v3h-3",
@@ -297,6 +304,8 @@ function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" |
      */
     expand: "M6.5 2.5H2.5v4M2.5 2.5 6.5 6.5M9.5 13.5h4v-4M13.5 13.5 9.5 9.5",
     collapse: "M2.5 6.5h4v-4M6.5 6.5 2.5 2.5M13.5 9.5h-4v4M9.5 9.5l4 4",
+    copy: "M5.5 5.5V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2.5M3.5 5.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1Z",
+    tick: "m3 8.5 3.5 3.5L13 4.5",
   };
   return (
     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden focusable="false">
@@ -421,6 +430,7 @@ export function Workbench({
   /** Tabs made for this application: a second round, a task, a panel. */
   const [extra, setExtra] = useState<Array<{ key: string; label: string; exists: boolean }>>([]);
   const [naming, setNaming] = useState(false);
+  const [copied, setCopied] = useState(false);
   /*
    * Remembered per browser, not per application.
    *
@@ -1322,6 +1332,50 @@ export function Workbench({
       <div className={wide ? "bench-body wide" : "bench-body"}>
         <section className={`pane${flash ? " pane-flash" : ""}`}>
           <div className="tabs">
+            {/*
+              Take the document somewhere else.
+              
+              These get pasted into an application form, an email or a terminal,
+              and the alternative is select-all inside a pane that also handles
+              click-to-edit and drag-to-select. Copies the markdown, which is
+              what the file actually is; the rendered view is a reading of it.
+            */}
+            {tab !== "pdf" && (text[tab] ?? "").trim() && (
+              <button
+                className="widen copy"
+                title={copied ? "Copied" : "Copy this document"}
+                aria-label="Copy this document"
+                onClick={() => {
+                  const md = text[tab] ?? "";
+                  /*
+                   * The modern API, with the old one behind it.
+                   *
+                   * navigator.clipboard needs a secure context and a focused
+                   * document, and rejects silently when it does not have both.
+                   * A copy button that sometimes does nothing and never says so
+                   * is worse than no copy button, so the deprecated path stays
+                   * as the fallback.
+                   */
+                  void navigator.clipboard?.writeText(md).catch(() => {
+                    const box = document.createElement("textarea");
+                    box.value = md;
+                    box.style.position = "fixed";
+                    box.style.opacity = "0";
+                    document.body.append(box);
+                    box.select();
+                    try {
+                      document.execCommand("copy");
+                    } finally {
+                      box.remove();
+                    }
+                  });
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1400);
+                }}
+              >
+                <Icon name={copied ? "tick" : "copy"} />
+              </button>
+            )}
             <button
               className="widen"
               onClick={toggleWide}

@@ -1588,12 +1588,17 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 .bench-body.wide .prep-doc .block:has(h3) { margin-block-start: 34px; }
 
 .widen {
-  order: 99; margin-inline-start: auto; align-self: center;
+  order: 99; align-self: center;
   font: inherit; line-height: 0; cursor: pointer;
   background: none; border: 0; border-radius: 6px; padding: 5px;
   color: var(--ink-3);
 }
 .widen:hover { background: var(--muted-bg); color: var(--ink); }
+/* Copy sits just before the widen control, both pushed to the end of the row. */
+.widen.copy { order: 98; margin-inline-start: auto; }
+.widen.copy + .widen { margin-inline-start: 0; }
+.tabs > .widen:not(.copy) { margin-inline-start: auto; }
+.tabs > .widen.copy ~ .widen { margin-inline-start: 0; }
 /* The browser's blue ring is the one thing on this page that is not on brand. */
 .widen:focus { outline: none; }
 .widen:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
