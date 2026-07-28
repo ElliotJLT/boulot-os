@@ -250,13 +250,16 @@ const STAGE_LABEL: Record<string, string> = {
  * library is 40kB and a build step to draw a bin, and every icon in this app
  * sits next to a word that already says what it does.
  */
-function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" | "doc" }) {
+function Icon({ name }: { name: "download" | "refresh" | "archive" | "chevron" | "doc" | "expand" | "collapse" }) {
   const paths: Record<string, string> = {
     download: "M8 2v8m0 0 3-3m-3 3L5 7M2.5 11.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1",
     refresh: "M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13 2v3h-3",
     archive: "M2.5 5.5h11m-10 0v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7m-7 0v-2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6.5 8v3m3-3v3",
     chevron: "m4.5 6.5 3.5 3 3.5-3",
     doc: "M9 1.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5m-4-3.5L12.5 5m-4-3.5V4a1 1 0 0 0 1 1h3",
+    // Arrows pushing outward, and pulling back in.
+    expand: "M6.5 3.5h-3v3m0 6v3h3m6-12h3v3m0 6v3h-3",
+    collapse: "M3.5 6.5h3v-3m9 3h-3v-3m-6 9h3v3m9-3h-3v3",
   };
   return (
     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden focusable="false">
@@ -366,6 +369,24 @@ export function Workbench({
    */
   const [attached, setAttached] = useState<Array<{ id: number; name: string; text: string }>>([]);
   const [openAttachment, setOpenAttachment] = useState<number | null>(null);
+  /*
+   * Room to read, when reading is what you are doing.
+   *
+   * The two panes are sized for the case where you are working with the agent.
+   * Reading a prep document or a job description is a different posture: the
+   * conversation is not doing anything, and the document is running at about
+   * sixty characters a line inside half a window.
+   *
+   * Remembered per browser, like the agent choice, because how wide you like
+   * your reading is a fact about you rather than about this application.
+   */
+  const [wide, setWide] = useState(() => localStorage.getItem("boulot.wide") === "1");
+  const toggleWide = () => {
+    setWide((w) => {
+      localStorage.setItem("boulot.wide", w ? "0" : "1");
+      return !w;
+    });
+  };
   const [menu, setMenu] = useState(false);
   /*
    * Remembered per browser, not per application.
@@ -1231,9 +1252,17 @@ export function Workbench({
         </div>
       )}
 
-      <div className="bench-body">
+      <div className={wide ? "bench-body wide" : "bench-body"}>
         <section className={`pane${flash ? " pane-flash" : ""}`}>
           <div className="tabs">
+            <button
+              className="widen"
+              onClick={toggleWide}
+              title={wide ? "Show the conversation" : "Hide the conversation and widen this"}
+              aria-label={wide ? "Show the conversation" : "Widen the document"}
+            >
+              <Icon name={wide ? "collapse" : "expand"} />
+            </button>
             <div className="tab-group">
               {[
                 ...OUTPUTS,
