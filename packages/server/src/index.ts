@@ -614,6 +614,21 @@ const DOCS = {
   prep: { file: "prep.md", label: "Prep" },
   job: { file: "job.md", label: "Job description" },
   research: { file: "research.md", label: "Research" },
+  /*
+   * The one document that is not about a job.
+   *
+   * Everything above answers a posting. This one exists because the best time
+   * to reach a company is before the posting exists: two to five months after
+   * a raise, when the need is real and the advert is not written. There is no
+   * JD to mirror and no CV to tailor against, so the message has to be about
+   * their problem — which is the only kind of cold email that has ever worked.
+   *
+   * It is a thread rather than a draft. A CV is written once and sent; this is
+   * sent, ignored, nudged, and eventually answered, and what matters later is
+   * which openings got replies. So it accumulates dated entries and is never
+   * rewritten in place.
+   */
+  outreach: { file: "outreach.md", label: "Outreach" },
 } as const;
 type DocKey = keyof typeof DOCS;
 

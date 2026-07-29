@@ -1368,6 +1368,22 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 }
 .prep-actions button:disabled { opacity: 0.4; cursor: default; }
 
+/*
+ * The one action on the rail that is the point, rather than one of several.
+ *
+ * Every other pill is an equal option. Here the order is fixed — research,
+ * then write — and the second one is gated on the first, so it reads as the
+ * destination rather than as an alternative to it.
+ */
+.prep-actions button.primary {
+  border-color: var(--accent); background: var(--accent-soft); color: var(--accent-deep);
+}
+.prep-actions button.primary:hover:not(:disabled) { background: var(--accent); color: #fff; }
+
+.rail-note {
+  margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+}
+
 /* Archiving, as a small form rather than a row of verdicts. */
 .filing {
   margin: 14px 0 0; padding: 16px 18px;

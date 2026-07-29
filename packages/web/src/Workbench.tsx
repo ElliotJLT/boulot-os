@@ -523,11 +523,20 @@ export function Workbench({
      */
     const st = String(d.stage ?? "");
     const talkingNow = ["screening", "interviewing", "offer"].includes(st);
+    const huntingNow =
+      st === "lead" && !d.docs?.some((x: Doc) => x.key === "job" && x.exists);
     if (!chosen.current) {
       if (talkingNow && d.docs?.some((x: Doc) => x.key === "prep" && x.exists)) {
         chosen.current = true;
         tabRef.current = "prep";
         setTab("prep");
+      } else if (huntingNow) {
+        // Same argument as Prep: land on the only document that can exist
+        // here. The CV tab on a company with no advert is an empty box
+        // offering to tailor against nothing.
+        chosen.current = true;
+        tabRef.current = "outreach";
+        setTab("outreach");
       } else if (d.pdf) {
         chosen.current = true;
         tabRef.current = "pdf";
@@ -837,9 +846,25 @@ export function Workbench({
   const talking = ["screening", "interviewing", "offer"].includes(stage);
   const sent = talking || stage === "applied" || justApplied;
 
+  /*
+   * A company, with no job to apply for.
+   *
+   * The three build steps assume a posting exists: tailor the CV *to what*,
+   * render a PDF to send *where*. A lead with no job.md is the case where the
+   * best move is to reach the founder two to five months after a raise, while
+   * the need is real and the advert is not written — and the rail was offering
+   * to tailor a CV against nothing.
+   *
+   * Keyed on the absence of a job description rather than on the stage,
+   * because a lead that has a posting is just an application nobody has
+   * started, and that one wants the build rail exactly as it is.
+   */
+  const hunting = !sent && !(text.job ?? "").trim();
+
   const done = (key: string) =>
     key === "pdf" ? pdfExists : Boolean(docs.find((d) => d.key === key)?.exists);
   const allDone = STEPS.every((s) => done(s.key));
+  const hasResearch = Boolean(text.research?.trim());
 
   /**
    * Produce one of the optional documents.
@@ -1401,7 +1426,20 @@ export function Workbench({
             </button>
             <div className="tab-group">
               {[
-                ...OUTPUTS,
+                /*
+                 * What this application is for, which is not always a CV.
+                 *
+                 * A company with no advert has no CV to tailor and no PDF to
+                 * render, so the first group is the message instead. It also
+                 * appears on a normal application once outreach.md exists,
+                 * because the two later uses — nudging silence, staying warm
+                 * after a rejection — happen long after the lead stage is over.
+                 */
+                ...(hunting ? [{ key: "outreach", label: "Outreach" } as const] : []),
+                ...(hunting ? [] : OUTPUTS),
+                ...(!hunting && docs.find((d) => d.key === "outreach")?.exists
+                  ? [{ key: "outreach", label: "Outreach" } as const]
+                  : []),
                 // An extra earns a tab by existing. Until then it is a button.
                 ...EXTRAS.filter(
                   (e) =>
@@ -1550,7 +1588,9 @@ export function Workbench({
               placeholder={
                 tab === "questions"
                   ? "Paste the application questions here and press play, or write them out:\n\n1. Why do you want to work here?"
-                  : "Nothing here yet. Press play and Boulot will write it, or start typing."
+                  : hunting
+                    ? "Nothing sent yet. Research them, then draft a message — or write your own here."
+                    : "Nothing here yet. Press play and Boulot will write it, or start typing."
               }
               onChange={(e) => {
                 setText((t) => ({ ...t, [tab]: e.target.value }));
@@ -1650,6 +1690,52 @@ export function Workbench({
                   </div>
                 );
               })()}
+            </div>
+          ) : hunting ? (
+            <div className="checklist">
+              <div className="checklist-top">
+                <h3>{running ?? (hasResearch ? "Reach them directly" : "Nobody is hiring here yet")}</h3>
+              </div>
+              <p className="rail-note">
+                {hasResearch
+                  ? "No advert means no queue. Write to a person about the problem they have, not the job they have not posted."
+                  : "Find out what they are actually building first. A cold message without it reads as a mail merge, and it burns the company for good."}
+              </p>
+              <div className="prep-actions">
+                <button
+                  disabled={Boolean(running)}
+                  onClick={() =>
+                    send(
+                      `Research the company behind active/${slug} and write active/${slug}/research.md. ` +
+                        `What are they building, what is technically hard about it, who founded it, what ` +
+                        `have they raised and when. Say plainly what you could not verify.`,
+                      "Researching them",
+                      "tweak",
+                      modelFor(),
+                    )
+                  }
+                >
+                  {hasResearch ? "Research again" : "Research them"}
+                </button>
+                <button
+                  className="primary"
+                  disabled={Boolean(running) || !hasResearch}
+                  title={hasResearch ? "" : "Research them first"}
+                  onClick={() =>
+                    send(
+                      `Use the boulot:outreach skill for active/${slug}. Read research.md and cv-master.md ` +
+                        `first. There is no job description: this company has not advertised. Append a ` +
+                        `dated entry to active/${slug}/outreach.md.`,
+                      "Writing to them",
+                      "tweak",
+                      modelFor(),
+                    )
+                  }
+                >
+                  Draft the message
+                </button>
+              </div>
+              {cost > 0 && <p className="cost">£{(cost * 0.79).toFixed(2)} this session</p>}
             </div>
           ) : (
           <div className="checklist">
@@ -1826,7 +1912,9 @@ export function Workbench({
               <p className="hint">
                 {talking
                   ? "Ask what they are likely to push on, how to answer something, or what to ask them. Anything worth keeping goes into Prep."
-                  : "Press play and Boulot writes the whole application, updating the documents on the left as it goes. Edit anything yourself, or ask for a change below."}
+                  : hunting
+                    ? "No advert, so nothing to apply to yet. Find out what they are building, then write to a person about it. If a role appears, paste it into the JD tab and this becomes a normal application."
+                    : "Press play and Boulot writes the whole application, updating the documents on the left as it goes. Edit anything yourself, or ask for a change below."}
               </p>
             )}
           </div>
