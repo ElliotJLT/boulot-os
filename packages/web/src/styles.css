@@ -1467,17 +1467,6 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 
 /* Steps you add rather than tick. A tickbox implies a default; both of these
    default to no, so they are offers until you take one. */
-.add-extras { display: flex; flex-wrap: wrap; gap: 6px; margin-block-start: 12px; }
-.add-extras button {
-  font: inherit; font-size: 12px; padding: 5px 11px; cursor: pointer;
-  border: 1px dashed var(--line-2); border-radius: 999px;
-  background: none; color: var(--ink-3);
-}
-.add-extras button:hover:not(:disabled) {
-  border-style: solid; border-color: var(--accent); color: var(--accent-deep);
-  background: var(--accent-soft);
-}
-.add-extras button:disabled { opacity: 0.4; cursor: default; }
 .checklist li .step-drop {
   margin-inline-start: auto; font: inherit; font-size: 13px; line-height: 1;
   border: 0; background: none; color: var(--ink-3); cursor: pointer; padding: 2px 4px;
@@ -1629,7 +1618,18 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   border: 0; background: none; color: var(--ink-3);
   padding: 4px 9px 6px; border-radius: 6px;
 }
-.tab-add:hover { background: var(--muted-bg); color: var(--ink); }
+.tab-add:hover:not(:disabled) { background: var(--muted-bg); color: var(--ink); }
+.tab-add:disabled { opacity: 0.35; cursor: default; }
+
+/*
+ * The two documents most applications ask for, offered by name.
+ *
+ * A bare + means "you think of one", which is the right control for a round
+ * nobody could have named in advance and the wrong one for a cover letter.
+ * Named, they cost no thought; the bare + sits after them for everything else.
+ */
+.tab-add.named { width: auto; padding: 0 10px; font-size: 12px; letter-spacing: 0; }
+.tab-more { margin-inline-start: 4px; gap: 2px; }
 .tab-new {
   font: inherit; font-size: 12px; inline-size: 130px;
   padding: 5px 9px; margin-inline-start: 2px;

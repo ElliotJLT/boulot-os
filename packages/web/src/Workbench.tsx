@@ -396,6 +396,7 @@ export function Workbench({
   const [outcome, setOutcome] = useState<string | null>(null);
   /** Extras the user has ticked. Play produces exactly the ticked list. */
   const [include, setInclude] = useState<Set<string>>(new Set());
+  const talkingRef = useRef(false);
   const [stage, setStage] = useState("");
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
   const [interviewDate, setInterviewDate] = useState<string | null>(null);
@@ -779,6 +780,22 @@ export function Workbench({
     if (!d?.key) return;
     chosen.current = true;
     setTab(d.key);
+    /*
+     * Making the tab is the ask.
+     *
+     * Two buttons used to mean "write me this document": a + in the rail for
+     * the two hardcoded extras, and a + in the tab strip for everything else.
+     * One of them queued the document for the next run and the other made an
+     * empty file and waited to be asked again, which is the same confusion
+     * that had a brand-new "Stack basics" tab sitting empty beside a long
+     * answer in the conversation.
+     *
+     * So there is one +, it lives with the tabs, and adding one puts the
+     * document in the plan. Only while the documents are still being written:
+     * once someone has replied, a new tab is a place to keep notes for a round
+     * that has not happened yet, and play is not what writes those.
+     */
+    if (!talkingRef.current) setInclude((prev) => new Set(prev).add(d.key));
     void refresh();
   };
 
@@ -844,6 +861,8 @@ export function Workbench({
    * left is the conversation, and that is when the panel changes.
    */
   const talking = ["screening", "interviewing", "offer"].includes(stage);
+  // addTab is defined above this and closes over it, so it reads the ref.
+  talkingRef.current = talking;
   const sent = talking || stage === "applied" || justApplied;
 
   /*
@@ -865,6 +884,28 @@ export function Workbench({
     key === "pdf" ? pdfExists : Boolean(docs.find((d) => d.key === key)?.exists);
   const allDone = STEPS.every((s) => done(s.key));
   const hasResearch = Boolean(text.research?.trim());
+
+  /*
+   * What play will do, in the order it will do it.
+   *
+   * The rail used to render the three fixed steps and then the requested
+   * extras underneath, while the run put the extras in the middle — so a
+   * ticked cover letter was listed after "Render the PDF" and written before
+   * it. Nobody would notice until the run, and then the ticks would light up
+   * out of order. One array now, read by both.
+   *
+   * The order itself is load-bearing: a cover letter written before the CV
+   * argues from the master record rather than the tailored one, the review
+   * has to see everything, and the PDF renders a CV that is about to change
+   * if it goes any earlier.
+   */
+  const asked = [
+    ...EXTRAS.filter((e) => include.has(e.key) || done(e.key)),
+    ...extra
+      .filter((e) => include.has(e.key))
+      .map((e) => ({ key: e.key, label: e.label, verb: `Writing ${e.label.toLowerCase()}` })),
+  ];
+  const railPlan = [STEPS[0], ...asked, STEPS[1], STEPS[2]];
 
   /**
    * Produce one of the optional documents.
@@ -904,10 +945,18 @@ export function Workbench({
      * than from the tailored one, and the PDF has to come last or it renders a
      * CV that is about to change.
      */
-    const ticked = EXTRAS.filter((e) => include.has(e.key));
+    /*
+     * The same list the rail is showing, so the two cannot disagree.
+     *
+     * Cover letter and Questions are in it because they are the two everybody
+     * needs, not because they are a closed set: a tab called "Diversity
+     * statement" or "Portfolio note" is the same kind of thing, and until now
+     * the only documents play could produce were the two whose names were
+     * compiled into the source.
+     */
     // CV, then anything extra, then the review, then the render. The review
     // reads whatever was written, so it has to come after all of it.
-    const plan = [STEPS[0], ...ticked, STEPS[1], STEPS[2]] as ReadonlyArray<{
+    const plan = railPlan as ReadonlyArray<{
       key: string;
       label: string;
       verb: string;
@@ -929,7 +978,7 @@ export function Workbench({
      * something you have already got.
      */
     const missing = plan.filter((s) => {
-      const optional = EXTRAS.some((e) => e.key === s.key);
+      const optional = !STEPS.some((f) => f.key === s.key);
       return optional ? include.has(s.key) : !done(s.key);
     });
     if (!missing.length) return;
@@ -955,7 +1004,23 @@ export function Workbench({
             ? `active/${slug}/application-answers.md already contains the employer's questions and no answers. Write an answer beneath each question, in that same file, keeping the questions in place. Answer only the questions written there and do not invent others.`
             : key === "review"
               ? `Run the three adversarial reviewers described in boulot:tailor-cv, then apply their edits to cv.md.`
-              : `Call boulot_render_pdf on active/${slug}/cv.md and report the fit.`;
+              : key === "pdf"
+                ? `Call boulot_render_pdf on active/${slug}/cv.md and report the fit.`
+                : /*
+                   * A tab whose name is the whole brief.
+                   *
+                   * Nothing here knows what "Diversity statement" or "Take-home
+                   * plan" is meant to contain, and it does not need to: the
+                   * person naming the tab knew, and anything they had already
+                   * put in it is the rest of the answer. Saying so beats
+                   * guessing a template.
+                   */
+                  `Write active/${slug}/${key}.md. It is titled "${
+                    extra.find((e) => e.key === key)?.label ?? key
+                  }" and that title is the brief. Anything already in the file is the ` +
+                  `user's own material — a spec, a paste, their notes — so treat it as input ` +
+                  `and build around it rather than replacing it. Use the boulot:application-answers ` +
+                  `skill for the writing, and keep it to what the title actually asks for.`;
 
     send(
       `For the application in active/${slug}, do these in order:\n\n` +
@@ -1440,12 +1505,16 @@ export function Workbench({
                 ...(!hunting && docs.find((d) => d.key === "outreach")?.exists
                   ? [{ key: "outreach", label: "Outreach" } as const]
                   : []),
+
                 // An extra earns a tab by existing. Until then it is a button.
                 ...EXTRAS.filter(
                   (e) =>
                     !NO_DOCUMENT.has(e.key) &&
                     (include.has(e.key) || docs.find((d) => d.key === e.key)?.exists),
                 ).map((e) => ({ key: e.key, label: e.key === "cover" ? "Cover letter" : "Questions" })),
+                // While talking these have their own group after the split.
+                // Last, because that is the order the rail writes them in.
+                ...(talking ? [] : extra.map((e) => ({ key: e.key, label: e.label }))),
               ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
                 const d = docs.find((x) => x.key === t.key);
@@ -1520,6 +1589,55 @@ export function Workbench({
                   )}
                 </div>
               </>
+            )}
+
+            {/*
+              The same +, before anyone has replied.
+
+              It used to appear only once the conversation started, so while
+              the application was being written the only way to ask for another
+              document was two buttons in the rail that could produce exactly
+              two documents. Here it produces any of them, and the two everyone
+              needs are offered by name so nobody has to guess the spelling.
+            */}
+            {!talking && !naming && (
+              <div className="tab-group tab-more">
+                {EXTRAS.filter((e) => !include.has(e.key) && !done(e.key)).map((e) => (
+                  <button
+                    key={e.key}
+                    className="tab-add named"
+                    disabled={Boolean(running)}
+                    onClick={() => setInclude((prev) => new Set(prev).add(e.key))}
+                  >
+                    + {e.key === "cover" ? "Cover letter" : "Questions"}
+                  </button>
+                ))}
+                <button
+                  className="tab-add"
+                  title="Another document for this application"
+                  disabled={Boolean(running)}
+                  onClick={() => setNaming(true)}
+                >
+                  +
+                </button>
+              </div>
+            )}
+            {!talking && naming && (
+              <div className="tab-group tab-more">
+                <input
+                  className="tab-new"
+                  autoFocus
+                  placeholder="Diversity statement, portfolio note…"
+                  onBlur={(e) => void addTab(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.currentTarget.value = "";
+                      setNaming(false);
+                    }
+                    if (e.key === "Enter") void addTab(e.currentTarget.value);
+                  }}
+                />
+              </div>
             )}
 
             <span className="tab-split" />
@@ -1757,29 +1875,17 @@ export function Workbench({
               </button>
             </div>
             <ol>
-              {STEPS.map((s) => {
+              {railPlan.map((s) => {
                 const isDone = done(s.key);
                 const isLive = runKind === "build" && Boolean(running) && !isDone;
+                // The three fixed steps are what an application is; the rest
+                // you asked for, so only the rest can be taken back off.
+                const optional = !STEPS.some((f) => f.key === s.key);
                 return (
                   <li key={s.key} className={isDone ? "step-done" : isLive ? "step-live" : ""}>
                     <span className="box">{isDone ? "✓" : isLive ? <span className="dot" /> : ""}</span>
                     <span>{isLive ? s.verb : s.label}</span>
-                  </li>
-                );
-              })}
-              {/*
-                The extras that have been asked for join the list; the ones that
-                have not sit underneath as buttons. A thing you have requested is
-                a step, and a thing you have not is an offer.
-              */}
-              {EXTRAS.filter((e) => include.has(e.key) || done(e.key)).map((s) => {
-                const isDone = done(s.key);
-                const isLive = runKind === "build" && Boolean(running) && !isDone;
-                return (
-                  <li key={s.key} className={isDone ? "step-done" : isLive ? "step-live" : ""}>
-                    <span className="box">{isDone ? "✓" : isLive ? <span className="dot" /> : ""}</span>
-                    <span>{isLive ? s.verb : s.label}</span>
-                    {!running && (
+                    {optional && !running && (
                       <button
                         className="step-drop"
                         title="Do not write this"
@@ -1798,20 +1904,6 @@ export function Workbench({
                 );
               })}
             </ol>
-
-            {EXTRAS.some((e) => !include.has(e.key) && !done(e.key)) && (
-              <div className="add-extras">
-                {EXTRAS.filter((e) => !include.has(e.key) && !done(e.key)).map((e) => (
-                  <button
-                    key={e.key}
-                    disabled={Boolean(running)}
-                    onClick={() => setInclude((prev) => new Set(prev).add(e.key))}
-                  >
-                    + {e.label}
-                  </button>
-                ))}
-              </div>
-            )}
 
             {cost > 0 && <p className="cost">£{(cost * 0.79).toFixed(2)} this session</p>}
 
