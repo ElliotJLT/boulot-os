@@ -397,6 +397,8 @@ export function Workbench({
   /** Extras the user has ticked. Play produces exactly the ticked list. */
   const [include, setInclude] = useState<Set<string>>(new Set());
   const talkingRef = useRef(false);
+  const [adding, setAdding] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState("");
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
   const [interviewDate, setInterviewDate] = useState<string | null>(null);
@@ -798,6 +800,23 @@ export function Workbench({
     if (!talkingRef.current) setInclude((prev) => new Set(prev).add(d.key));
     void refresh();
   };
+
+  /*
+   * Click away and it goes, the same as the "Ask about this" button.
+   *
+   * A menu that only closes when you pick something makes choosing nothing
+   * into a thing you have to work out how to do.
+   */
+  useEffect(() => {
+    if (!adding) return;
+    const away = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest?.(".tab-menu") || t?.closest?.(".tab-add")) return;
+      setAdding(false);
+    };
+    document.addEventListener("mousedown", away, true);
+    return () => document.removeEventListener("mousedown", away, true);
+  }, [adding]);
 
   const saveInterviewDate = async (date: string) => {
     setInterviewDate(date || null);
@@ -1592,51 +1611,55 @@ export function Workbench({
             )}
 
             {/*
-              The same +, before anyone has replied.
+              The same +, before anyone has replied, and only ever one of it.
 
               It used to appear only once the conversation started, so while
               the application was being written the only way to ask for another
-              document was two buttons in the rail that could produce exactly
-              two documents. Here it produces any of them, and the two everyone
-              needs are offered by name so nobody has to guess the spelling.
+              document was a pair of buttons in the rail that could produce
+              exactly two documents. Replacing them with a pair of + buttons in
+              the strip fixed the wrong half: there were then three + controls
+              in a row, which is a menu that has been unrolled onto the screen.
+
+              So it is a menu. The two documents most applications ask for are
+              rows in it, because nobody should have to type "Cover letter",
+              and the field underneath takes anything else.
             */}
-            {!talking && !naming && (
+            {!talking && (
               <div className="tab-group tab-more">
-                {EXTRAS.filter((e) => !include.has(e.key) && !done(e.key)).map((e) => (
-                  <button
-                    key={e.key}
-                    className="tab-add named"
-                    disabled={Boolean(running)}
-                    onClick={() => setInclude((prev) => new Set(prev).add(e.key))}
-                  >
-                    + {e.key === "cover" ? "Cover letter" : "Questions"}
-                  </button>
-                ))}
                 <button
-                  className="tab-add"
+                  className={adding ? "tab-add on" : "tab-add"}
                   title="Another document for this application"
                   disabled={Boolean(running)}
-                  onClick={() => setNaming(true)}
+                  onClick={() => setAdding((v) => !v)}
                 >
                   +
                 </button>
-              </div>
-            )}
-            {!talking && naming && (
-              <div className="tab-group tab-more">
-                <input
-                  className="tab-new"
-                  autoFocus
-                  placeholder="Diversity statement, portfolio note…"
-                  onBlur={(e) => void addTab(e.currentTarget.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      e.currentTarget.value = "";
-                      setNaming(false);
-                    }
-                    if (e.key === "Enter") void addTab(e.currentTarget.value);
-                  }}
-                />
+                {adding && (
+                  <div className="tab-menu" ref={menuRef}>
+                    {EXTRAS.filter((e) => !include.has(e.key) && !done(e.key)).map((e) => (
+                      <button
+                        key={e.key}
+                        onClick={() => {
+                          setInclude((prev) => new Set(prev).add(e.key));
+                          setAdding(false);
+                        }}
+                      >
+                        {e.key === "cover" ? "Cover letter" : "Their questions"}
+                      </button>
+                    ))}
+                    <input
+                      autoFocus
+                      placeholder="Something else…"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setAdding(false);
+                        if (e.key === "Enter") {
+                          setAdding(false);
+                          void addTab(e.currentTarget.value);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

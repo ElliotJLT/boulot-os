@@ -1628,8 +1628,38 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
  * nobody could have named in advance and the wrong one for a cover letter.
  * Named, they cost no thought; the bare + sits after them for everything else.
  */
-.tab-add.named { width: auto; padding: 0 10px; font-size: 12px; letter-spacing: 0; }
-.tab-more { margin-inline-start: 4px; gap: 2px; }
+.tab-more { position: relative; margin-inline-start: 4px; }
+.tab-add.on { background: var(--muted-bg); color: var(--ink); }
+
+/*
+ * The + opens this rather than unrolling itself into three + buttons.
+ *
+ * Named rows for the two documents most applications ask for, and a field for
+ * everything nobody could have named in advance. Anchored to the + rather than
+ * centred, because it belongs to that control.
+ */
+.tab-menu {
+  position: absolute; inset-block-start: calc(100% + 6px); inset-inline-start: 0;
+  z-index: 30; min-inline-size: 196px; padding: 5px;
+  display: grid; gap: 2px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: var(--shadow-lg, 0 10px 30px rgb(0 0 0 / 0.13));
+}
+.tab-menu button {
+  font: inherit; font-size: 12.5px; text-align: start; cursor: pointer;
+  padding: 7px 9px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--ink);
+}
+.tab-menu button:hover { background: var(--muted-bg); }
+.tab-menu input {
+  font: inherit; font-size: 12.5px; inline-size: 100%; box-sizing: border-box;
+  margin-block-start: 3px; padding: 7px 9px;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink);
+}
+.tab-menu input:focus { outline: none; border-color: var(--accent); }
+/* The rows above are shortcuts for typing in it, so it is not a separate idea. */
+.tab-menu button + input { border-block-start-color: var(--line); }
 .tab-new {
   font: inherit; font-size: 12px; inline-size: 130px;
   padding: 5px 9px; margin-inline-start: 2px;
