@@ -230,6 +230,7 @@ export function App() {
   const [watching, setWatching] = useState<string | null>(null);
   const [maxAgents, setMaxAgents] = useState(3);
   const [reload, setReload] = useState(0);
+  const [costToday, setCostToday] = useState<{ gbp: number; runs: number } | null>(null);
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [health, setHealth] = useState<{ vault: string; needsSetup: string | null; firstPerson: string | null } | null>(null);
 
@@ -291,6 +292,25 @@ export function App() {
     const t = setInterval(poll, 2000);
     return () => clearInterval(t);
   }, []);
+
+  /*
+   * Today's spend, across every application.
+   *
+   * Refetched whenever the running-jobs count changes, because that is the
+   * one event that can move the number: a run just finished and billed for
+   * whatever it did. A slower clock underneath as well, in case a run outlives
+   * the tab and finishes with nobody here to trigger it.
+   */
+  useEffect(() => {
+    const poll = () =>
+      fetch("/api/cost/today")
+        .then((r) => r.json())
+        .then((d: { gbp: number; runs: number }) => setCostToday(d))
+        .catch(() => {});
+    void poll();
+    const t = setInterval(poll, 30_000);
+    return () => clearInterval(t);
+  }, [busy.length]);
 
   useEffect(() => {
     if (!who) return;
@@ -446,6 +466,19 @@ export function App() {
             <span className="agent-dot" />
             {busy.length}/{maxAgents} agents
           </span>
+          {/*
+            What today has cost, so far.
+
+            Every run already showed its own cost beside itself, which answers
+            "was that one expensive" but not "should I still be doing this
+            today". Zero runs today renders nothing rather than "£0.00" — a
+            number with no information in it is worse than no number.
+          */}
+          {costToday && costToday.runs > 0 && (
+            <span className="cost-today" title={`${costToday.runs} run${costToday.runs === 1 ? "" : "s"} today`}>
+              £{costToday.gbp.toFixed(2)} today
+            </span>
+          )}
           {/*
             Settings is the plumbing. Profile is you.
             

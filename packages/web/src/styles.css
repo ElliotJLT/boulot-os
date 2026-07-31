@@ -977,6 +977,14 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .agents.on .agent-dot { animation: none; } }
 
+/* What today has cost. Same quiet chip as .agents; this one just reads a number. */
+.cost-today {
+  display: inline-flex; align-items: center;
+  font-size: 12px; color: var(--ink-3);
+  padding: 6px 12px; border-radius: 999px; background: var(--bg-2);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Saving happens by itself; this only says so. */
 .saving { font-size: 12px; color: var(--ink-3); }
 
