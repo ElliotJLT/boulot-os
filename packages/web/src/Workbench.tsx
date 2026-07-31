@@ -1982,29 +1982,25 @@ export function Workbench({
               </button>
             </div>
             {/*
-              The picker, only until there is something better to look at.
+              The picker, only before there is anything else to look at.
 
               This list answers "what is play about to do, and can I change
-              it" — which matters before a run and stops mattering the moment
-              one starts, because BuildProgress in the log below then narrates
-              the same steps at finer grain and, unlike this list, actually
-              knows what a run adopted from the New application screen is
-              doing. That gap used to show as three dead checkboxes sitting
-              above a live six-step rail telling a truer version of the same
-              story: the build was real, the top of the screen just did not
-              know it, because its dot only lit up for runs started from this
-              screen and a run handed off from creation is not one of those.
+              it", which is only a question before the first run: once one has
+              happened, two other things already answer it better. The tab
+              strip shows which documents exist — present once written, an
+              empty dot before, a × to remove — so "which extras got written"
+              is not this list's to say any more either. And BuildProgress
+              narrates the process itself at finer grain, including runs
+              adopted from the New application screen, which this list could
+              never see: its steps only ever lit up for a run started from
+              this screen, so a build handed off from creation sat here as
+              three dead checkboxes above a live rail telling the true story.
 
-              So this only shows while nothing is running: before, as the
-              picker, and after, back in its other job of reviewing what got
-              written and what did not — including the named extras
-              BuildProgress does not know about, like a cover letter or a
-              custom tab. Gated on `running` rather than on activity ever
-              having existed, since activity from a finished run stays around
-              and would otherwise keep this hidden for good the first time
-              anything ran.
+              So once `activity` holds anything, this has nothing left to add
+              and gets out of the way. What survives underneath — header, play
+              button, cost — is the part neither the tabs nor the rail cover.
             */}
-            {!running && (
+            {!running && activity.length === 0 && (
               <ol>
                 {railPlan.map((s) => {
                   const isDone = done(s.key);
