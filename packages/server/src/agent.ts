@@ -2,6 +2,7 @@ import { query, createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk"
 import { whatWorked, readVault, readDetails } from "@boulot/core";
 import { z } from "zod";
 import { spawnSync } from "node:child_process";
+import { recordCost, USD_TO_GBP } from "./usage.js";
 import { resolve, relative, isAbsolute, dirname, basename } from "node:path";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { fetchJob } from "./boards.js";
@@ -781,7 +782,7 @@ export async function run({
           onEvent({
             t: "error",
             message:
-              `That run hit its £${(budgetUsd * 0.79).toFixed(2)} budget and stopped. ` +
+              `That run hit its £${(budgetUsd * USD_TO_GBP).toFixed(2)} budget and stopped. ` +
               `Anything already written has been kept. Ask for a narrower next step.`,
           });
         } else if (m.stop_reason === "tool_use") {
@@ -791,6 +792,10 @@ export async function run({
           });
         }
         newSessionId = m.session_id ?? newSessionId;
+        // The one place every run's cost passes through, regardless of which
+        // application or skill it was for, so it is also the one place to log
+        // it for the day's running total in the top bar.
+        recordCost(m.total_cost_usd ?? 0);
         onEvent({ t: "result", cost: m.total_cost_usd ?? 0, error: m.is_error ?? false });
       }
     }

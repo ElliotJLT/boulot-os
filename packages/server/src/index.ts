@@ -28,6 +28,7 @@ import {
   reachedInterview,
 } from "@boulot/core";
 import { run } from "./agent.js";
+import { costToday } from "./usage.js";
 
 /**
  * The Boulot local server.
@@ -117,6 +118,16 @@ function inVault(...segments: string[]): string {
   if (rel.startsWith("..") || isAbsolute(rel)) throw new Error("path escapes the vault");
   return abs;
 }
+
+/*
+ * What today has cost, across every application.
+ *
+ * Not person-scoped, because the log is not either: one machine, one running
+ * total for the day, which is what "should I keep going" actually needs to
+ * know. Polled rather than pushed — a run finishing is not urgent enough to
+ * justify a socket message just for this.
+ */
+app.get("/api/cost/today", async () => costToday());
 
 app.get("/api/health", async () => {
   const who = people(VAULT);
