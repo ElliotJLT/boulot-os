@@ -818,6 +818,40 @@ export function Workbench({
     return () => document.removeEventListener("mousedown", away, true);
   }, [adding]);
 
+  /**
+   * Delete a tab, which deletes the file. Same weight as Start over: one
+   * confirm, because there is no undo once the file is gone.
+   */
+  const deleteTab = async (key: string, label: string) => {
+    if (
+      !confirm(
+        `Delete the "${label}" tab?\n\nThis permanently removes it from the vault. There is no undo.`,
+      )
+    )
+      return;
+    const ok = await fetch(`/api/${who}/job/${slug}/doc/${key}`, { method: "DELETE" })
+      .then((r) => r.ok)
+      .catch(() => false);
+    if (!ok) return;
+    setExtra((prev) => prev.filter((e) => e.key !== key));
+    setInclude((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    setText((t) => {
+      const next = { ...t };
+      delete next[key];
+      return next;
+    });
+    if (tabRef.current === key) {
+      chosen.current = true;
+      setTab("prep");
+    }
+    void refresh();
+  };
+
   const saveInterviewDate = async (date: string) => {
     setInterviewDate(date || null);
     setEditingDate(false);
@@ -1537,10 +1571,11 @@ export function Workbench({
               ].map((t) => {
                 if (t.key === "pdf" && !pdfExists) return null;
                 const d = docs.find((x) => x.key === t.key);
+                const removable = extra.some((e) => e.key === t.key);
                 return (
                   <button
                     key={t.key}
-                    className={tab === t.key ? "on" : ""}
+                    className={`${tab === t.key ? "on" : ""} ${removable ? "removable" : ""}`.trim()}
                     onClick={() => {
                       chosen.current = true;
                       setTab(t.key);
@@ -1549,6 +1584,25 @@ export function Workbench({
                   >
                     {t.label}
                     {t.key !== "pdf" && d && !d.exists && <span className="empty-dot" title="not written yet" />}
+                    {/*
+                      A tab you made, gone the way a Chrome tab goes: hidden
+                      until you are looking at this one, permanent once clicked.
+                      It deletes the file, so it asks first — same weight as
+                      Start over, for the same reason.
+                    */}
+                    {removable && (
+                      <span
+                        className="tab-delete"
+                        role="button"
+                        title={`Delete "${t.label}"`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void deleteTab(t.key, t.label);
+                        }}
+                      >
+                        ×
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -1566,19 +1620,35 @@ export function Workbench({
               <>
                 <span className="tab-split" />
                 <div className="tab-group">
-                  {[PREP, ...extra].map((t) => (
-                    <button
-                      key={t.key}
-                      className={tab === t.key ? "on" : ""}
-                      onClick={() => {
-                        chosen.current = true;
-                        setTab(t.key);
-                        setDirty(false);
-                      }}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
+                  {[PREP, ...extra].map((t) => {
+                    const removable = t.key !== "prep";
+                    return (
+                      <button
+                        key={t.key}
+                        className={`${tab === t.key ? "on" : ""} ${removable ? "removable" : ""}`.trim()}
+                        onClick={() => {
+                          chosen.current = true;
+                          setTab(t.key);
+                          setDirty(false);
+                        }}
+                      >
+                        {t.label}
+                        {removable && (
+                          <span
+                            className="tab-delete"
+                            role="button"
+                            title={`Delete "${t.label}"`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void deleteTab(t.key, t.label);
+                            }}
+                          >
+                            ×
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                   {naming ? (
                     <input
                       className="tab-new"

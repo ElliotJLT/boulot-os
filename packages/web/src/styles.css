@@ -530,6 +530,24 @@ span.play.busy { cursor: default; }
 .tab-source button { color: var(--ink-3); }
 .tab-source button.on { color: var(--ink-2); }
 
+/*
+ * The X that deletes a tab you made, the way Chrome hides one until you are
+ * on it or over it. Everywhere else in the strip stays exactly as wide as its
+ * label: CV, JD and Research never had one and never should, so the extra
+ * width only exists on the buttons that opt in.
+ */
+.tab-group button.removable { padding-inline-end: 24px; position: relative; }
+.tab-delete {
+  position: absolute; inset-inline-end: 5px; inset-block-start: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 15px; block-size: 15px; border-radius: 50%;
+  font-size: 13px; line-height: 1; color: var(--ink-3);
+  opacity: 0; transition: opacity 100ms ease, background 100ms ease, color 100ms ease;
+}
+.tab-group button.removable:hover .tab-delete,
+.tab-group button.removable.on .tab-delete { opacity: 0.55; }
+.tab-delete:hover { opacity: 1 !important; background: var(--line); color: var(--ink); }
+
 /* ── Career record ────────────────────────────────── */
 .career { padding-block-end: 40px; }
 .updated { margin-inline-start: auto; font-size: 12px; color: var(--ink-3); }

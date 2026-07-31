@@ -819,6 +819,32 @@ app.put<{ Params: { who: string; slug: string; doc: string }; Body: { markdown: 
 );
 
 /*
+ * Deleting a tab means deleting the file. There is no trash: it is a markdown
+ * file in a folder the user already owns, and pretending to remove it while
+ * keeping it around somewhere is the kind of surprise that erodes trust in
+ * every other "gone" in the app.
+ *
+ * Restricted to tabs the user made. cv.md, job.md, prep.md and the rest are
+ * structural — the app has other, considered ways to clear them (Start over,
+ * dropping a step before a run) — and a blanket delete-by-key route would let
+ * any of them go the same way a stale round does.
+ */
+app.delete<{ Params: { who: string; slug: string; doc: string } }>(
+  "/api/:who/job/:slug/doc/:doc",
+  async (req, reply) => {
+    if (req.params.doc in DOCS) return reply.code(400).send({ error: "not a removable tab" });
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+    const file = docFile(req.params.doc);
+    if (!file || RESERVED.has(file)) return reply.code(400).send({ error: "not a removable tab" });
+    const p = join(dir, file);
+    if (!existsSync(p)) return reply.code(404).send({ error: "no such document" });
+    rmSync(p);
+    return { ok: true };
+  },
+);
+
+/*
  * A new tab, which is a new file.
  *
  * Created with its title as the first line, so the name lives in the document
