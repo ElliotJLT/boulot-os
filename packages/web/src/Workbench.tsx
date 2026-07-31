@@ -609,7 +609,14 @@ export function Workbench({
             events: Event[];
           }>;
         }) => {
-        const mine = d.jobs.find((j) => j.slug === slug);
+        /*
+         * A finished intake and a build you just started can share a slug —
+         * the folder gets one the moment it exists, and neither job forgets
+         * it afterwards. Plain `.find` returns whichever comes first, which
+         * on a reload mid-build can be the intake that already ended,
+         * reporting "nothing running" while a build genuinely is.
+         */
+        const mine = d.jobs.find((j) => j.slug === slug && j.running) ?? d.jobs.find((j) => j.slug === slug);
         if (!mine) return;
         setActivity(mine.events.filter((e) => e.t === "tool").map((e) => (e as { label: string }).label));
         setTurns(
@@ -640,7 +647,14 @@ export function Workbench({
         (d: {
           jobs: Array<{ slug: string | null; label: string; running: boolean; startedAt?: number }>;
         }) => {
-        const mine = d.jobs.find((j) => j.slug === slug);
+        /*
+         * A finished intake and a build you just started can share a slug —
+         * the folder gets one the moment it exists, and neither job forgets
+         * it afterwards. Plain `.find` returns whichever comes first, which
+         * on a reload mid-build can be the intake that already ended,
+         * reporting "nothing running" while a build genuinely is.
+         */
+        const mine = d.jobs.find((j) => j.slug === slug && j.running) ?? d.jobs.find((j) => j.slug === slug);
         if (mine?.running) {
           setRunning(mine.label);
           setRunKind((k) => k ?? "adopted");
@@ -1967,36 +1981,60 @@ export function Workbench({
                 {running ? <span className="pip" /> : allDone ? "✓" : "▶"}
               </button>
             </div>
-            <ol>
-              {railPlan.map((s) => {
-                const isDone = done(s.key);
-                const isLive = runKind === "build" && Boolean(running) && !isDone;
-                // The three fixed steps are what an application is; the rest
-                // you asked for, so only the rest can be taken back off.
-                const optional = !STEPS.some((f) => f.key === s.key);
-                return (
-                  <li key={s.key} className={isDone ? "step-done" : isLive ? "step-live" : ""}>
-                    <span className="box">{isDone ? "✓" : isLive ? <span className="dot" /> : ""}</span>
-                    <span>{isLive ? s.verb : s.label}</span>
-                    {optional && !running && (
-                      <button
-                        className="step-drop"
-                        title="Do not write this"
-                        onClick={() =>
-                          setInclude((prev) => {
-                            const next = new Set(prev);
-                            next.delete(s.key);
-                            return next;
-                          })
-                        }
-                      >
-                        ×
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
+            {/*
+              The picker, only until there is something better to look at.
+
+              This list answers "what is play about to do, and can I change
+              it" — which matters before a run and stops mattering the moment
+              one starts, because BuildProgress in the log below then narrates
+              the same steps at finer grain and, unlike this list, actually
+              knows what a run adopted from the New application screen is
+              doing. That gap used to show as three dead checkboxes sitting
+              above a live six-step rail telling a truer version of the same
+              story: the build was real, the top of the screen just did not
+              know it, because its dot only lit up for runs started from this
+              screen and a run handed off from creation is not one of those.
+
+              So this only shows while nothing is running: before, as the
+              picker, and after, back in its other job of reviewing what got
+              written and what did not — including the named extras
+              BuildProgress does not know about, like a cover letter or a
+              custom tab. Gated on `running` rather than on activity ever
+              having existed, since activity from a finished run stays around
+              and would otherwise keep this hidden for good the first time
+              anything ran.
+            */}
+            {!running && (
+              <ol>
+                {railPlan.map((s) => {
+                  const isDone = done(s.key);
+                  // The three fixed steps are what an application is; the rest
+                  // you asked for, so only the rest can be taken back off.
+                  const optional = !STEPS.some((f) => f.key === s.key);
+                  return (
+                    <li key={s.key} className={isDone ? "step-done" : ""}>
+                      <span className="box">{isDone ? "✓" : ""}</span>
+                      <span>{s.label}</span>
+                      {optional && (
+                        <button
+                          className="step-drop"
+                          title="Do not write this"
+                          onClick={() =>
+                            setInclude((prev) => {
+                              const next = new Set(prev);
+                              next.delete(s.key);
+                              return next;
+                            })
+                          }
+                        >
+                          ×
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
 
             {cost > 0 && <p className="cost">£{(cost * 0.79).toFixed(2)} this session</p>}
 

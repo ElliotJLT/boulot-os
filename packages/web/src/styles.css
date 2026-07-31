@@ -474,12 +474,6 @@ main { max-inline-size: 1600px; margin: 0 auto; padding: 24px 28px 56px; }
 }
 .step-done { color: var(--ink); }
 .step-done .box { background: var(--ink); border-color: var(--ink); }
-.step-live { color: var(--ink); }
-.step-live .box { border-color: var(--ink-3); }
-.step-live .dot {
-  inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--ink);
-  animation: breathe 1.3s ease-in-out infinite;
-}
 
 .applied-note {
   margin: 14px 0 0; padding-block-start: 12px;
