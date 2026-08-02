@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildProgress, Markdown, Thinking, collapse } from "./Activity.js";
 import { PrepDoc } from "./Prep.js";
-import { longDate } from "./dates.js";
+import { daysUntil, longDate } from "./dates.js";
 import { useSocket } from "./socket.js";
 import { AGENTS, MODELS, type AgentKey } from "./models.js";
 
@@ -402,6 +402,8 @@ export function Workbench({
   const talkingRef = useRef(false);
   const [adding, setAdding] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  /** The "what happened" form, once the interview date has gone by. */
+  const [advancing, setAdvancing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState("");
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
@@ -558,13 +560,25 @@ export function Workbench({
     // Always keep cv and job in memory: the tweak box attaches them regardless
     // of which tab is showing, and the PDF tab has no markdown of its own.
     const active = tabRef.current;
+    const inProcess = Boolean(d.stage) && d.stage !== "drafting" && d.stage !== "lead";
     const needed = [
       ...new Set([
         active === "pdf" ? "cv" : active,
         "cv",
         "job",
         // The prep conversation attaches these whatever tab is showing.
-        ...(d.stage && d.stage !== "drafting" && d.stage !== "lead" ? ["research", "prep"] : []),
+        ...(inProcess ? ["research", "prep"] : []),
+        /*
+         * Every round, not just the one on screen.
+         *
+         * A second round asked about the first and got an answer written as
+         * though the first had not happened, because the prep prompt only ever
+         * carried prep.md and whichever tab was open. The rounds were sitting
+         * in the same folder the whole time and the model could not see them.
+         * They are a few kilobytes of markdown each; loading them all is
+         * cheaper than the question they were failing to answer.
+         */
+        ...(inProcess ? ((d.extra ?? []) as Array<{ key: string }>).map((e) => e.key) : []),
       ]),
     ];
     const loaded = await Promise.all(
@@ -889,6 +903,57 @@ export function Workbench({
       body: JSON.stringify({ company: name }),
     });
     onRenamed?.(name);
+  };
+
+  /**
+   * The round happened. Record it, and set up the next one.
+   *
+   * Creating the tab already moves substage and clears interview_date, because
+   * the old date belongs to a round that is over. That is right and it loses
+   * the date, so the round that just finished is stamped with it first: the
+   * documents are what get read later, and "this one was on 28 July" is the
+   * fact that makes a pile of rounds a sequence.
+   */
+  const nextRound = async (name: string, date: string) => {
+    const label = name.trim();
+    setAdvancing(false);
+    if (!label) return;
+
+    /*
+     * Which document was the round that just ended.
+     *
+     * Tabs are created in the order the rounds happen, so the most recent one
+     * is the round being closed. Before any tab exists, prep.md is round one.
+     */
+    const closing = extra.at(-1)?.key ?? "prep";
+    if (interviewDate) {
+      const body = text[closing] ?? "";
+      const stamp = `Happened ${longDate(interviewDate)}`;
+      if (!body.includes(stamp)) {
+        /*
+         * Above "My notes", never inside it.
+         *
+         * That heading is the user's and it sits at the bottom of every prep
+         * document, so appending to the end of the file put the stamp inside
+         * the one section nothing is allowed to write to. It belongs to the
+         * round, so it goes at the end of the round's own material.
+         */
+        const mine = /^##\s+my notes\s*$/im.exec(body);
+        const line = `**${stamp}**`;
+        const next = mine
+          ? `${body.slice(0, mine.index).trimEnd()}\n\n${line}\n\n${body.slice(mine.index)}`
+          : `${body.trimEnd()}\n\n${line}\n`;
+        setText((t) => ({ ...t, [closing]: next }));
+        await fetch(`/api/${who}/job/${slug}/doc/${closing}`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ markdown: next }),
+        });
+      }
+    }
+
+    await addTab(label);
+    if (date) await saveInterviewDate(date);
   };
 
   const saveInterviewDate = async (date: string) => {
@@ -1267,6 +1332,20 @@ export function Workbench({
           attach("job_description", job, "job.md") +
           attach("research", text.research ?? "", "research.md") +
           attach("prep_notes", text.prep ?? "", "prep.md") +
+          /*
+           * The rounds that already happened.
+           *
+           * "What did they ask last time" is the most obvious question a
+           * second round produces and the prompt could not answer it: only
+           * prep.md and the open tab were ever attached, so every earlier
+           * round was invisible. Ordered by creation, which is the order they
+           * happened in, and labelled so the model can tell a round that is
+           * over from the one being prepared for.
+           */
+          extra
+            .filter((e) => e.key !== tab)
+            .map((e) => attach(`earlier_round name="${e.label}"`, text[e.key] ?? "", `${e.key}.md`))
+            .join("") +
           (target !== "prep.md" ? attach("this_round", text[tab] ?? "", target) : "") +
           `\n\nQuestion: ${q}\n\n` +
           (q.includes("> ")
@@ -1900,6 +1979,23 @@ export function Workbench({
                         }}
                       />
                     </span>
+                  ) : interviewDate && (daysUntil(interviewDate) ?? 0) < 0 ? (
+                    /*
+                     * A date that has gone by is a question, not a claim.
+                     *
+                     * The board already stopped asserting "interview today" the
+                     * morning after and started asking what happened. It asked
+                     * on the card, where the only available answer was to open
+                     * the application and find that nothing here could answer
+                     * it either. This is where the answer lives.
+                     */
+                    <>
+                      That was on{" "}
+                      <button className="when" onClick={() => setEditingDate(true)}>
+                        {longDate(interviewDate)}
+                      </button>
+                      . What happened?
+                    </>
                   ) : interviewDate ? (
                     <>
                       Preparing for interview on{" "}
@@ -1922,6 +2018,47 @@ export function Workbench({
                   </span>
                 )}
               </div>
+              {/*
+                What happens next, as three things you can actually press.
+                
+                Rejection and an offer both already had a home: the archive
+                form and the stage control. The middle one, which is the
+                common case, had none — a second round meant making a tab and
+                separately remembering to move the date, and the date the
+                first round happened on was overwritten in the process.
+              */}
+              {!running && interviewDate && (daysUntil(interviewDate) ?? 0) < 0 && (
+                advancing ? (
+                  <form
+                    className="next-round"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const f = new FormData(e.currentTarget);
+                      void nextRound(String(f.get("name") ?? ""), String(f.get("date") ?? ""));
+                    }}
+                  >
+                    <input
+                      name="name"
+                      autoFocus
+                      defaultValue={`Round ${extra.length + 2}`}
+                      placeholder="Round 2, take-home…"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setAdvancing(false);
+                      }}
+                    />
+                    <input name="date" type="date" title="When is it, if you know" />
+                    <button type="submit">Add it</button>
+                  </form>
+                ) : (
+                  <div className="prep-actions">
+                    <button className="primary" onClick={() => setAdvancing(true)}>
+                      Another round
+                    </button>
+                    <button onClick={() => setFiling(true)}>Rejected</button>
+                    <button onClick={() => void setStageTo("offer")}>Offer</button>
+                  </div>
+                )
+              )}
               <p className="prep-lede">
                 The job description and the research are on the left. Anything you ask goes into{" "}
                 <b>{extra.find((e) => e.key === tab)?.label ?? "Prep"}</b>, the tab you have open,
