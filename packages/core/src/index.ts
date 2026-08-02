@@ -14,3 +14,4 @@ export * from "./memory/consolidate.js";
 export * from "./memory/run.js";
 export * from "./vault/master.js";
 export * from "./learning/works.js";
+export * from "./writing/tells.js";

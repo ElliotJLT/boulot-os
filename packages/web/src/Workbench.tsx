@@ -402,6 +402,8 @@ export function Workbench({
   const talkingRef = useRef(false);
   const [adding, setAdding] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  /** Machine-findable writing tells, per document, from the server. */
+  const [tells, setTells] = useState<Record<string, Array<{ kind: string; quote: string; fix: string }>>>({});
   /** The "what happened" form, once the interview date has gone by. */
   const [advancing, setAdvancing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -553,6 +555,7 @@ export function Workbench({
       }
     }
     setFit(d.fit ?? null);
+    setTells(d.tells ?? {});
     setStage(st);
     setAppliedDate((d.appliedDate as string | null) ?? null);
     setInterviewDate((d.interviewDate as string | null) ?? null);
@@ -1158,7 +1161,30 @@ export function Workbench({
         : key === "cover"
           ? `Use the boulot:application-answers skill to write a cover letter to active/${slug}/cover-letter.md.`
           : key === "questions"
-            ? `active/${slug}/application-answers.md already contains the employer's questions and no answers. Write an answer beneath each question, in that same file, keeping the questions in place. Answer only the questions written there and do not invent others.`
+            ? /*
+               * The one step that wrote prose and named no skill.
+               *
+               * The CV step loads boulot:tailor-cv, the cover letter loads
+               * boulot:application-answers, and this — the longest prose in
+               * the app, the thing a human actually reads — loaded neither.
+               * Every writing rule in the plugin was sitting there unread
+               * while this produced "the part I'm proudest of isn't the
+               * launch, it's the evaluation harness", which the voice rules
+               * ban by name.
+               */
+              `Use the boulot:application-answers skill, and read boulot:writing-voice before you ` +
+              `write a word. active/${slug}/application-answers.md already contains the employer's ` +
+              `questions and no answers. Write an answer beneath each question, in that same file, ` +
+              `keeping the questions in place. Answer only the questions written there and do not ` +
+              `invent others.\n\n` +
+              `Three constructions are banned outright, because they are what makes an answer read ` +
+              `as machine-written no matter how true it is:\n` +
+              `1. "It is not X, it is Y" in any form, including across two sentences ("The part I am ` +
+              `proudest of is not the launch. It is the harness"). State the positive.\n` +
+              `2. A closing line that generalises into a maxim. End on the concrete thing, or stop.\n` +
+              `3. "rather than" more than once in the whole document.\n` +
+              `Vary paragraph length. If every paragraph lands a neat beat, rewrite it so one of them ` +
+              `just states a fact and moves on.`
             : key === "review"
               ? `Run the three adversarial reviewers described in boulot:tailor-cv, then apply their edits to cv.md.`
               : key === "pdf"
@@ -1943,6 +1969,44 @@ export function Workbench({
             />
           )}
 
+          {/*
+            What a machine can tell you about the prose.
+
+            The CV has had a fit report for months; the documents somebody
+            actually reads had nothing, and "the part I'm proudest of isn't
+            the launch, it's the harness" went out to an employer. This is the
+            same idea pointed at the writing: only the tells that can be found
+            without a model, so it is never wrong about whether it found one.
+          */}
+          {(tells[tab]?.length ?? 0) > 0 && (
+            <div className="tells">
+              <b>
+                {tells[tab]!.length} thing{tells[tab]!.length === 1 ? "" : "s"} that read as
+                machine-written
+              </b>
+              <ul>
+                {tells[tab]!.slice(0, 5).map((t, i) => (
+                  <li key={i}>
+                    <q>{t.quote}</q> <em>{t.fix}</em>
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="linkish"
+                disabled={Boolean(running)}
+                onClick={() =>
+                  void tweak(
+                    `Fix the writing tells in ${tab === "cover" ? "cover-letter.md" : "application-answers.md"}. ` +
+                      `Rewrite each flagged passage so it states the positive directly. Do not add a ` +
+                      `closing maxim, do not balance clauses to replace the ones you cut, and change ` +
+                      `nothing about what the answer claims.`,
+                  )
+                }
+              >
+                Fix these
+              </button>
+            </div>
+          )}
           {fit && !fit.fits && fit.trimTarget && (
             <p className="fitline">
               Cut about <strong>{fit.trimTarget.charactersToCut}</strong> characters from{" "}

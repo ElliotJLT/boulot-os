@@ -26,6 +26,7 @@ import {
   today as todayStr,
   whatWorked,
   reachedInterview,
+  findTells,
 } from "@boulot/core";
 import { run } from "./agent.js";
 import { costToday } from "./usage.js";
@@ -825,6 +826,26 @@ app.get<{ Params: { who: string; slug: string } }>("/api/:who/job/:slug/docs", a
       ? (readApplication(join(dir, "status.md")).interviewDate ?? null)
       : null,
     fit: existsSync(fitPath) ? JSON.parse(readFileSync(fitPath, "utf8")) : null,
+    /*
+     * Machine-checkable writing tells, for the documents made of prose.
+     *
+     * The CV gets measured for overflow and for whether a parser can read it.
+     * The documents a human actually sits and reads got nothing, and an answer
+     * went out carrying the exact construction the voice rules ban by name.
+     * Same treatment: computed here, reported plainly, no model in the loop.
+     *
+     * Not the CV, whose bullets are deliberately clipped and would read as
+     * false positives, and not the job description or research, which are
+     * somebody else's prose.
+     */
+    tells: Object.fromEntries(
+      (["cover", "questions"] as const).flatMap((key) => {
+        const p = join(dir, DOCS[key].file);
+        if (!existsSync(p)) return [];
+        const found = findTells(readFileSync(p, "utf8"));
+        return found.length ? [[key, found]] : [];
+      }),
+    ),
   };
 });
 

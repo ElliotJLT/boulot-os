@@ -1049,6 +1049,18 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   background: var(--accent-soft); color: var(--accent-deep);
 }
 
+/* What reads as machine-written, under the document it is about. */
+.tells {
+  margin: 0; padding: 12px 16px;
+  border-block-start: 1px solid var(--line);
+  background: var(--bg-2); font-size: 12.5px;
+}
+.tells b { font-size: 12.5px; }
+.tells ul { margin: 7px 0 8px; padding-inline-start: 16px; display: grid; gap: 5px; }
+.tells li { color: var(--ink-2); line-height: 1.45; }
+.tells q { color: var(--ink); }
+.tells em { color: var(--ink-3); font-style: normal; }
+
 /* Saving happens by itself; this only says so. */
 .saving { font-size: 12px; color: var(--ink-3); }
 
