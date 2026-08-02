@@ -384,12 +384,15 @@ export function Workbench({
   company,
   onClose,
   onArchived,
+  onRenamed,
 }: {
   who: string;
   slug: string;
   company: string;
   onClose: () => void;
   onArchived?: () => void;
+  /** So the board and the header stop disagreeing about the name. */
+  onRenamed?: (name: string) => void;
 }) {
   const [filing, setFiling] = useState(false);
   const [lesson, setLesson] = useState("");
@@ -398,6 +401,7 @@ export function Workbench({
   const [include, setInclude] = useState<Set<string>>(new Set());
   const talkingRef = useRef(false);
   const [adding, setAdding] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState("");
   const [appliedDate, setAppliedDate] = useState<string | null>(null);
@@ -866,6 +870,27 @@ export function Workbench({
     void refresh();
   };
 
+  /**
+   * Rename the company.
+   *
+   * A recruiter-anonymised application arrives as "Unknown (recruiter-
+   * anonymized UK fintech, lending)" and gets a real name the moment they tell
+   * you. Editable here because asking the agent to do it is how a CV ends up
+   * naming an employer that does not exist: with the CV in context, "change
+   * the name to X" reads as a find-and-replace.
+   */
+  const saveCompany = async (next: string) => {
+    const name = next.trim();
+    setRenaming(false);
+    if (!name || name === company) return;
+    await fetch(`/api/${who}/job/${slug}/company`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ company: name }),
+    });
+    onRenamed?.(name);
+  };
+
   const saveInterviewDate = async (date: string) => {
     setInterviewDate(date || null);
     setEditingDate(false);
@@ -1320,7 +1345,22 @@ export function Workbench({
           ←
         </button>
         <h2>
-          {company}
+          {renaming ? (
+            <input
+              className="rename"
+              autoFocus
+              defaultValue={company}
+              onBlur={(e) => void saveCompany(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void saveCompany(e.currentTarget.value);
+                if (e.key === "Escape") setRenaming(false);
+              }}
+            />
+          ) : (
+            <button className="rename-open" onClick={() => setRenaming(true)} title="Rename this application">
+              {company}
+            </button>
+          )}
           {(justApplied || stage === "applied") && (
             <span
               className={justApplied ? "applied-tick pop" : "applied-tick"}

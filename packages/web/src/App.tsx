@@ -395,6 +395,10 @@ export function App() {
           company={open.company}
           onClose={() => setOpen(null)}
           onArchived={() => setReload((r) => r + 1)}
+          onRenamed={(name) => {
+            setOpen((o) => (o ? { ...o, company: name } : o));
+            setReload((r) => r + 1);
+          }}
         />
       </main>
     );

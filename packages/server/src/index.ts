@@ -466,6 +466,41 @@ app.post<{ Params: { who: string; slug: string }; Body: { date?: string | null }
   },
 );
 
+/*
+ * What the company is called.
+ *
+ * Recruiters withhold the client, so an application often starts life as
+ * "Unknown (recruiter-anonymized UK fintech, lending)" and stays that way
+ * after they tell you who it is. Asking the agent to rename it is the obvious
+ * move and the wrong tool: told "change the name to X" with a CV in context,
+ * it find-and-replaced a real past employer throughout the CV and the cover
+ * letter, which is a factual error on a document that gets sent to people.
+ *
+ * So renaming is a plain field edit the user does directly. The folder name
+ * never changes: it is the identity every other file and every running job
+ * refers to, and renaming directories under an app that has the old path open
+ * is a much bigger promise than this needs to make.
+ */
+app.post<{ Params: { who: string; slug: string }; Body: { company?: string } }>(
+  "/api/:who/job/:slug/company",
+  async (req, reply) => {
+    const dir = jobDir(req.params.who, req.params.slug);
+    if (!dir) return reply.code(404).send({ error: "no such application" });
+    const status = join(dir, "status.md");
+    if (!existsSync(status)) return reply.code(404).send({ error: "no status.md" });
+    const company = (req.body?.company ?? "").trim();
+    if (!company) return reply.code(400).send({ error: "company required" });
+    writeFileSync(
+      status,
+      updateFrontmatter(readFileSync(status, "utf8"), {
+        company,
+        last_updated: todayStr(),
+      }),
+    );
+    return { slug: req.params.slug, company };
+  },
+);
+
 app.post<{ Params: { who: string; slug: string }; Body: { stage?: string } }>(
   "/api/:who/job/:slug/stage",
   async (req, reply) => {

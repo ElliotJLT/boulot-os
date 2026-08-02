@@ -1014,6 +1014,26 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * The company name, editable in place.
+ *
+ * Looks exactly like the heading until you hover it, because it is the
+ * heading: a rename is rare enough that a permanent pencil next to the title
+ * would be clutter, and common enough on recruiter-anonymised roles that it
+ * has to be findable by trying to click the thing you want to change.
+ */
+.rename-open {
+  font: inherit; color: inherit; background: none; border: 0; padding: 2px 5px;
+  margin-inline-start: -5px; border-radius: 6px; cursor: text; text-align: start;
+}
+.rename-open:hover { background: var(--muted-bg); }
+.rename {
+  font: inherit; color: inherit; background: var(--bg);
+  border: 1px solid var(--accent); border-radius: 6px;
+  padding: 2px 5px; margin-inline-start: -5px; min-inline-size: 24ch;
+}
+.rename:focus { outline: none; }
+
 /* Saving happens by itself; this only says so. */
 .saving { font-size: 12px; color: var(--ink-3); }
 
