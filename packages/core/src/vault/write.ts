@@ -36,8 +36,33 @@ export function updateFrontmatter(text: string, patch: Record<string, string | n
     return `---\n${block}\n---\n\n${text}`;
   }
 
-  const end = text.indexOf("\n---", 3);
-  if (end === -1) return text;
+  /*
+   * Frontmatter that was never closed.
+   *
+   * Returning the text unchanged here is what a missing "---" used to do, and
+   * it fails in the worst available way: the caller writes the file back
+   * happily, the endpoint reports success, and the value never changes. A card
+   * that would not move between columns however many times you dragged it
+   * turned out to be one status.md whose closing delimiter was never written.
+   *
+   * The file is still readable and the intent is obvious, so it gets repaired
+   * rather than refused. The block runs to the last line that still looks like
+   * a key, and anything after that is body text that keeps its place below a
+   * delimiter this now supplies.
+   */
+  let end = text.indexOf("\n---", 3);
+  if (end === -1) {
+    const lines = text.split("\n");
+    let last = 0;
+    for (let i = 1; i < lines.length; i += 1) {
+      const line = lines[i] ?? "";
+      if (KEY_LINE.test(line) || /^\s+\S/.test(line)) last = i;
+      else if (line.trim() !== "") break;
+    }
+    const upto = lines.slice(0, last + 1).join("\n");
+    text = `${upto}\n---\n${lines.slice(last + 1).join("\n")}`;
+    end = upto.length;
+  }
 
   const head = text.slice(0, text.indexOf("\n") + 1);
   const block = text.slice(text.indexOf("\n") + 1, end);
