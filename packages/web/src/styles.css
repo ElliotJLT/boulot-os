@@ -1070,9 +1070,22 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
  */
 .control {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 22px 12px; position: relative;
+  position: relative;
+  /*
+   * No gutter of its own.
+   *
+   * `main` already sets the page gutter and this was adding twenty-two more
+   * on top of it, so the strip sat inset from both the brand above it and the
+   * columns below and read as floating over the page rather than being part
+   * of it. The 4px matches `.column > header`, so the first chip lines up with
+   * the word PREP underneath it.
+   */
+  padding-inline: 4px;
+  margin-block-end: 20px;
 }
-.control-shut { padding-block-end: 6px; }
+.control-shut { margin-block-end: 14px; }
+/* The strip supplies the separation the header's own margin was providing. */
+.top:has(+ .control) { margin-block-end: 16px; }
 .control-row {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
