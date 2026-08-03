@@ -32,6 +32,7 @@ import {
 } from "@boulot/core";
 import { run } from "./agent.js";
 import { costToday } from "./usage.js";
+import { planUsage } from "./plan.js";
 
 /**
  * The Boulot local server.
@@ -130,7 +131,7 @@ function inVault(...segments: string[]): string {
  * know. Polled rather than pushed — a run finishing is not urgent enough to
  * justify a socket message just for this.
  */
-app.get("/api/cost/today", async () => costToday());
+app.get("/api/cost/today", async () => ({ ...costToday(), plan: planUsage() }));
 
 app.get("/api/health", async () => {
   const who = people(VAULT);

@@ -231,7 +231,11 @@ export function App() {
   const [watching, setWatching] = useState<string | null>(null);
   const [maxAgents, setMaxAgents] = useState(3);
   const [reload, setReload] = useState(0);
-  const [costToday, setCostToday] = useState<{ gbp: number; runs: number } | null>(null);
+  const [costToday, setCostToday] = useState<{
+    gbp: number;
+    runs: number;
+    plan?: { fiveHour: number; week: number; at: number } | null;
+  } | null>(null);
   /*
    * The strip starts open and remembers being closed.
    *
@@ -313,7 +317,7 @@ export function App() {
     const poll = () =>
       fetch("/api/cost/today")
         .then((r) => r.json())
-        .then((d: { gbp: number; runs: number }) => setCostToday(d))
+        .then((d) => setCostToday(d))
         .catch(() => {});
     void poll();
     const t = setInterval(poll, 30_000);
@@ -505,17 +509,36 @@ export function App() {
       */}
       {board && (
         <div className={strip ? "control" : "control control-shut"}>
+          {/*
+            A word and a chevron, not a bare ×.
+            
+            The × was doing two jobs badly: it did not say what it would close,
+            and it read as "dismiss this permanently" rather than "fold this
+            away". A labelled header says what the strip is even while it is
+            shut, which is the only state in which anybody needs telling.
+          */}
           <button
-            className="control-toggle"
+            className="control-head"
             onClick={() => {
               const next = !strip;
               setStrip(next);
               localStorage.setItem("boulot.strip", next ? "open" : "closed");
             }}
-            title={strip ? "Hide" : "Show today"}
             aria-expanded={strip}
           >
-            {strip ? "×" : "Today"}
+            <span className={strip ? "control-chev open" : "control-chev"} aria-hidden>
+              <svg viewBox="0 0 16 16" width="11" height="11">
+                <path
+                  d="M5 3l5 5-5 5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            Progress
           </button>
           {strip && (
             <div className="control-row">
@@ -526,6 +549,25 @@ export function App() {
               {costToday && costToday.runs > 0 && (
                 <span className="cost-today" title={`${costToday.runs} run${costToday.runs === 1 ? "" : "s"} today`}>
                   £{costToday.gbp.toFixed(2)} today
+                </span>
+              )}
+              {/*
+                A different pool from the one above it.
+                
+                Boulot bills an API key per token. This is the Max plan's
+                rolling limits, spent by everything else the day is made of.
+                Both can end an afternoon, neither is the other, and the labels
+                have to keep them apart because the two numbers sit inches
+                away from each other.
+              */}
+              {costToday?.plan && (
+                <span
+                  className="control-stat"
+                  title={`Claude subscription, not Boulot's API spend. Measured ${new Date(costToday.plan.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}.`}
+                >
+                  <b>{costToday.plan.fiveHour}%</b> of 5h
+                  <span className="control-sep" />
+                  <b>{costToday.plan.week}%</b> weekly
                 </span>
               )}
               {board.activity && (
