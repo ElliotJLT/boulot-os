@@ -60,20 +60,18 @@ describe("normaliseStage", () => {
 });
 
 describe("flagsFor", () => {
-  it("flags an overdue next action first", () => {
-    const f = primaryFlag(app({ nextActionDate: daysAgo(3) }), TODAY);
-    expect(f).toMatchObject({ kind: "OVERDUE", days: 3 });
-  });
-
-  it.each([
-    [0, "DUE_TODAY"],
-    [1, "DUE_TOMORROW"],
-  ])("flags a next action %s days out as %s", (n, kind) => {
-    expect(primaryFlag(app({ nextActionDate: inDays(n) }), TODAY)?.kind).toBe(kind);
-  });
-
-  it("does not flag a next action further out", () => {
-    expect(primaryFlag(app({ nextActionDate: inDays(5) }), TODAY)).toBeNull();
+  /*
+   * A next-action date raises nothing at all any more.
+   *
+   * The intake wrote "today + 7" onto every application and nothing ever
+   * updated it, so a week later every card went overdue and stayed there. One
+   * board carried seventeen at once, the worst reading 164 days. These assert
+   * the silence, because the old behaviour had tests too and they all passed
+   * while the feature was useless.
+   */
+  it.each([[-3], [0], [1], [5]])("raises nothing for a next action %s days out", (n) => {
+    const f = flagsFor(app({ nextActionDate: n < 0 ? daysAgo(-n) : inDays(n) }), TODAY);
+    expect(f.find((x) => ["OVERDUE", "DUE_TODAY", "DUE_TOMORROW"].includes(x.kind))).toBeUndefined();
   });
 
   // Boundary: the threshold is "more than", not "at least".
@@ -92,13 +90,16 @@ describe("flagsFor", () => {
     expect(f.find((x) => x.kind === "NO_RESPONSE")).toBeUndefined();
   });
 
-  // The distinction that makes STALE meaningful: drifting means nothing planned.
-  it("does not call something stale when a next action is scheduled", () => {
-    const f = flagsFor(
-      app({ lastUpdated: daysAgo(90), nextActionDate: inDays(4) }),
-      TODAY,
-    );
-    expect(f.find((x) => x.kind === "STALE")).toBeUndefined();
+  /*
+   * Stale is about drift, and a phantom date does not stop drift.
+   *
+   * This used to be suppressed by any next-action date, which the intake put
+   * on everything, so the flag that means something was hidden behind the one
+   * that did not.
+   */
+  it("still calls it stale when a next action is scheduled but nothing has moved", () => {
+    const f = flagsFor(app({ lastUpdated: daysAgo(90), nextActionDate: inDays(4) }), TODAY);
+    expect(f.find((x) => x.kind === "STALE")).toBeDefined();
   });
 
   it("calls it stale when it is drifting with nothing planned", () => {
@@ -132,16 +133,19 @@ describe("daysBetween", () => {
 
 describe("nextActions", () => {
   it("returns at most three, worst first, excluding dead ones", () => {
+    // Ranked on real signals now: silence since applying, and drift. A
+    // next-action date no longer decides anything, so these carry dates that
+    // differ only in how long nothing has happened.
     const apps = [
-      app({ slug: "a", nextActionDate: daysAgo(1) }),
-      app({ slug: "b", nextActionDate: daysAgo(30) }),
-      app({ slug: "c", nextActionDate: inDays(0) }),
+      app({ slug: "a", lastUpdated: daysAgo(THRESHOLDS.noResponseDays + 2) }),
+      app({ slug: "b", lastUpdated: daysAgo(120) }),
+      app({ slug: "c", lastUpdated: daysAgo(THRESHOLDS.noResponseDays + 5) }),
       app({ slug: "d", lastUpdated: daysAgo(99) }),
       app({ slug: "e", stage: "closed-lost", outcome: "rejected" }),
     ];
     const out = nextActions(apps, TODAY);
     expect(out).toHaveLength(3);
-    expect(out[0]?.app.slug).toBe("b"); // most overdue
+    expect(out[0]?.app.slug).toBe("b"); // longest silence
     expect(out.map((o) => o.app.slug)).not.toContain("e");
   });
 });

@@ -51,10 +51,28 @@ export function archivable(app: Application, today: Date = new Date()): ArchiveC
     return { ...base, reason: outcome.replace(/_/g, " "), outcome };
   }
 
-  // Silence only counts against an application you actually sent, and only when
-  // nothing is planned. A future next-action date means you are still working
-  // it, however long ago you applied.
-  if (app.stage !== "applied" || app.nextActionDate) return null;
+  /*
+   * Silence counts against anything you sent and then heard nothing about.
+   *
+   * Two things used to stop this firing, and between them it never fired at
+   * all: any next-action date blocked it regardless of whether the date had
+   * passed, and the intake stamped one on every application. Tracebit carried
+   * a date from February and was, on that basis, "still being worked". The
+   * board showed ten dead applications and proposed zero for archiving.
+   *
+   * A date only means you are still on it while it is still ahead of you.
+   */
+  const planned = app.nextActionDate ? new Date(app.nextActionDate) : null;
+  if (planned && !Number.isNaN(planned.getTime()) && daysBetween(today, planned) >= 0) return null;
+
+  /*
+   * And an application that reached a conversation can go quiet too.
+   *
+   * Restricting this to `applied` meant anything that got as far as a screen
+   * and then died stayed on the board for good: three rows sat in Interviewing
+   * for four months, inflating every conversion rate the Insights page draws.
+   */
+  if (!["applied", "screening", "interviewing"].includes(app.stage)) return null;
 
   const last = app.lastUpdated ?? app.appliedDate;
   if (!last) return null;

@@ -38,8 +38,36 @@ describe("archivable", () => {
   });
 
   it("only counts silence against applications actually sent", () => {
+    // A lead was never sent, so silence proves nothing about it.
     expect(archivable(app({ stage: "lead", lastUpdated: daysAgo(400) }), TODAY)).toBeNull();
-    expect(archivable(app({ stage: "interviewing", lastUpdated: daysAgo(400) }), TODAY)).toBeNull();
+    expect(archivable(app({ stage: "drafting", lastUpdated: daysAgo(400) }), TODAY)).toBeNull();
+  });
+
+  /*
+   * A process that reached a conversation can die just as quietly.
+   *
+   * Restricting this to `applied` left three rows sitting in Interviewing for
+   * four months, counted in every conversion rate the Insights page draws.
+   */
+  it("counts silence against a process that got as far as a conversation", () => {
+    expect(archivable(app({ stage: "interviewing", lastUpdated: daysAgo(400) }), TODAY)?.outcome).toBe(
+      "ghosted",
+    );
+    expect(archivable(app({ stage: "screening", lastUpdated: daysAgo(400) }), TODAY)?.outcome).toBe(
+      "ghosted",
+    );
+  });
+
+  /*
+   * A date only means "still on it" while it is still ahead of you.
+   *
+   * Any next-action date used to block archiving outright, and the intake put
+   * one on everything, so a date from February counted as a live plan.
+   */
+  it("ignores a next-action date that has already gone by", () => {
+    expect(
+      archivable(app({ lastUpdated: daysAgo(200), nextActionDate: daysAgo(150) }), TODAY)?.outcome,
+    ).toBe("ghosted");
   });
 
   it("falls back to the applied date when nothing has been updated", () => {
@@ -93,20 +121,20 @@ describe("updateFrontmatter", () => {
 
 describe("the to-do list and the archive", () => {
   it("an archived application still computes as overdue", () => {
-    // Not a bug in flagsFor: nothing will ever update an archived file, so its
-    // next-action date recedes forever. It is a bug to show it, which is why the
-    // board filters by bucket before asking for next actions.
-    const dead = app({ bucket: "archive", nextActionDate: daysAgo(155) });
+    // Not a bug in flagsFor: nothing will ever touch an archived file, so it
+    // drifts further from "updated" forever. It is a bug to show it, which is
+    // why the board filters by bucket before asking for next actions.
+    const dead = app({ bucket: "archive", lastUpdated: daysAgo(155) });
     expect(nextActions([dead], TODAY)).toHaveLength(1);
     expect(nextActions([dead].filter((a) => a.bucket === "active"), TODAY)).toHaveLength(0);
   });
 
   it("does not let old archived items crowd out live ones", () => {
     const apps = [
-      app({ slug: "old", bucket: "archive", nextActionDate: daysAgo(155) }),
-      app({ slug: "older", bucket: "archive", nextActionDate: daysAgo(125) }),
-      app({ slug: "oldest", bucket: "archive", nextActionDate: daysAgo(112) }),
-      app({ slug: "live", bucket: "active", nextActionDate: daysAgo(2) }),
+      app({ slug: "old", bucket: "archive", lastUpdated: daysAgo(155) }),
+      app({ slug: "older", bucket: "archive", lastUpdated: daysAgo(125) }),
+      app({ slug: "oldest", bucket: "archive", lastUpdated: daysAgo(112) }),
+      app({ slug: "live", bucket: "active", lastUpdated: daysAgo(40) }),
     ];
     const shown = nextActions(apps.filter((a) => a.bucket === "active"), TODAY);
     expect(shown.map((x) => x.app.slug)).toEqual(["live"]);

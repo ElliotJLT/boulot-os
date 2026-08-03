@@ -73,19 +73,21 @@ export function flagsFor(app: Application, today: Date = new Date()): Flag[] {
     return [{ kind: "DEAD", label: app.outcome ?? "closed", priority: 90 }];
   }
 
-  const nextAction = parseDate(app.nextActionDate);
   const lastUpdated = parseDate(app.lastUpdated);
 
-  if (nextAction) {
-    const delta = daysBetween(today, nextAction);
-    if (delta < 0) {
-      flags.push({ kind: "OVERDUE", label: `${Math.abs(delta)}d overdue`, priority: 0, days: Math.abs(delta) });
-    } else if (delta === 0) {
-      flags.push({ kind: "DUE_TODAY", label: "due today", priority: 1 });
-    } else if (delta === 1) {
-      flags.push({ kind: "DUE_TOMORROW", label: "due tomorrow", priority: 2 });
-    }
-  }
+  /*
+   * next_action_date no longer produces flags, because nobody ever set one.
+   *
+   * The new-job skill stamped every application with "today + 7" and nothing
+   * else ever touched the field. Seven days later it went overdue and stayed
+   * overdue for good, so the board carried seventeen of these at once — one
+   * reading "164d overdue" — against a deadline no person had chosen and no
+   * action would ever clear. A flag that fires on every card is not a signal,
+   * and it was crowding out the two that are: no reply, and drifting.
+   *
+   * The field is still read (it is in the schema and in the files) and still
+   * shown where a real date exists. It just stops manufacturing urgency.
+   */
 
   if (lastUpdated) {
     const idle = daysBetween(lastUpdated, today);
@@ -94,9 +96,10 @@ export function flagsFor(app: Application, today: Date = new Date()): Flag[] {
       flags.push({ kind: "NO_RESPONSE", label: `no reply in ${idle}d`, priority: 10, days: idle });
     }
 
-    // Stale is specifically "drifting with nothing planned". An application
-    // with a future next-action date is not stale, however long it has been.
-    if (!nextAction && idle > THRESHOLDS.staleDays) {
+    // Stale is specifically "drifting with nothing planned". This used to be
+    // suppressed by any next-action date at all, which the intake stamped on
+    // everything, so the flag that matters was hidden by the one that did not.
+    if (idle > THRESHOLDS.staleDays) {
       flags.push({ kind: "STALE", label: `stale, ${idle}d`, priority: 20, days: idle });
     }
   }

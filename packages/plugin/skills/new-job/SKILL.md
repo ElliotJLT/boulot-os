@@ -75,7 +75,7 @@ role: Head of Operations
 stage: lead
 applied_date:
 last_updated: <today, via boulot_today>
-next_action_date: <deadline, or today + 7>
+next_action_date: <only if the posting states a real closing date; otherwise leave empty>
 url: <link>
 source: <greenhouse | linkedin | referral | ...>
 salary:
