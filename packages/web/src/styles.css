@@ -998,6 +998,7 @@ button.linkish:hover, button.link:hover, .tidy .link:hover { color: var(--accent
   padding: 6px 12px; border-radius: 999px; background: var(--bg-2);
   font-variant-numeric: tabular-nums;
 }
+.agents b { color: var(--ink); font-weight: 600; }
 .agents .agent-dot {
   inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--line-2);
 }

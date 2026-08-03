@@ -541,45 +541,51 @@ export function App() {
             Progress
           </button>
           {strip && (
+            /*
+              Four chips, grouped by what each one measures.
+              
+              It was six, and the split between them was arbitrary: agents and
+              spend are both "what Boulot is doing and what it cost", and today
+              and this week are the same count over two windows. Merging those
+              pairs leaves one chip per category — Boulot working, the
+              subscription, what you sent, what it earned — so the row can be
+              read as four things rather than scanned as six.
+              
+              What is deliberately not merged: the spend chip and the plan
+              chip. They look like the same kind of number and are two
+              different pools, and one pill implies one budget.
+            */
             <div className="control-row">
-              <span className={busy.length ? "agents on" : "agents"} title="Applications being worked on right now">
+              <span className={busy.length ? "agents on" : "agents"} title="Applications being worked on right now, and what today's runs have cost">
                 <span className="agent-dot" />
                 {busy.length}/{maxAgents} agents
+                {costToday && costToday.runs > 0 && (
+                  <>
+                    <span className="control-sep" />
+                    <b>£{costToday.gbp.toFixed(2)}</b>
+                  </>
+                )}
               </span>
-              {costToday && costToday.runs > 0 && (
-                <span className="cost-today" title={`${costToday.runs} run${costToday.runs === 1 ? "" : "s"} today`}>
-                  £{costToday.gbp.toFixed(2)} today
-                </span>
-              )}
-              {/*
-                A different pool from the one above it.
-                
-                Boulot bills an API key per token. This is the Max plan's
-                rolling limits, spent by everything else the day is made of.
-                Both can end an afternoon, neither is the other, and the labels
-                have to keep them apart because the two numbers sit inches
-                away from each other.
-              */}
+
               {costToday?.plan && (
                 <span
                   className="control-stat"
-                  title={`Claude subscription, not Boulot's API spend. Measured ${new Date(costToday.plan.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}.`}
+                  title={`Claude subscription, a separate pool from Boulot's API spend. Measured ${new Date(costToday.plan.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}.`}
                 >
                   <b>{costToday.plan.fiveHour}%</b> of 5h
                   <span className="control-sep" />
                   <b>{costToday.plan.week}%</b> weekly
                 </span>
               )}
+
               {board.activity && (
-                <>
-                  <span className="control-stat">
-                    <b>{board.activity.momentum.today}</b> sent today
-                  </span>
-                  <span className="control-stat">
-                    <b>{board.activity.momentum.week}</b> this week
-                  </span>
-                </>
+                <span className="control-stat" title="Applications sent">
+                  <b>{board.activity.momentum.today}</b> today
+                  <span className="control-sep" />
+                  <b>{board.activity.momentum.week}</b> this week
+                </span>
               )}
+
               {board.funnel.applied > 0 && (
                 <span className="control-stat" title={`${board.funnel.stages.find((x) => x.label === "Interview")?.count ?? 0} of ${board.funnel.applied} reached an interview`}>
                   <b>
