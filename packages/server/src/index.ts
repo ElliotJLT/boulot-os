@@ -27,6 +27,8 @@ import {
   whatWorked,
   reachedInterview,
   findTells,
+  activityGrid,
+  momentum,
 } from "@boulot/core";
 import { run } from "./agent.js";
 import { costToday } from "./usage.js";
@@ -296,6 +298,17 @@ app.get<{ Params: { who: string } }>("/api/:who/board", async (req, reply) => {
       flag,
     })),
     funnel: buildFunnel(applications, today),
+    /*
+     * What you did, by day, and the few counts worth seeing without asking.
+     *
+     * Reads the whole vault including the archive, the same as the funnel and
+     * for the same reason: this is history, and an application does not stop
+     * having been sent on a Tuesday because it was rejected in June.
+     */
+    activity: (() => {
+      const grid = activityGrid(applications, 182, today);
+      return { grid, momentum: momentum(grid) };
+    })(),
     // Proposed, not performed. The board shows a single line offering the move
     // rather than doing it, because an application that vanishes on its own is
     // worse than one that lingers a fortnight.

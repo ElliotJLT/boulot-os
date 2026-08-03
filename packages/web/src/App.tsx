@@ -35,6 +35,7 @@ type Board = {
     medianDaysToClose: number | null;
     presumedGhosted: number;
   };
+  activity?: { momentum: { today: number; week: number; streak: number; best: number } };
   archivable: Candidate[];
   archived: number;
   warnings: number;
@@ -231,6 +232,13 @@ export function App() {
   const [maxAgents, setMaxAgents] = useState(3);
   const [reload, setReload] = useState(0);
   const [costToday, setCostToday] = useState<{ gbp: number; runs: number } | null>(null);
+  /*
+   * The strip starts open and remembers being closed.
+   *
+   * It is a glance, not a dashboard, so the cost of it being there is that it
+   * is always there. Anyone who does not want it should have to say so once.
+   */
+  const [strip, setStrip] = useState(() => localStorage.getItem("boulot.strip") !== "closed");
   const [authMode, setAuthMode] = useState<string | null>(null);
   const [health, setHealth] = useState<{ vault: string; needsSetup: string | null; firstPerson: string | null } | null>(null);
 
@@ -466,23 +474,6 @@ export function App() {
             is the main thing that makes the app faster to use than doing it by
             hand.
           */}
-          <span className={busy.length ? "agents on" : "agents"} title="Applications being worked on right now">
-            <span className="agent-dot" />
-            {busy.length}/{maxAgents} agents
-          </span>
-          {/*
-            What today has cost, so far.
-
-            Every run already showed its own cost beside itself, which answers
-            "was that one expensive" but not "should I still be doing this
-            today". Zero runs today renders nothing rather than "£0.00" — a
-            number with no information in it is worse than no number.
-          */}
-          {costToday && costToday.runs > 0 && (
-            <span className="cost-today" title={`${costToday.runs} run${costToday.runs === 1 ? "" : "s"} today`}>
-              £{costToday.gbp.toFixed(2)} today
-            </span>
-          )}
           {/*
             Settings is the plumbing. Profile is you.
             
@@ -498,6 +489,72 @@ export function App() {
           </button>
         </nav>
       </header>
+
+      {/*
+        The state of the room, under the header rather than in it.
+        
+        These started as two chips beside the nav buttons and were already
+        crowding them, and the interesting numbers were on a page two clicks
+        away. A strip is the honest shape: wide, quiet, glanceable, and closed
+        for good by anyone who finds it noise.
+        
+        Deliberately four numbers. Agents and spend because they are happening
+        right now and nothing else says so; sent today and the interview rate
+        because they are the two that answer "is this working" without an
+        opinion in them.
+      */}
+      {board && (
+        <div className={strip ? "control" : "control control-shut"}>
+          <button
+            className="control-toggle"
+            onClick={() => {
+              const next = !strip;
+              setStrip(next);
+              localStorage.setItem("boulot.strip", next ? "open" : "closed");
+            }}
+            title={strip ? "Hide" : "Show today"}
+            aria-expanded={strip}
+          >
+            {strip ? "×" : "Today"}
+          </button>
+          {strip && (
+            <div className="control-row">
+              <span className={busy.length ? "agents on" : "agents"} title="Applications being worked on right now">
+                <span className="agent-dot" />
+                {busy.length}/{maxAgents} agents
+              </span>
+              {costToday && costToday.runs > 0 && (
+                <span className="cost-today" title={`${costToday.runs} run${costToday.runs === 1 ? "" : "s"} today`}>
+                  £{costToday.gbp.toFixed(2)} today
+                </span>
+              )}
+              {board.activity && (
+                <>
+                  <span className="control-stat">
+                    <b>{board.activity.momentum.today}</b> sent today
+                  </span>
+                  <span className="control-stat">
+                    <b>{board.activity.momentum.week}</b> this week
+                  </span>
+                </>
+              )}
+              {board.funnel.applied > 0 && (
+                <span className="control-stat" title={`${board.funnel.stages.find((x) => x.label === "Interview")?.count ?? 0} of ${board.funnel.applied} reached an interview`}>
+                  <b>
+                    {Math.round(
+                      ((board.funnel.stages.find((x) => x.label === "Interview")?.count ?? 0) /
+                        board.funnel.applied) *
+                        100,
+                    )}
+                    %
+                  </b>{" "}
+                  reach interview
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/*
         A board with nothing on it.
